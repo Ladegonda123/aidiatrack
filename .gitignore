@@ -1,0 +1,25 @@
+# Node
+node_modules/
+dist/
+*.log
+npm-debug.log*
+ 
+# Environment
+.env
+.env.local
+.env.production
+ 
+# OS
+.DS_Store
+Thumbs.db
+ 
+# Mobile
+mobile/.expo/
+mobile/android/
+mobile/ios/
+ 
+# TypeScript build output
+backend/dist/
+ 
+# Prisma (keep migrations folder, just exclude auto-generated)
+backend/prisma/generated/

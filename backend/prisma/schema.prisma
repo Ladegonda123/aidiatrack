@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+ 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ActivityLevel {
+  NONE
+  LOW
+  MODERATE
+  HIGH
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  fullName     String    @map("full_name")
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role      @default(PATIENT)
+  phone        String?
+  dateOfBirth  DateTime? @map("date_of_birth")
+  gender       String?
+  doctorId     Int?      @map("doctor_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  doctor              User?   @relation("DoctorPatients", fields: [doctorId], references: [id])
+  patients            User[]  @relation("DoctorPatients")
+  healthRecords       HealthRecord[]
+  predictions         Prediction[]
+  sentMessages        Message[] @relation("SentMessages")
+  receivedMessages    Message[] @relation("ReceivedMessages")
+  medications         Medication[]
+  dietRecommendations DietRecommendation[]
+ 
+  @@map("users")
+}
+
+model HealthRecord {
+  id            Int           @id @default(autoincrement())
+  patientId     Int           @map("patient_id")
+  bloodGlucose  Float         @map("blood_glucose")
+  weightKg      Float?        @map("weight_kg")
+  bmi           Float?
+  bloodPressure String?       @map("blood_pressure")
+  mealDesc      String?       @map("meal_description")
+  calories      Int?
+  activityLevel ActivityLevel @default(NONE) @map("activity_level")
+  insulinDose   Float?        @map("insulin_dose")
+  hba1c         Float?
+  notes         String?
+  recordedAt    DateTime      @default(now()) @map("recorded_at")
+ 
+  patient         User              @relation(fields: [patientId], references: [id])
+  predictions     Prediction[]
+  dietRecs        DietRecommendation[]
+ 
+  @@map("health_records")
+}
+
+model Prediction {
+  id               Int       @id @default(autoincrement())
+  patientId        Int       @map("patient_id")
+  healthRecordId   Int?      @map("health_record_id")
+  predictedGlucose Float?    @map("predicted_glucose")
+  predictionHours  Int       @default(2) @map("prediction_hours")
+  riskLevel        RiskLevel @default(LOW) @map("risk_level")
+  riskFactors      Json?     @map("risk_factors")
+  confidence       Float?
+  modelVersion     String?   @map("model_version")
+  createdAt        DateTime  @default(now()) @map("created_at")
+ 
+  patient      User          @relation(fields: [patientId], references: [id])
+  healthRecord HealthRecord? @relation(fields: [healthRecordId], references: [id])
+ 
+  @@map("predictions")
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  senderId      Int      @map("sender_id")
+  receiverId    Int      @map("receiver_id")
+  content       String
+  isRead        Boolean  @default(false) @map("is_read")
+  attachmentUrl String?  @map("attachment_url")
+  sentAt        DateTime @default(now()) @map("sent_at")
+  sender   User @relation("SentMessages",   fields: [senderId],   references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+ 
+  @@map("messages")
+}
+
+model Medication {
+  id            Int      @id @default(autoincrement())
+  patientId     Int      @map("patient_id")
+  drugName      String   @map("drug_name")
+  dosage        String
+  frequency     String
+  reminderTimes Json     @map("reminder_times")
+  isActive      Boolean  @default(true) @map("is_active")
+  prescribedBy  Int?     @map("prescribed_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+ 
+  patient User @relation(fields: [patientId], references: [id])
+ 
+  @@map("medications")
+}
+
+model DietRecommendation {
+  id                 Int      @id @default(autoincrement())
+  patientId          Int      @map("patient_id")
+  recommendationText String   @map("recommendation_text")
+  foodsToEat         Json     @map("foods_to_eat")
+  foodsToAvoid       Json     @map("foods_to_avoid")
+  basedOnRecordId    Int?     @map("based_on_record_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+ 
+  patient      User          @relation(fields: [patientId], references: [id])
+  healthRecord HealthRecord? @relation(fields: [basedOnRecordId], references: [id])
+ 
+  @@map("diet_recommendations")
+}
