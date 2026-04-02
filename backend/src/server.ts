@@ -5,11 +5,15 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { Server } from "socket.io";
 import { ENV } from "./config/env";
+import { generalRateLimit } from "./middleware/rateLimit.middleware";
+import { sanitizeInput } from "./middleware/sanitize.middleware";
+import { verifyDatabaseConnection } from "./config/database";
 // import { setupSocket } from './config/socket'
 // import { errorMiddleware } from './middleware/error.middleware'
 
 // import authRoutes       from './routes/auth.routes'
 // import healthRoutes     from './routes/health.routes'
+// import adminRoutes from './routes/admin.routes'
 // import predictionRoutes from './routes/prediction.routes'
 // import chatRoutes       from './routes/chat.routes'
 // import doctorRoutes     from './routes/doctor.routes'
@@ -36,6 +40,7 @@ app.use(
 app.use(helmet());
 app.use(morgan(ENV.IS_DEV ? "dev" : "combined"));
 app.use(express.json({ limit: "10mb" }));
+app.use(sanitizeInput);
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/api/health", (_req, res) => {
@@ -47,8 +52,11 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+app.use("/api", generalRateLimit);
+
 // app.use('/api/auth',           authRoutes)
 // app.use('/api/health-records', healthRoutes)
+// app.use('/api/admin', adminRoutes)
 // app.use('/api/predictions',    predictionRoutes)
 // app.use('/api/chat',           chatRoutes)
 // app.use('/api/doctor',         doctorRoutes)
@@ -60,10 +68,17 @@ app.use((_req, res) => {
 
 // app.use(errorMiddleware)
 
-httpServer.listen(ENV.PORT, () => {
-  console.log(`AIDiaTrack API running → http://localhost:${ENV.PORT}`);
-  console.log(`Environment: ${ENV.NODE_ENV}`);
-  console.log(`Socket.IO: enabled`);
-});
+const startServer = async (): Promise<void> => {
+  await verifyDatabaseConnection()
+
+  httpServer.listen(ENV.PORT, () => {
+    console.log(`AIDiaTrack API running → http://localhost:${ENV.PORT}`)
+    console.log(`Environment  : ${ENV.NODE_ENV}`)
+    console.log(`Socket.IO   : enabled`)
+    console.log(`Health check: http://localhost:${ENV.PORT}/api/health`)
+  })
+}
+
+startServer()
 
 export default app;
