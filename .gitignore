@@ -23,3 +23,8 @@ backend/dist/
  
 # Prisma (keep migrations folder, just exclude auto-generated)
 backend/prisma/generated/
+
+.github/
+AGENTS.md
+CLAUDE.md
+
