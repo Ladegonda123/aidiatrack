@@ -14,13 +14,13 @@ async function main() {
   await prisma.healthRecord.deleteMany();
   await prisma.user.deleteMany();
 
-  const passwordHash = await bcrypt.hash("password123", 10);
+  const passwordHash = await bcrypt.hash("Test@1234", 12);
 
-  // ── Create 2 Doctors ──────────────────────────────────────────────
+  // ── Create 1 Doctor ───────────────────────────────────────────────
   const doctor1 = await prisma.user.create({
     data: {
       fullName: "Dr. Amina Uwase",
-      email: "amina.uwase@kigalihealth.rw",
+      email: "doctor@aidiatrack.rw",
       passwordHash,
       role: Role.DOCTOR,
       phone: "+250788000001",
@@ -28,22 +28,11 @@ async function main() {
     },
   });
 
-  const doctor2 = await prisma.user.create({
-    data: {
-      fullName: "Dr. Jean-Pierre Nkurunziza",
-      email: "jeanpierre@kigalihealth.rw",
-      passwordHash,
-      role: Role.DOCTOR,
-      phone: "+250788000002",
-      gender: "Male",
-    },
-  });
-
-  // ── Create 3 Patients (assigned to doctors) ───────────────────────
+  // ── Create 2 Patients ──────────────────────────────────────────────
   const patient1 = await prisma.user.create({
     data: {
       fullName: "Marie Mukamana",
-      email: "marie@example.com",
+      email: "patient1@aidiatrack.rw",
       passwordHash,
       role: Role.PATIENT,
       phone: "+250788100001",
@@ -56,7 +45,7 @@ async function main() {
   const patient2 = await prisma.user.create({
     data: {
       fullName: "Emmanuel Habimana",
-      email: "emmanuel@example.com",
+      email: "patient2@aidiatrack.rw",
       passwordHash,
       role: Role.PATIENT,
       phone: "+250788100002",
@@ -66,25 +55,13 @@ async function main() {
     },
   });
 
-  const patient3 = await prisma.user.create({
-    data: {
-      fullName: "Claudine Uwimana",
-      email: "claudine@example.com",
-      passwordHash,
-      role: Role.PATIENT,
-      phone: "+250788100003",
-      gender: "Female",
-      dateOfBirth: new Date("1990-11-08"),
-      doctorId: doctor2.id,
-    },
-  });
-
-  // ── Health Records for Patient 1 (last 7 days) ────────────────────
-  const glucoseReadings = [145, 162, 138, 175, 120, 190, 155];
+  // ── Health Records for Patient 1 ──────────────────────────────────
+  const glucoseReadings = [145, 162, 138, 175, 120];
+  const createdHealthRecords: Array<{ id: number }> = [];
   for (let i = 0; i < glucoseReadings.length; i++) {
     const date = new Date();
-    date.setDate(date.getDate() - (6 - i));
-    await prisma.healthRecord.create({
+    date.setDate(date.getDate() - (4 - i));
+    const healthRecord = await prisma.healthRecord.create({
       data: {
         patientId: patient1.id,
         bloodGlucose: glucoseReadings[i],
@@ -99,19 +76,40 @@ async function main() {
         recordedAt: date,
       },
     });
+    createdHealthRecords.push({ id: healthRecord.id });
   }
 
-  // ── Medication for Patient 1 ──────────────────────────────────────
-  await prisma.medication.create({
-    data: {
-      patientId: patient1.id,
-      drugName: "Metformin",
-      dosage: "500mg",
-      frequency: "twice daily",
-      reminderTimes: ["08:00", "20:00"],
-      isActive: true,
-      prescribedBy: doctor1.id,
-    },
+  // ── Medications for Patient 1 ─────────────────────────────────────
+  await prisma.medication.createMany({
+    data: [
+      {
+        patientId: patient1.id,
+        drugName: "Metformin",
+        dosage: "500mg",
+        frequency: "twice daily",
+        reminderTimes: ["08:00", "20:00"],
+        isActive: true,
+        prescribedBy: doctor1.id,
+      },
+      {
+        patientId: patient1.id,
+        drugName: "Glipizide",
+        dosage: "5mg",
+        frequency: "once daily",
+        reminderTimes: ["09:00"],
+        isActive: true,
+        prescribedBy: doctor1.id,
+      },
+      {
+        patientId: patient1.id,
+        drugName: "Lisinopril",
+        dosage: "10mg",
+        frequency: "once daily",
+        reminderTimes: ["07:30"],
+        isActive: true,
+        prescribedBy: doctor1.id,
+      },
+    ],
   });
 
   // ── Sample Prediction for Patient 1 ──────────────────────────────
@@ -128,32 +126,64 @@ async function main() {
   });
 
   // ── Sample Chat Messages ──────────────────────────────────────────
-  await prisma.message.create({
-    data: {
-      senderId: patient1.id,
-      receiverId: doctor1.id,
-      content:
-        "Good morning doctor, my sugar was 175 this morning after breakfast.",
-      isRead: true,
-    },
+  await prisma.message.createMany({
+    data: [
+      {
+        senderId: patient1.id,
+        receiverId: doctor1.id,
+        content:
+          "Good morning doctor, my sugar was 175 this morning after breakfast.",
+        isRead: true,
+      },
+      {
+        senderId: doctor1.id,
+        receiverId: patient1.id,
+        content:
+          "Thank you Marie. Please reduce your carbohydrate intake at breakfast.",
+        isRead: true,
+      },
+      {
+        senderId: patient1.id,
+        receiverId: doctor1.id,
+        content: "I also felt a little tired after lunch.",
+        isRead: false,
+      },
+      {
+        senderId: doctor1.id,
+        receiverId: patient1.id,
+        content: "Try a short walk after meals and keep your hydration up.",
+        isRead: false,
+      },
+      {
+        senderId: patient1.id,
+        receiverId: doctor1.id,
+        content: "Understood, I will log my next reading this evening.",
+        isRead: false,
+      },
+    ],
   });
 
-  await prisma.message.create({
+  // ── Sample Diet Recommendation for Patient 1 ─────────────────────
+  await prisma.dietRecommendation.create({
     data: {
-      senderId: doctor1.id,
-      receiverId: patient1.id,
-      content:
-        "Thank you Marie. Please reduce your carbohydrate intake at breakfast. Try eggs with vegetables instead.",
-      isRead: false,
+      patientId: patient1.id,
+      recommendationText:
+        "Focus on balanced meals with beans, greens, avocado, and controlled portions of whole grains.",
+      foodsToEat: ["beans", "spinach", "avocado", "whole grains"],
+      foodsToAvoid: [
+        "sugary drinks",
+        "fried snacks",
+        "large white bread portions",
+      ],
+      basedOnRecordId: createdHealthRecords[createdHealthRecords.length - 1].id,
     },
   });
 
   console.log("✅ Seed complete!");
-  console.log(`   Doctors  : ${doctor1.fullName}, ${doctor2.fullName}`);
   console.log(
-    `   Patients : ${patient1.fullName}, ${patient2.fullName}, ${patient3.fullName}`,
+    `   Users    : ${doctor1.fullName}, ${patient1.fullName}, ${patient2.fullName}`,
   );
-  console.log(`   Password : password123  (all accounts)`);
+  console.log(`   Password : Test@1234  (all accounts)`);
 }
 
 main()

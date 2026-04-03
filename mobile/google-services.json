@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "519063263671",
+    "project_id": "aidiatrack",
+    "storage_bucket": "aidiatrack.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:519063263671:android:5fab9172d7c65e1aa0b032",
+        "android_client_info": {
+          "package_name": "rw.aidiatrack.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhYgp7-wNkGxxWTSji0CqJ3IY5d2qTFX0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

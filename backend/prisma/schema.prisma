@@ -34,6 +34,7 @@ model User {
   phone        String?
   dateOfBirth  DateTime? @map("date_of_birth")
   gender       String?
+  fcmToken     String?   @map("fcm_token")
   doctorId     Int?      @map("doctor_id")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -133,4 +134,20 @@ model DietRecommendation {
   healthRecord HealthRecord? @relation(fields: [basedOnRecordId], references: [id])
  
   @@map("diet_recommendations")
+}
+
+model FoodItem {
+  id              Int     @id @default(autoincrement())
+  name            String
+  nameKin         String? @map("name_kin")
+  category        String
+  glycemicIndex   Int?    @map("glycemic_index")
+  glycemicLoad    Float?  @map("glycemic_load")
+  caloriesPer100g Float?  @map("calories_per_100g")
+  carbsPer100g    Float?  @map("carbs_per_100g")
+  proteinPer100g  Float?  @map("protein_per_100g")
+  fatPer100g      Float?  @map("fat_per_100g")
+  isLocal         Boolean @default(false) @map("is_local")
+
+  @@map("food_items")
 }
