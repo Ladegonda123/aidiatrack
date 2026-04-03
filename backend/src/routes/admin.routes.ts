@@ -1,42 +1,45 @@
-// import { Router, Request, Response } from "express";
-// import { authenticate } from "../middleware/auth.middleware";
-// import { requireRole } from "../middleware/role.middleware";
+import { Router } from "express";
+import { authenticate } from "../middleware/auth.middleware";
+import { requireRole } from "../middleware/role.middleware";
+import { validate } from "../middleware/validate.middleware";
+import {
+  assignPatientSchema,
+  unassignPatientSchema,
+} from "../validators/admin.validator";
+import {
+  assignPatient,
+  getMyPatientByEmail,
+  getUnassignedPatients,
+  unassignPatient,
+} from "../controllers/admin.controller";
 
-// const router = Router();
+const router = Router();
 
-// // POST /api/admin/assign-patient
-// // Doctor assigns a patient to themselves by the patient's email
-// router.post(
-//   "/assign-patient",
-//   authenticate,
-//   requireRole("DOCTOR"),
-//   (req: Request, res: Response) => {
-//     // Phase 2 will call a real controller here:
-//     // await prisma.user.update({
-//     //   where: { email: req.body.patientEmail },
-//     //   data: { doctorId: req.user.userId }
-//     // })
-//     res.json({
-//       success: true,
-//       message: "Assign patient to doctor — Phase 2",
-//       received: req.body, // { patientEmail: "marie@example.com" }
-//     });
-//   },
-// );
+router.post(
+  "/assign-patient",
+  authenticate,
+  requireRole("DOCTOR"),
+  validate(assignPatientSchema),
+  assignPatient,
+);
+router.post(
+  "/unassign-patient",
+  authenticate,
+  requireRole("DOCTOR"),
+  validate(unassignPatientSchema),
+  unassignPatient,
+);
+router.get(
+  "/unassigned-patients",
+  authenticate,
+  requireRole("DOCTOR"),
+  getUnassignedPatients,
+);
+router.get(
+  "/patients/search",
+  authenticate,
+  requireRole("DOCTOR"),
+  getMyPatientByEmail,
+);
 
-// // GET /api/admin/unassigned-patients
-// // Lists patients not yet assigned to any doctor
-// router.get(
-//   "/unassigned-patients",
-//   authenticate,
-//   requireRole("DOCTOR"),
-//   (_req: Request, res: Response) => {
-//     res.json({
-//       success: true,
-//       message: "Get unassigned patients — Phase 2",
-//       patients: [],
-//     });
-//   },
-// );
-
-// export default router;
+export default router;

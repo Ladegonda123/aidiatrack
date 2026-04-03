@@ -1,19 +1,20 @@
-// import { Router, Request, Response } from "express";
-// import { authenticate } from "../middleware/auth.middleware";
-// import { authRateLimit } from "../middleware/rateLimit.middleware"; 
+import { Router } from "express";
+import { registerSchema, loginSchema } from "../validators/auth.validator";
+import { authenticate } from "../middleware/auth.middleware";
+import { authRateLimit } from "../middleware/rateLimit.middleware";
+import { validate } from "../middleware/validate.middleware";
+import {
+  register,
+  login,
+  getMe,
+  updateProfile,
+} from "../controllers/auth.controller";
 
-// const router = Router();
+const router = Router();
 
-// router.post("/register", authRateLimit, (req: Request, res: Response) => {
-//   res.json({ success: true, message: "Register endpoint — Phase 2" });
-// });
+router.post("/register", authRateLimit, validate(registerSchema), register);
+router.post("/login", authRateLimit, validate(loginSchema), login);
+router.get("/me", authenticate, getMe);
+router.put("/profile", authenticate, updateProfile);
 
-// router.post("/login", authRateLimit, (req: Request, res: Response) => {
-//   res.json({ success: true, message: "Login endpoint — Phase 2" });
-// });
-
-// router.get("/me", authenticate, (req: Request, res: Response) => {
-//   res.json({ success: true, message: "Get profile — Phase 2", user: req.user });
-// });
-
-// export default router;
+export default router;
