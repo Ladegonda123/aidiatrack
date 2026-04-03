@@ -11,11 +11,7 @@ export const requireRole = (...roles: string[]) => {
     }
 
     if (!roles.includes(userRole)) {
-      sendError(
-        res,
-        403,
-        "You do not have permission to access this resource",
-      );
+      sendError(res, 403, "You do not have permission to access this resource");
       return;
     }
 
