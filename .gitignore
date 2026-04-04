@@ -31,7 +31,6 @@ CLAUDE.md
 # AI training data — too large for GitHub
 ai-service/data/*.csv
 ai-service/data/*.xlsx
-ai-service/models/*.pkl
 ai-service/models/*.h5
 
 # Keep the folder itself
