@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,7 +17,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { z } from "zod";
-import LanguageToggle from "../../components/LanguageToggle";
+import LanguageDropdown from "../../components/LanguageDropdown";
 import { RootStackParamList, UserRole } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
@@ -51,6 +51,15 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <LanguageDropdown />,
+      headerStyle: { backgroundColor: COLORS.background },
+      headerTintColor: COLORS.primary,
+      headerShadowVisible: false,
+    });
+  }, [navigation, i18n.language]);
 
   const {
     control,
@@ -108,11 +117,6 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerRow}>
-            <View style={styles.headerSpacer} />
-            <LanguageToggle />
-          </View>
-
           <Text style={styles.title}>{t("auth.register.title")}</Text>
           <Text style={styles.subtitle}>{t("auth.register.subtitle")}</Text>
 
@@ -291,9 +295,6 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             )}
 
-            <Text style={styles.label}>{t("auth.register.languageLabel")}</Text>
-            <LanguageToggle style={styles.registerLanguageToggle} />
-
             <TouchableOpacity
               style={[
                 styles.button,
@@ -341,16 +342,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingBottom: 16,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  headerSpacer: {
-    width: 56,
   },
   title: {
     fontSize: 30,
@@ -428,9 +419,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.textPrimary,
     fontWeight: "600",
-  },
-  registerLanguageToggle: {
-    marginBottom: 8,
   },
   validationError: {
     color: COLORS.danger,

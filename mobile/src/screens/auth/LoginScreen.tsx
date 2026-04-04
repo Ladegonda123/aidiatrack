@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,7 +17,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { z } from "zod";
-import LanguageToggle from "../../components/LanguageToggle";
+import LanguageDropdown from "../../components/LanguageDropdown";
 import { RootStackParamList } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
@@ -35,11 +35,20 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => <LanguageDropdown />,
+      headerStyle: { backgroundColor: COLORS.background },
+      headerTintColor: COLORS.primary,
+      headerShadowVisible: false,
+    });
+  }, [navigation, i18n.language]);
 
   const {
     control,
@@ -80,11 +89,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerRow}>
-            <View style={styles.headerSpacer} />
-            <LanguageToggle />
-          </View>
-
           <View style={styles.heroBlock}>
             <Text style={styles.logo}>{t("common.appName")}</Text>
             <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
@@ -203,16 +207,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingBottom: 16,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 10,
-  },
-  headerSpacer: {
-    width: 56,
   },
   heroBlock: {
     marginTop: 20,
