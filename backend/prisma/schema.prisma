@@ -35,6 +35,7 @@ model User {
   dateOfBirth  DateTime? @map("date_of_birth")
   gender       String?
   fcmToken     String?   @map("fcm_token")
+  language     String    @default("rw")  @map("language")
   doctorId     Int?      @map("doctor_id")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -52,19 +53,22 @@ model User {
 }
 
 model HealthRecord {
-  id            Int           @id @default(autoincrement())
-  patientId     Int           @map("patient_id")
-  bloodGlucose  Float         @map("blood_glucose")
-  weightKg      Float?        @map("weight_kg")
-  bmi           Float?
-  bloodPressure String?       @map("blood_pressure")
-  mealDesc      String?       @map("meal_description")
-  calories      Int?
-  activityLevel ActivityLevel @default(NONE) @map("activity_level")
-  insulinDose   Float?        @map("insulin_dose")
-  hba1c         Float?
-  notes         String?
-  recordedAt    DateTime      @default(now()) @map("recorded_at")
+  id               Int           @id @default(autoincrement())
+  patientId        Int           @map("patient_id")
+  bloodGlucose     Float         @map("blood_glucose")
+  weightKg         Float?        @map("weight_kg")
+  bmi              Float?
+  bloodPressure    String?       @map("blood_pressure")
+  mealDesc         String?       @map("meal_description")
+  calories         Int?
+  mealGi           Int?          @map("meal_gi")
+  mealCalories     Int?          @map("meal_calories")
+  minutesSinceMeal Int?          @map("minutes_since_meal")
+  activityLevel    ActivityLevel @default(NONE) @map("activity_level")
+  insulinDose      Float?        @map("insulin_dose")
+  hba1c            Float?
+  notes            String?
+  recordedAt       DateTime      @default(now()) @map("recorded_at")
  
   patient         User              @relation(fields: [patientId], references: [id])
   predictions     Prediction[]
@@ -122,13 +126,14 @@ model Medication {
 }
 
 model DietRecommendation {
-  id                 Int      @id @default(autoincrement())
-  patientId          Int      @map("patient_id")
-  recommendationText String   @map("recommendation_text")
-  foodsToEat         Json     @map("foods_to_eat")
-  foodsToAvoid       Json     @map("foods_to_avoid")
-  basedOnRecordId    Int?     @map("based_on_record_id")
-  createdAt          DateTime @default(now()) @map("created_at")
+  id                   Int      @id @default(autoincrement())
+  patientId            Int      @map("patient_id")
+  recommendationText   String   @map("recommendation_text")
+  recommendationTextRw String?  @map("recommendation_text_rw")
+  foodsToEat           Json     @map("foods_to_eat")
+  foodsToAvoid         Json     @map("foods_to_avoid")
+  basedOnRecordId      Int?     @map("based_on_record_id")
+  createdAt            DateTime @default(now()) @map("created_at")
  
   patient      User          @relation(fields: [patientId], references: [id])
   healthRecord HealthRecord? @relation(fields: [basedOnRecordId], references: [id])

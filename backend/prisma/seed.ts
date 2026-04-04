@@ -25,6 +25,7 @@ async function main() {
       role: Role.DOCTOR,
       phone: "+250788000001",
       gender: "Female",
+      language: "rw",
     },
   });
 
@@ -39,6 +40,7 @@ async function main() {
       gender: "Female",
       dateOfBirth: new Date("1978-03-15"),
       doctorId: doctor1.id,
+      language: "rw",
     },
   });
 
@@ -52,6 +54,7 @@ async function main() {
       gender: "Male",
       dateOfBirth: new Date("1965-07-22"),
       doctorId: doctor1.id,
+      language: "en",
     },
   });
 

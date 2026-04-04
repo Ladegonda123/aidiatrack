@@ -83,31 +83,94 @@ export const saveDeviceToken = async (
   }
 };
 
+const getNotificationText = (
+  language: string,
+  key: "medicationReminder" | "highBgAlert" | "chatMessage",
+  params?: Record<string, string>,
+): { title: string; body: string } => {
+  const texts = {
+    en: {
+      medicationReminder: {
+        title: "Medication Reminder",
+        body: `Time to take ${params?.drug} ${params?.dosage}`,
+      },
+      highBgAlert: {
+        title: "High Blood Glucose Alert",
+        body: `Your reading of ${params?.value} mg/dL is high. Please take action.`,
+      },
+      chatMessage: {
+        title: `New message from ${params?.name}`,
+        body: params?.preview ?? "",
+      },
+    },
+    rw: {
+      medicationReminder: {
+        title: "Urwibutso rw'imiti",
+        body: `Ni igihe cyo gufata ${params?.drug} ${params?.dosage}`,
+      },
+      highBgAlert: {
+        title: "Umuburo w’isukari nyinshi mu maraso",
+        body: `Isuzuma ryawe rya ${params?.value} mg/dL riri hejuru. Fata ingamba vuba.`,
+      },
+      chatMessage: {
+        title: `Ubutumwa bushya buva kwa ${params?.name}`,
+        body: params?.preview ?? "",
+      },
+    },
+  };
+  return texts[language as "en" | "rw"]?.[key] ?? texts["en"][key];
+};
+
 export const sendMedicationReminder = async (
   userId: number,
   drugName: string,
   dosage: string,
 ): Promise<void> => {
-  await sendPushNotification({
-    userId,
-    title: "Medication Reminder",
-    body: `Time to take ${drugName} ${dosage}`,
-    channelId: "medication_reminders",
-    data: { type: "medication_reminder", drugName },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { language: true },
+    });
+    const lang = user?.language ?? "rw";
+    const { title, body } = getNotificationText(lang, "medicationReminder", {
+      drug: drugName,
+      dosage,
+    });
+    await sendPushNotification({
+      userId,
+      title,
+      body,
+      channelId: "medication_reminders",
+      data: { type: "medication_reminder", drugName },
+    });
+  } catch (error: unknown) {
+    logger.error("Failed to send medication reminder", { userId, error });
+  }
 };
 
 export const sendHighBgAlert = async (
   userId: number,
   bgValue: number,
 ): Promise<void> => {
-  await sendPushNotification({
-    userId,
-    title: "High Blood Glucose Alert",
-    body: `Your reading of ${bgValue} mg/dL is high. Please take action.`,
-    channelId: "bg_alerts",
-    data: { type: "bg_alert", bgValue: bgValue.toString() },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { language: true },
+    });
+    const lang = user?.language ?? "rw";
+    const { title, body } = getNotificationText(lang, "highBgAlert", {
+      value: bgValue.toString(),
+    });
+    await sendPushNotification({
+      userId,
+      title,
+      body,
+      channelId: "bg_alerts",
+      data: { type: "bg_alert", bgValue: bgValue.toString() },
+    });
+  } catch (error: unknown) {
+    logger.error("Failed to send BG alert", { userId, error });
+  }
 };
 
 export const sendChatNotification = async (
@@ -115,14 +178,28 @@ export const sendChatNotification = async (
   senderName: string,
   messagePreview: string,
 ): Promise<void> => {
-  await sendPushNotification({
-    userId: receiverId,
-    title: `New message from ${senderName}`,
-    body:
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: receiverId },
+      select: { language: true },
+    });
+    const lang = user?.language ?? "rw";
+    const preview =
       messagePreview.length > 80
         ? `${messagePreview.substring(0, 80)}...`
-        : messagePreview,
-    channelId: "general",
-    data: { type: "chat_message", senderName },
-  });
+        : messagePreview;
+    const { title, body } = getNotificationText(lang, "chatMessage", {
+      name: senderName,
+      preview,
+    });
+    await sendPushNotification({
+      userId: receiverId,
+      title,
+      body,
+      channelId: "general",
+      data: { type: "chat_message", senderName },
+    });
+  } catch (error: unknown) {
+    logger.error("Failed to send chat notification", { receiverId, error });
+  }
 };
