@@ -1,133 +1,463 @@
 import React, { useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { z } from "zod";
+import LanguageToggle from "../../components/LanguageToggle";
 import { RootStackParamList, UserRole } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Register">;
 
-const RegisterScreen: React.FC<Props> = ({ navigation }) => {
-  const { t } = useTranslation();
-  const { register } = useAuth();
-  const [fullName, setFullName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [role] = useState<UserRole>("PATIENT");
-  const [loading, setLoading] = useState<boolean>(false);
+const registerSchema = z.object({
+  fullName: z.string().min(2, { message: "auth.validation.fullNameMin" }),
+  email: z
+    .string()
+    .min(1, { message: "auth.validation.emailRequired" })
+    .email({ message: "auth.validation.emailInvalid" }),
+  password: z.string().min(8, { message: "auth.validation.passwordMin8" }),
+  role: z.enum(["PATIENT", "DOCTOR"], {
+    message: "auth.validation.roleRequired",
+  }),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .refine((value) => !value || /^\d{10,15}$/.test(value), {
+      message: "auth.validation.phoneDigits",
+    }),
+});
 
-  const onRegister = async (): Promise<void> => {
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
+const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+  const { t, i18n } = useTranslation();
+  const { register } = useAuth();
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      role: "PATIENT",
+      phone: "",
+    },
+  });
+
+  const selectedRole = watch("role");
+
+  const onRegister = async (values: RegisterFormValues): Promise<void> => {
     try {
       setLoading(true);
+      setRegisterError(null);
+
+      const currentLanguage = i18n.language === "en" ? "en" : "rw";
+
       await register({
-        fullName,
-        email: email.trim(),
-        password,
-        role,
-        language: "rw",
+        fullName: values.fullName.trim(),
+        email: values.email.trim(),
+        password: values.password,
+        role: values.role as UserRole,
+        phone: values.phone?.trim() ? values.phone.trim() : undefined,
+        language: currentLanguage,
       });
     } catch {
-      Alert.alert(t("common.error"));
+      setRegisterError(t("common.error"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t("auth.register.title")}</Text>
-      <Text style={styles.subtitle}>{t("auth.register.subtitle")}</Text>
-
-      <TextInput
-        style={styles.input}
-        value={fullName}
-        onChangeText={setFullName}
-        placeholder={t("auth.register.fullNamePlaceholder")}
-      />
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder={t("auth.register.emailPlaceholder")}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t("auth.register.passwordPlaceholder")}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={onRegister}
-        disabled={loading}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={styles.buttonText}>
-          {loading ? t("common.loading") : t("auth.register.button")}
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <View style={styles.headerSpacer} />
+          <LanguageToggle />
+        </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.link}>
-          {t("auth.register.hasAccount")} {t("auth.register.login")}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={styles.title}>{t("auth.register.title")}</Text>
+        <Text style={styles.subtitle}>{t("auth.register.subtitle")}</Text>
+
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>
+            {t("auth.register.fullNamePlaceholder")}
+          </Text>
+          <Controller
+            control={control}
+            name="fullName"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.register.fullNamePlaceholder")}
+                autoCapitalize="words"
+              />
+            )}
+          />
+          {errors.fullName?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.fullName.message)}
+            </Text>
+          )}
+
+          <Text style={styles.label}>
+            {t("auth.register.emailPlaceholder")}
+          </Text>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.register.emailPlaceholder")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="emailAddress"
+              />
+            )}
+          />
+          {errors.email?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.email.message)}
+            </Text>
+          )}
+
+          <Text style={styles.label}>
+            {t("auth.register.passwordPlaceholder")}
+          </Text>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder={t("auth.register.passwordPlaceholder")}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  textContentType="newPassword"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showPassword
+                      ? t("auth.login.hidePassword")
+                      : t("auth.login.showPassword")
+                  }
+                >
+                  <MaterialCommunityIcons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+          {errors.password?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.password.message)}
+            </Text>
+          )}
+
+          <Text style={styles.label}>{t("auth.register.rolePicker")}</Text>
+          <View style={styles.roleRow}>
+            <TouchableOpacity
+              style={[
+                styles.roleCard,
+                selectedRole === "PATIENT"
+                  ? styles.roleCardSelected
+                  : styles.roleCardUnselected,
+              ]}
+              onPress={() =>
+                setValue("role", "PATIENT", { shouldValidate: true })
+              }
+            >
+              <MaterialCommunityIcons
+                name="account"
+                size={26}
+                color={
+                  selectedRole === "PATIENT"
+                    ? COLORS.primary
+                    : COLORS.textSecondary
+                }
+              />
+              <Text style={styles.roleCardText}>
+                {t("auth.register.rolePatientCombined")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.roleCard,
+                selectedRole === "DOCTOR"
+                  ? styles.roleCardSelected
+                  : styles.roleCardUnselected,
+              ]}
+              onPress={() =>
+                setValue("role", "DOCTOR", { shouldValidate: true })
+              }
+            >
+              <MaterialCommunityIcons
+                name="stethoscope"
+                size={26}
+                color={
+                  selectedRole === "DOCTOR"
+                    ? COLORS.primary
+                    : COLORS.textSecondary
+                }
+              />
+              <Text style={styles.roleCardText}>
+                {t("auth.register.roleDoctorCombined")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {errors.role?.message && (
+            <Text style={styles.validationError}>{t(errors.role.message)}</Text>
+          )}
+
+          <Text style={styles.label}>
+            {t("auth.register.phoneLabel")} ({t("common.optional")})
+          </Text>
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.register.phonePlaceholder")}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+              />
+            )}
+          />
+          {errors.phone?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.phone.message)}
+            </Text>
+          )}
+
+          <Text style={styles.label}>{t("auth.register.languageLabel")}</Text>
+          <LanguageToggle style={styles.registerLanguageToggle} />
+
+          <TouchableOpacity
+            style={[styles.button, loading ? styles.buttonDisabled : undefined]}
+            onPress={handleSubmit(onRegister)}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.card} />
+            ) : (
+              <Text style={styles.buttonText}>{t("auth.register.button")}</Text>
+            )}
+          </TouchableOpacity>
+
+          {registerError ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorCardText}>{registerError}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Login")}
+          style={styles.bottomLinkContainer}
+        >
+          <Text style={styles.link}>
+            {t("auth.register.hasAccount")} {t("auth.register.login")}
+          </Text>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
-    justifyContent: "center",
+  },
+  keyboardAvoiding: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  headerSpacer: {
+    width: 56,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
+    fontSize: 30,
+    fontWeight: "800",
+    color: COLORS.primary,
+    textAlign: "center",
+    marginTop: 10,
   },
   subtitle: {
-    marginTop: 4,
-    marginBottom: 20,
+    marginTop: 8,
+    marginBottom: 16,
     color: COLORS.textSecondary,
+    textAlign: "center",
+  },
+  formContainer: {
+    marginTop: 8,
+  },
+  label: {
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+    fontWeight: "600",
   },
   input: {
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    paddingVertical: 12,
     color: COLORS.textPrimary,
   },
-  button: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
+  passwordInputWrapper: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    marginBottom: 12,
+    color: COLORS.textPrimary,
+  },
+  eyeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  roleRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 2,
+  },
+  roleCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    minHeight: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+  },
+  roleCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: "#EAF4FB",
+  },
+  roleCardUnselected: {
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  roleCardText: {
+    marginTop: 8,
+    textAlign: "center",
+    color: COLORS.textPrimary,
+    fontWeight: "600",
+  },
+  registerLanguageToggle: {
+    marginBottom: 8,
+  },
+  validationError: {
+    color: COLORS.danger,
+    marginTop: 4,
+    marginBottom: 10,
+    fontSize: 12,
+  },
+  button: {
+    marginTop: 6,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  buttonDisabled: {
+    opacity: 0.8,
   },
   buttonText: {
     color: COLORS.card,
     fontWeight: "700",
+    fontSize: 16,
+  },
+  errorCard: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+    backgroundColor: "#FDECEC",
+    padding: 12,
+  },
+  errorCardText: {
+    color: COLORS.danger,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  bottomLinkContainer: {
+    marginTop: "auto",
+    paddingVertical: 10,
   },
   link: {
     color: COLORS.primary,
     textAlign: "center",
+    fontWeight: "600",
   },
 });
 

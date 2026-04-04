@@ -1,12 +1,16 @@
 {
   "common": {
+    "appName": "AIDiaTrack",
     "save": "Save",
     "cancel": "Cancel",
     "loading": "Loading...",
     "error": "Something went wrong. Please try again.",
     "retry": "Try Again",
     "noData": "No data yet",
-    "required": "This field is required"
+    "required": "This field is required",
+    "optional": "optional",
+    "languageKinShort": "KIN",
+    "languageEngShort": "ENG"
   },
   "auth": {
     "login": {
@@ -14,6 +18,8 @@
       "subtitle": "Sign in to your AIDiaTrack account",
       "emailPlaceholder": "Email address",
       "passwordPlaceholder": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "button": "Sign In",
       "noAccount": "Don't have an account?",
       "register": "Register",
@@ -28,6 +34,9 @@
       "rolePicker": "I am a...",
       "rolePatient": "Patient",
       "roleDoctor": "Doctor",
+      "rolePatientCombined": "Umurwayi / Patient",
+      "roleDoctorCombined": "Umuganga / Doctor",
+      "phoneLabel": "Phone number",
       "phonePlaceholder": "Phone number (optional)",
       "languageLabel": "Preferred language",
       "languageEn": "English",
@@ -35,6 +44,15 @@
       "button": "Create Account",
       "hasAccount": "Already have an account?",
       "login": "Sign In"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email",
+      "passwordRequired": "Password is required",
+      "passwordMin8": "Password must be at least 8 characters",
+      "fullNameMin": "Full name must be at least 2 characters",
+      "roleRequired": "Please select a role",
+      "phoneDigits": "Phone number must be 10 to 15 digits"
     }
   },
   "dashboard": {

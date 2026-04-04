@@ -34,7 +34,9 @@ interface AuthContextType {
   updateLanguage: (lang: Language) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export const AuthProvider = ({
   children,

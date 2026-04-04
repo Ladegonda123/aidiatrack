@@ -1,119 +1,300 @@
 import React, { useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { z } from "zod";
+import LanguageToggle from "../../components/LanguageToggle";
 import { RootStackParamList } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, { message: "auth.validation.emailRequired" })
+    .email({ message: "auth.validation.emailInvalid" }),
+  password: z.string().min(1, { message: "auth.validation.passwordRequired" }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const { login } = useAuth();
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  const onLogin = async (): Promise<void> => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onLogin = async (values: LoginFormValues): Promise<void> => {
     try {
       setLoading(true);
-      await login(email.trim(), password);
+      setLoginError(null);
+      await login(values.email.trim(), values.password);
     } catch {
-      Alert.alert(t("common.error"));
+      setLoginError(t("auth.login.error"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t("auth.login.title")}</Text>
-      <Text style={styles.subtitle}>{t("auth.login.subtitle")}</Text>
-
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder={t("auth.login.emailPlaceholder")}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t("auth.login.passwordPlaceholder")}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={onLogin}
-        disabled={loading}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={styles.buttonText}>
-          {loading ? t("common.loading") : t("auth.login.button")}
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <View style={styles.headerSpacer} />
+          <LanguageToggle />
+        </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-        <Text style={styles.link}>
-          {t("auth.login.noAccount")} {t("auth.login.register")}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.heroBlock}>
+          <Text style={styles.logo}>{t("common.appName")}</Text>
+          <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>{t("auth.login.emailPlaceholder")}</Text>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.login.emailPlaceholder")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="emailAddress"
+              />
+            )}
+          />
+          {errors.email?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.email.message)}
+            </Text>
+          )}
+
+          <Text style={styles.label}>
+            {t("auth.login.passwordPlaceholder")}
+          </Text>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder={t("auth.login.passwordPlaceholder")}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  textContentType="password"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showPassword
+                      ? t("auth.login.hidePassword")
+                      : t("auth.login.showPassword")
+                  }
+                >
+                  <MaterialCommunityIcons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+          {errors.password?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.password.message)}
+            </Text>
+          )}
+
+          <TouchableOpacity
+            style={[styles.button, loading ? styles.buttonDisabled : undefined]}
+            onPress={handleSubmit(onLogin)}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.card} />
+            ) : (
+              <Text style={styles.buttonText}>{t("auth.login.button")}</Text>
+            )}
+          </TouchableOpacity>
+
+          {loginError ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorCardText}>{loginError}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Register")}
+          style={styles.bottomLinkContainer}
+        >
+          <Text style={styles.link}>
+            {t("auth.login.noAccount")} {t("auth.login.register")}
+          </Text>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
-    justifyContent: "center",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
+  keyboardAvoiding: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  subtitle: {
-    marginTop: 4,
-    marginBottom: 20,
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  headerSpacer: {
+    width: 56,
+  },
+  heroBlock: {
+    marginTop: 20,
+    marginBottom: 26,
+    alignItems: "center",
+  },
+  logo: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: COLORS.primary,
+  },
+  tagline: {
+    marginTop: 8,
+    textAlign: "center",
     color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  formContainer: {
+    backgroundColor: "transparent",
+  },
+  label: {
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+    fontWeight: "600",
   },
   input: {
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    paddingVertical: 12,
     color: COLORS.textPrimary,
   },
-  button: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
+  passwordInputWrapper: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    marginBottom: 12,
+    color: COLORS.textPrimary,
+  },
+  eyeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  validationError: {
+    color: COLORS.danger,
+    marginTop: 4,
+    marginBottom: 10,
+    fontSize: 12,
+  },
+  button: {
+    marginTop: 6,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  buttonDisabled: {
+    opacity: 0.8,
   },
   buttonText: {
     color: COLORS.card,
     fontWeight: "700",
+    fontSize: 16,
+  },
+  errorCard: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+    backgroundColor: "#FDECEC",
+    padding: 12,
+  },
+  errorCardText: {
+    color: COLORS.danger,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  bottomLinkContainer: {
+    marginTop: "auto",
+    paddingVertical: 12,
   },
   link: {
     color: COLORS.primary,
     textAlign: "center",
+    fontWeight: "600",
   },
 });
 

@@ -1,12 +1,16 @@
 {
   "common": {
+    "appName": "AIDiaTrack",
     "save": "Bika",
     "cancel": "Reka",
     "loading": "Gutegereza...",
     "error": "Hari ikibazo. Ongera ugerageze.",
     "retry": "Ongera Ugerageze",
     "noData": "Nta makuru arabonetse",
-    "required": "Ubu butaka busabwa"
+    "required": "Ubu butaka busabwa",
+    "optional": "si ngombwa",
+    "languageKinShort": "KIN",
+    "languageEngShort": "ENG"
   },
   "auth": {
     "login": {
@@ -14,6 +18,8 @@
       "subtitle": "Injira muri konti yawe ya AIDiaTrack",
       "emailPlaceholder": "Aderesi ya imeyili",
       "passwordPlaceholder": "Ijambo ry'ibanga",
+      "showPassword": "Erekana ijambo ry'ibanga",
+      "hidePassword": "Hisha ijambo ry'ibanga",
       "button": "Injira",
       "noAccount": "Nta konti ufite?",
       "register": "Iyandikishe",
@@ -28,6 +34,9 @@
       "rolePicker": "Ndi...",
       "rolePatient": "Umurwayi",
       "roleDoctor": "Umuganga",
+      "rolePatientCombined": "Umurwayi / Patient",
+      "roleDoctorCombined": "Umuganga / Doctor",
+      "phoneLabel": "Numero ya telefoni",
       "phonePlaceholder": "Numero ya telefoni (si ngombwa)",
       "languageLabel": "Ururimi rw'ibanze",
       "languageEn": "Icyongereza",
@@ -35,6 +44,15 @@
       "button": "Fungura Konti",
       "hasAccount": "Usanzwe ufite konti?",
       "login": "Injira"
+    },
+    "validation": {
+      "emailRequired": "Aderesi ya imeyili irakenewe",
+      "emailInvalid": "Shyiramo imeyili yemewe",
+      "passwordRequired": "Ijambo ry'ibanga rirakenewe",
+      "passwordMin8": "Ijambo ry'ibanga rigomba kugira nibura inyuguti 8",
+      "fullNameMin": "Amazina yuzuye agomba kugira nibura inyuguti 2",
+      "roleRequired": "Hitamo uruhare",
+      "phoneDigits": "Numero ya telefoni igomba kuba imibare 10 kugeza kuri 15"
     }
   },
   "dashboard": {
