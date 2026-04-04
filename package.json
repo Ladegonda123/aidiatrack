@@ -1,0 +1,26 @@
+{
+  "name": "aidiatrack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd ai-service && python app.py\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:ai": "cd ai-service && python app.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ladegonda123/aidiatrack.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Ladegonda123/aidiatrack/issues"
+  },
+  "homepage": "https://github.com/Ladegonda123/aidiatrack#readme",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

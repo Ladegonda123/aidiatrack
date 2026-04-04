@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import prisma from "../config/database";
-import { predictGlucose } from "../services/ai.service";
+import * as aiService from "../services/ai.service";
 import { HealthRecordInput } from "../types";
 import { logger } from "../utils/logger";
 import { sendError, sendSuccess } from "../utils/response";
@@ -18,7 +19,34 @@ export const predictGlucoseLevel = async (
       return;
     }
 
-    const prediction = await predictGlucose({ patientId, ...body });
+    const previousRecords = await prisma.healthRecord.findMany({
+      where: { patientId },
+      orderBy: { recordedAt: "desc" },
+      take: 4,
+      select: { bloodGlucose: true },
+    });
+
+    const bgReadings = previousRecords
+      .reverse()
+      .map((record) => record.bloodGlucose);
+
+    const activityMap: Record<string, number> = {
+      NONE: 0,
+      LOW: 1,
+      MODERATE: 2,
+      HIGH: 3,
+    };
+
+    const prediction = await aiService.predictGlucose({
+      bgReadings,
+      currentBg: body.bloodGlucose,
+      mealGi: 55,
+      mealCalories: body.calories ?? 450,
+      activityEncoded: activityMap[body.activityLevel ?? "NONE"] ?? 0,
+      insulinDose: body.insulinDose ?? 0,
+      hourOfDay: new Date().getHours(),
+      minutesSinceMeal: 30,
+    });
 
     sendSuccess(
       res,
@@ -55,37 +83,70 @@ export const getPredictionHistory = async (
   }
 };
 
-export const assessRisk = async (
+export const getRiskAssessment = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     const patientId = req.user!.userId;
-    const latestPrediction = await prisma.prediction.findFirst({
-      where: { patientId },
-      orderBy: { createdAt: "desc" },
+    const patientProfile = await prisma.user.findUnique({
+      where: { id: patientId },
       select: {
-        riskLevel: true,
-        riskFactors: true,
+        dateOfBirth: true,
+        gender: true,
       },
     });
 
-    if (!latestPrediction) {
-      sendError(res, 404, "No prediction found to assess risk");
+    if (!patientProfile) {
+      sendError(res, 404, "Patient not found");
       return;
     }
+
+    const features = await aiService.buildRiskFeatures(
+      patientId,
+      patientProfile,
+    );
+
+    if (!features) {
+      sendError(
+        res,
+        400,
+        "Not enough data for risk assessment. Log at least one reading first.",
+      );
+      return;
+    }
+
+    const prediction = await aiService.assessRisk(features);
+
+    if (!prediction) {
+      sendError(res, 503, "Risk assessment temporarily unavailable");
+      return;
+    }
+
+    await prisma.prediction.create({
+      data: {
+        patientId,
+        riskLevel: prediction.riskLevel,
+        riskFactors: prediction.riskFactors as Prisma.InputJsonValue,
+        confidence: prediction.confidence,
+        modelVersion: "1.0.0-stub",
+      },
+    });
 
     sendSuccess(
       res,
       {
-        riskLevel: latestPrediction.riskLevel,
-        factors: latestPrediction.riskFactors,
+        riskLevel: prediction.riskLevel,
+        riskFactors: prediction.riskFactors,
+        confidence: prediction.confidence,
       },
       200,
       "Risk assessment completed",
     );
   } catch (error: unknown) {
-    logger.error("assessRisk failed", error);
+    logger.error("getRiskAssessment failed", error);
     sendError(res, 500, "Failed to assess risk");
   }
 };
+
+export const assessRisk = getRiskAssessment;
