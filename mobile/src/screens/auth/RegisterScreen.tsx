@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -93,222 +94,239 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
       <KeyboardAvoidingView
-        style={styles.keyboardAvoiding}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.headerRow}>
-          <View style={styles.headerSpacer} />
-          <LanguageToggle />
-        </View>
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            padding: 20,
+            paddingBottom: 40,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerRow}>
+            <View style={styles.headerSpacer} />
+            <LanguageToggle />
+          </View>
 
-        <Text style={styles.title}>{t("auth.register.title")}</Text>
-        <Text style={styles.subtitle}>{t("auth.register.subtitle")}</Text>
+          <Text style={styles.title}>{t("auth.register.title")}</Text>
+          <Text style={styles.subtitle}>{t("auth.register.subtitle")}</Text>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>
-            {t("auth.register.fullNamePlaceholder")}
-          </Text>
-          <Controller
-            control={control}
-            name="fullName"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder={t("auth.register.fullNamePlaceholder")}
-                autoCapitalize="words"
-              />
-            )}
-          />
-          {errors.fullName?.message && (
-            <Text style={styles.validationError}>
-              {t(errors.fullName.message)}
+          <View style={styles.formContainer}>
+            <Text style={styles.label}>
+              {t("auth.register.fullNamePlaceholder")}
             </Text>
-          )}
-
-          <Text style={styles.label}>
-            {t("auth.register.emailPlaceholder")}
-          </Text>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder={t("auth.register.emailPlaceholder")}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="emailAddress"
-              />
-            )}
-          />
-          {errors.email?.message && (
-            <Text style={styles.validationError}>
-              {t(errors.email.message)}
-            </Text>
-          )}
-
-          <Text style={styles.label}>
-            {t("auth.register.passwordPlaceholder")}
-          </Text>
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.passwordInputWrapper}>
+            <Controller
+              control={control}
+              name="fullName"
+              render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  style={styles.passwordInput}
+                  style={styles.input}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  placeholder={t("auth.register.passwordPlaceholder")}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  textContentType="newPassword"
+                  placeholder={t("auth.register.fullNamePlaceholder")}
+                  autoCapitalize="words"
                 />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    showPassword
-                      ? t("auth.login.hidePassword")
-                      : t("auth.login.showPassword")
-                  }
-                >
-                  <MaterialCommunityIcons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={COLORS.textSecondary}
+              )}
+            />
+            {errors.fullName?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.fullName.message)}
+              </Text>
+            )}
+
+            <Text style={styles.label}>
+              {t("auth.register.emailPlaceholder")}
+            </Text>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder={t("auth.register.emailPlaceholder")}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
+                />
+              )}
+            />
+            {errors.email?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.email.message)}
+              </Text>
+            )}
+
+            <Text style={styles.label}>
+              {t("auth.register.passwordPlaceholder")}
+            </Text>
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <View style={styles.passwordInputWrapper}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder={t("auth.register.passwordPlaceholder")}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    textContentType="newPassword"
                   />
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword((prev) => !prev)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showPassword
+                        ? t("auth.login.hidePassword")
+                        : t("auth.login.showPassword")
+                    }
+                  >
+                    <MaterialCommunityIcons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={COLORS.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+            {errors.password?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.password.message)}
+              </Text>
             )}
-          />
-          {errors.password?.message && (
-            <Text style={styles.validationError}>
-              {t(errors.password.message)}
-            </Text>
-          )}
 
-          <Text style={styles.label}>{t("auth.register.rolePicker")}</Text>
-          <View style={styles.roleRow}>
-            <TouchableOpacity
-              style={[
-                styles.roleCard,
-                selectedRole === "PATIENT"
-                  ? styles.roleCardSelected
-                  : styles.roleCardUnselected,
-              ]}
-              onPress={() =>
-                setValue("role", "PATIENT", { shouldValidate: true })
-              }
-            >
-              <MaterialCommunityIcons
-                name="account"
-                size={26}
-                color={
+            <Text style={styles.label}>{t("auth.register.rolePicker")}</Text>
+            <View style={styles.roleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.roleCard,
                   selectedRole === "PATIENT"
-                    ? COLORS.primary
-                    : COLORS.textSecondary
+                    ? styles.roleCardSelected
+                    : styles.roleCardUnselected,
+                ]}
+                onPress={() =>
+                  setValue("role", "PATIENT", { shouldValidate: true })
                 }
-              />
-              <Text style={styles.roleCardText}>
-                {t("auth.register.rolePatientCombined")}
+              >
+                <MaterialCommunityIcons
+                  name="account"
+                  size={26}
+                  color={
+                    selectedRole === "PATIENT"
+                      ? COLORS.primary
+                      : COLORS.textSecondary
+                  }
+                />
+                <Text style={styles.roleCardText}>
+                  {t("auth.register.rolePatientCombined")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.roleCard,
+                  selectedRole === "DOCTOR"
+                    ? styles.roleCardSelected
+                    : styles.roleCardUnselected,
+                ]}
+                onPress={() =>
+                  setValue("role", "DOCTOR", { shouldValidate: true })
+                }
+              >
+                <MaterialCommunityIcons
+                  name="stethoscope"
+                  size={26}
+                  color={
+                    selectedRole === "DOCTOR"
+                      ? COLORS.primary
+                      : COLORS.textSecondary
+                  }
+                />
+                <Text style={styles.roleCardText}>
+                  {t("auth.register.roleDoctorCombined")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {errors.role?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.role.message)}
               </Text>
-            </TouchableOpacity>
+            )}
+
+            <Text style={styles.label}>
+              {t("auth.register.phoneLabel")} ({t("common.optional")})
+            </Text>
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder={t("auth.register.phonePlaceholder")}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                />
+              )}
+            />
+            {errors.phone?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.phone.message)}
+              </Text>
+            )}
+
+            <Text style={styles.label}>{t("auth.register.languageLabel")}</Text>
+            <LanguageToggle style={styles.registerLanguageToggle} />
 
             <TouchableOpacity
               style={[
-                styles.roleCard,
-                selectedRole === "DOCTOR"
-                  ? styles.roleCardSelected
-                  : styles.roleCardUnselected,
+                styles.button,
+                loading ? styles.buttonDisabled : undefined,
               ]}
-              onPress={() =>
-                setValue("role", "DOCTOR", { shouldValidate: true })
-              }
+              onPress={handleSubmit(onRegister)}
+              disabled={loading}
             >
-              <MaterialCommunityIcons
-                name="stethoscope"
-                size={26}
-                color={
-                  selectedRole === "DOCTOR"
-                    ? COLORS.primary
-                    : COLORS.textSecondary
-                }
-              />
-              <Text style={styles.roleCardText}>
-                {t("auth.register.roleDoctorCombined")}
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={COLORS.card} />
+              ) : (
+                <Text style={styles.buttonText}>
+                  {t("auth.register.button")}
+                </Text>
+              )}
             </TouchableOpacity>
+
+            {registerError ? (
+              <View style={styles.errorCard}>
+                <Text style={styles.errorCardText}>{registerError}</Text>
+              </View>
+            ) : null}
           </View>
-          {errors.role?.message && (
-            <Text style={styles.validationError}>{t(errors.role.message)}</Text>
-          )}
-
-          <Text style={styles.label}>
-            {t("auth.register.phoneLabel")} ({t("common.optional")})
-          </Text>
-          <Controller
-            control={control}
-            name="phone"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder={t("auth.register.phonePlaceholder")}
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-              />
-            )}
-          />
-          {errors.phone?.message && (
-            <Text style={styles.validationError}>
-              {t(errors.phone.message)}
-            </Text>
-          )}
-
-          <Text style={styles.label}>{t("auth.register.languageLabel")}</Text>
-          <LanguageToggle style={styles.registerLanguageToggle} />
 
           <TouchableOpacity
-            style={[styles.button, loading ? styles.buttonDisabled : undefined]}
-            onPress={handleSubmit(onRegister)}
-            disabled={loading}
+            onPress={() => navigation.navigate("Login")}
+            style={styles.bottomLinkContainer}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color={COLORS.card} />
-            ) : (
-              <Text style={styles.buttonText}>{t("auth.register.button")}</Text>
-            )}
+            <Text style={styles.link}>
+              {t("auth.register.hasAccount")} {t("auth.register.login")}
+            </Text>
           </TouchableOpacity>
-
-          {registerError ? (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorCardText}>{registerError}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Login")}
-          style={styles.bottomLinkContainer}
-        >
-          <Text style={styles.link}>
-            {t("auth.register.hasAccount")} {t("auth.register.login")}
-          </Text>
-        </TouchableOpacity>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

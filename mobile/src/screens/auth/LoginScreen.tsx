@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -65,116 +66,129 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
       <KeyboardAvoidingView
-        style={styles.keyboardAvoiding}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.headerRow}>
-          <View style={styles.headerSpacer} />
-          <LanguageToggle />
-        </View>
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            padding: 20,
+            paddingBottom: 40,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerRow}>
+            <View style={styles.headerSpacer} />
+            <LanguageToggle />
+          </View>
 
-        <View style={styles.heroBlock}>
-          <Text style={styles.logo}>{t("common.appName")}</Text>
-          <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
-        </View>
+          <View style={styles.heroBlock}>
+            <Text style={styles.logo}>{t("common.appName")}</Text>
+            <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
+          </View>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>{t("auth.login.emailPlaceholder")}</Text>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder={t("auth.login.emailPlaceholder")}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="emailAddress"
-              />
-            )}
-          />
-          {errors.email?.message && (
-            <Text style={styles.validationError}>
-              {t(errors.email.message)}
-            </Text>
-          )}
-
-          <Text style={styles.label}>
-            {t("auth.login.passwordPlaceholder")}
-          </Text>
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.passwordInputWrapper}>
+          <View style={styles.formContainer}>
+            <Text style={styles.label}>{t("auth.login.emailPlaceholder")}</Text>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  style={styles.passwordInput}
+                  style={styles.input}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  placeholder={t("auth.login.passwordPlaceholder")}
-                  secureTextEntry={!showPassword}
+                  placeholder={t("auth.login.emailPlaceholder")}
+                  keyboardType="email-address"
                   autoCapitalize="none"
-                  textContentType="password"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
                 />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    showPassword
-                      ? t("auth.login.hidePassword")
-                      : t("auth.login.showPassword")
-                  }
-                >
-                  <MaterialCommunityIcons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={COLORS.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
+              )}
+            />
+            {errors.email?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.email.message)}
+              </Text>
             )}
-          />
-          {errors.password?.message && (
-            <Text style={styles.validationError}>
-              {t(errors.password.message)}
+
+            <Text style={styles.label}>
+              {t("auth.login.passwordPlaceholder")}
             </Text>
-          )}
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <View style={styles.passwordInputWrapper}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder={t("auth.login.passwordPlaceholder")}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    textContentType="password"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword((prev) => !prev)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showPassword
+                        ? t("auth.login.hidePassword")
+                        : t("auth.login.showPassword")
+                    }
+                  >
+                    <MaterialCommunityIcons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color={COLORS.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+            {errors.password?.message && (
+              <Text style={styles.validationError}>
+                {t(errors.password.message)}
+              </Text>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                loading ? styles.buttonDisabled : undefined,
+              ]}
+              onPress={handleSubmit(onLogin)}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={COLORS.card} />
+              ) : (
+                <Text style={styles.buttonText}>{t("auth.login.button")}</Text>
+              )}
+            </TouchableOpacity>
+
+            {loginError ? (
+              <View style={styles.errorCard}>
+                <Text style={styles.errorCardText}>{loginError}</Text>
+              </View>
+            ) : null}
+          </View>
 
           <TouchableOpacity
-            style={[styles.button, loading ? styles.buttonDisabled : undefined]}
-            onPress={handleSubmit(onLogin)}
-            disabled={loading}
+            onPress={() => navigation.navigate("Register")}
+            style={styles.bottomLinkContainer}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color={COLORS.card} />
-            ) : (
-              <Text style={styles.buttonText}>{t("auth.login.button")}</Text>
-            )}
+            <Text style={styles.link}>
+              {t("auth.login.noAccount")} {t("auth.login.register")}
+            </Text>
           </TouchableOpacity>
-
-          {loginError ? (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorCardText}>{loginError}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Register")}
-          style={styles.bottomLinkContainer}
-        >
-          <Text style={styles.link}>
-            {t("auth.login.noAccount")} {t("auth.login.register")}
-          </Text>
-        </TouchableOpacity>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
