@@ -1,9 +1,6 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -40,6 +38,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -76,124 +75,122 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 60 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={20}
+        extraHeight={120}
       >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            padding: 20,
-            paddingBottom: 40,
-          }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroBlock}>
-            <Text style={styles.logo}>{t("common.appName")}</Text>
-            <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
-          </View>
+        <View style={styles.heroBlock}>
+          <Text style={styles.logo}>{t("common.appName")}</Text>
+          <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
+        </View>
 
-          <View style={styles.formContainer}>
-            <Text style={styles.label}>{t("auth.login.emailPlaceholder")}</Text>
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, onBlur, value } }) => (
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>{t("auth.login.emailPlaceholder")}</Text>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.login.emailPlaceholder")}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="emailAddress"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => passwordRef.current?.focus()}
+              />
+            )}
+          />
+          {errors.email?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.email.message)}
+            </Text>
+          )}
+
+          <Text style={styles.label}>
+            {t("auth.login.passwordPlaceholder")}
+          </Text>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.passwordInputWrapper}>
                 <TextInput
-                  style={styles.input}
+                  ref={passwordRef}
+                  style={styles.passwordInput}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  placeholder={t("auth.login.emailPlaceholder")}
-                  keyboardType="email-address"
+                  placeholder={t("auth.login.passwordPlaceholder")}
+                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
-                  autoCorrect={false}
-                  textContentType="emailAddress"
+                  textContentType="password"
+                  returnKeyType="done"
+                  blurOnSubmit={true}
                 />
-              )}
-            />
-            {errors.email?.message && (
-              <Text style={styles.validationError}>
-                {t(errors.email.message)}
-              </Text>
-            )}
-
-            <Text style={styles.label}>
-              {t("auth.login.passwordPlaceholder")}
-            </Text>
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <View style={styles.passwordInputWrapper}>
-                  <TextInput
-                    style={styles.passwordInput}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder={t("auth.login.passwordPlaceholder")}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    textContentType="password"
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showPassword
+                      ? t("auth.login.hidePassword")
+                      : t("auth.login.showPassword")
+                  }
+                >
+                  <MaterialCommunityIcons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={COLORS.textSecondary}
                   />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword((prev) => !prev)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showPassword
-                        ? t("auth.login.hidePassword")
-                        : t("auth.login.showPassword")
-                    }
-                  >
-                    <MaterialCommunityIcons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={20}
-                      color={COLORS.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-            {errors.password?.message && (
-              <Text style={styles.validationError}>
-                {t(errors.password.message)}
-              </Text>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                loading ? styles.buttonDisabled : undefined,
-              ]}
-              onPress={handleSubmit(onLogin)}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color={COLORS.card} />
-              ) : (
-                <Text style={styles.buttonText}>{t("auth.login.button")}</Text>
-              )}
-            </TouchableOpacity>
-
-            {loginError ? (
-              <View style={styles.errorCard}>
-                <Text style={styles.errorCardText}>{loginError}</Text>
+                </TouchableOpacity>
               </View>
-            ) : null}
-          </View>
+            )}
+          />
+          {errors.password?.message && (
+            <Text style={styles.validationError}>
+              {t(errors.password.message)}
+            </Text>
+          )}
 
           <TouchableOpacity
-            onPress={() => navigation.navigate("Register")}
-            style={styles.bottomLinkContainer}
+            style={[styles.button, loading ? styles.buttonDisabled : undefined]}
+            onPress={handleSubmit(onLogin)}
+            disabled={loading}
           >
-            <Text style={styles.link}>
-              {t("auth.login.noAccount")} {t("auth.login.register")}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.card} />
+            ) : (
+              <Text style={styles.buttonText}>{t("auth.login.button")}</Text>
+            )}
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          {loginError ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorCardText}>{loginError}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Register")}
+          style={styles.bottomLinkContainer}
+        >
+          <Text style={styles.link}>
+            {t("auth.login.noAccount")} {t("auth.login.register")}
+          </Text>
+        </TouchableOpacity>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };
