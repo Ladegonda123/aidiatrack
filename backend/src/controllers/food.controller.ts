@@ -31,9 +31,17 @@ const getGiCategory = (
   return "high";
 };
 
-export const searchFoods = async (req: Request, res: Response): Promise<void> => {
+export const searchFoods = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const { search, lang = "rw", category, giMax } = req.query as FoodSearchQuery;
+    const {
+      search,
+      lang = "rw",
+      category,
+      giMax,
+    } = req.query as FoodSearchQuery;
 
     const trimmedSearch = typeof search === "string" ? search.trim() : "";
     if (trimmedSearch.length === 1) {
