@@ -26,7 +26,7 @@ interface LoginBody {
 
 interface UpdateProfileBody {
   fullName?: string;
-    language?: string;
+  language?: string;
   phone?: string;
   gender?: string;
   dateOfBirth?: Date | string;

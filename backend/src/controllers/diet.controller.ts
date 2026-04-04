@@ -35,7 +35,7 @@ export const getDietRecommendations = async (
       return;
     }
 
-      const language = (req.user!.language as "en" | "rw") || "rw";
+    const language = (req.user!.language as "en" | "rw") || "rw";
     const adviceText = getDietAdvice(lastRecord.bloodGlucose, language);
 
     // Determine foods to eat and avoid based on BG level
@@ -54,13 +54,7 @@ export const getDietRecommendations = async (
     } else if (lastRecord.bloodGlucose <= 130) {
       foodsToEat =
         language === "rw"
-          ? [
-              "ibiharage",
-              "imboga",
-              "amagi",
-              "ibijumba",
-              "ubugari bw'ubwali",
-            ]
+          ? ["ibiharage", "imboga", "amagi", "ibijumba", "ubugari bw'ubwali"]
           : [
               "beans",
               "vegetables",
@@ -79,12 +73,7 @@ export const getDietRecommendations = async (
           : ["cassava leaves", "beans", "eggs", "meat"];
       foodsToAvoid =
         language === "rw"
-          ? [
-              "ubugali",
-              "umuceli mwekundu",
-              "imineke",
-              "imyumbati igatokowe",
-            ]
+          ? ["ubugali", "umuceli mwekundu", "imineke", "imyumbati igatokowe"]
           : ["ugali", "white rice", "fried plantains", "fried cassava"];
     } else {
       foodsToEat =
@@ -93,13 +82,7 @@ export const getDietRecommendations = async (
           : ["meat", "eggs", "leafy vegetables", "cassava leaves"];
       foodsToAvoid =
         language === "rw"
-          ? [
-              "ubugali",
-              "umuceli",
-              "imineke",
-              "ibiryo bitorokoye",
-              "umutobe",
-            ]
+          ? ["ubugali", "umuceli", "imineke", "ibiryo bitorokoye", "umutobe"]
           : ["ugali", "rice", "banana", "fried foods", "fruit juice"];
     }
 
