@@ -10,6 +10,7 @@ export interface AuthUser {
   email?: string;
   fullName?: string;
   doctorId?: number | null;
+  language?: string;
 }
 
 export interface HealthRecordInput {

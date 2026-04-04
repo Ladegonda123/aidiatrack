@@ -18,6 +18,7 @@ import medicationRoutes from "./routes/medication.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import chatRoutes from "./routes/chat.routes";
 import foodRoutes from "./routes/food.routes";
+import dietRoutes from "./routes/diet.routes";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -61,6 +62,7 @@ app.use("/api/doctor", doctorRoutes);
 app.use("/api/medications", medicationRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/foods", foodRoutes);
+app.use("/api/diet", dietRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });

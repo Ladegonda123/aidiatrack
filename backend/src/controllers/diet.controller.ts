@@ -1,7 +1,120 @@
+import { Request, Response } from "express";
+import { prisma } from "../config/database";
+import { sendSuccess, sendError } from "../utils/response";
+import { logger } from "../utils/logger";
+
 /**
  * Consolidated dietary advice based on blood glucose level
  * Supports English and Kinyarwanda
  */
+
+export const getDietRecommendations = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { userId } = req.user!;
+
+    // Get patient's last health record
+    const lastRecord = await prisma.healthRecord.findFirst({
+      where: { patientId: userId },
+      orderBy: { recordedAt: "desc" },
+      take: 1,
+    });
+
+    // If no records, return guidance to log readings first
+    if (!lastRecord) {
+      sendSuccess(res, {
+        advice:
+          req.user!.language === "rw"
+            ? "Andika isuzuma rya mbere kugira ngo ubone inama isuso ku diyabete yawe."
+            : "Log your first health reading to get personalized dietary advice.",
+        foodsToEat: [],
+        foodsToAvoid: [],
+      });
+      return;
+    }
+
+      const language = (req.user!.language as "en" | "rw") || "rw";
+    const adviceText = getDietAdvice(lastRecord.bloodGlucose, language);
+
+    // Determine foods to eat and avoid based on BG level
+    let foodsToEat: string[] = [];
+    let foodsToAvoid: string[] = [];
+
+    if (lastRecord.bloodGlucose < 70) {
+      foodsToEat =
+        language === "rw"
+          ? ["imineke", "imbuto", "ikinini"]
+          : ["banana", "fruits", "sugary drinks"];
+      foodsToAvoid =
+        language === "rw"
+          ? ["ubugali", "umuceli", "imboga n'udusomo"]
+          : ["ugali", "white rice", "green vegetables only"];
+    } else if (lastRecord.bloodGlucose <= 130) {
+      foodsToEat =
+        language === "rw"
+          ? [
+              "ibiharage",
+              "imboga",
+              "amagi",
+              "ibijumba",
+              "ubugari bw'ubwali",
+            ]
+          : [
+              "beans",
+              "vegetables",
+              "eggs",
+              "sweet potato",
+              "whole grain bread",
+            ];
+      foodsToAvoid =
+        language === "rw"
+          ? ["ubugali mu kivanyo kinini", "umuceli mwekundu"]
+          : ["ugali in large portions", "white rice"];
+    } else if (lastRecord.bloodGlucose <= 180) {
+      foodsToEat =
+        language === "rw"
+          ? ["isombe", "ibiharage", "amagi", "inyama"]
+          : ["cassava leaves", "beans", "eggs", "meat"];
+      foodsToAvoid =
+        language === "rw"
+          ? [
+              "ubugali",
+              "umuceli mwekundu",
+              "imineke",
+              "imyumbati igatokowe",
+            ]
+          : ["ugali", "white rice", "fried plantains", "fried cassava"];
+    } else {
+      foodsToEat =
+        language === "rw"
+          ? ["inyama", "amagi", "imboga zikaze", "isombe"]
+          : ["meat", "eggs", "leafy vegetables", "cassava leaves"];
+      foodsToAvoid =
+        language === "rw"
+          ? [
+              "ubugali",
+              "umuceli",
+              "imineke",
+              "ibiryo bitorokoye",
+              "umutobe",
+            ]
+          : ["ugali", "rice", "banana", "fried foods", "fruit juice"];
+    }
+
+    sendSuccess(res, {
+      bloodGlucose: lastRecord.bloodGlucose,
+      advice: adviceText,
+      foodsToEat,
+      foodsToAvoid,
+      recordDate: lastRecord.recordedAt,
+    });
+  } catch (error) {
+    logger.error("getDietRecommendations failed", error);
+    sendError(res, 500, "Failed to fetch dietary recommendations");
+  }
+};
 
 export const getDietAdvice = (
   bloodGlucose: number,

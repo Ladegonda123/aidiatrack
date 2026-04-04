@@ -26,6 +26,7 @@ interface LoginBody {
 
 interface UpdateProfileBody {
   fullName?: string;
+    language?: string;
   phone?: string;
   gender?: string;
   dateOfBirth?: Date | string;
@@ -62,6 +63,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         phone: body.phone,
         gender: body.gender,
         dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
+        language: "rw",
       },
     });
 
@@ -69,6 +71,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       userId: createdUser.id,
       role: createdUser.role === "DOCTOR" ? "DOCTOR" : "PATIENT",
       email: createdUser.email,
+      language: createdUser.language,
     });
 
     if (typeof body.fcmToken === "string" && body.fcmToken.trim().length > 0) {
@@ -112,6 +115,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       userId: user.id,
       role: user.role === "DOCTOR" ? "DOCTOR" : "PATIENT",
       email: user.email,
+      language: user.language,
     });
 
     if (typeof body.fcmToken === "string" && body.fcmToken.trim().length > 0) {
@@ -167,6 +171,7 @@ export const updateProfile = async (
       gender: body.gender,
       dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
       fcmToken: body.fcmToken?.trim() || undefined,
+      language: body.language,
     });
 
     if (Object.keys(updateData).length === 0) {
