@@ -2,8 +2,8 @@ import { Router } from "express";
 import { authenticate } from "../middleware/auth.middleware";
 import { requireRole } from "../middleware/role.middleware";
 import {
-  assessRisk,
   getPredictionHistory,
+  getRiskAssessment,
   predictGlucoseLevel,
 } from "../controllers/prediction.controller";
 
@@ -21,6 +21,6 @@ router.get(
   requireRole("PATIENT"),
   getPredictionHistory,
 );
-router.post("/risk", authenticate, requireRole("PATIENT"), assessRisk);
+router.post("/risk", authenticate, requireRole("PATIENT"), getRiskAssessment);
 
 export default router;

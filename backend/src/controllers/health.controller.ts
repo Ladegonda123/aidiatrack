@@ -3,7 +3,7 @@ import prisma from "../config/database";
 import { calculateBmi, paginate } from "../utils/helpers";
 import { logger } from "../utils/logger";
 import { sendError, sendSuccess } from "../utils/response";
-import { predictGlucose } from "../services/ai.service";
+import * as aiService from "../services/ai.service";
 import { sendHighBgAlert } from "../services/notification.service";
 import { ActivityLevel, HealthRecordInput } from "../types";
 import xss from "xss";
@@ -76,43 +76,55 @@ export const logHealthRecord = async (
       },
     });
 
+    const features = await aiService.buildGlucoseFeatures(userId, {
+      id: record.id,
+      bloodGlucose: record.bloodGlucose,
+      mealGi: record.mealGi,
+      mealCalories: record.mealCalories,
+      activityLevel: record.activityLevel,
+      insulinDose: record.insulinDose,
+      recordedAt: record.recordedAt,
+    });
+
+    const prediction = await aiService.predictGlucose(features);
+
+    if (prediction) {
+      try {
+        await prisma.prediction.create({
+          data: {
+            patientId: userId,
+            healthRecordId: record.id,
+            predictedGlucose: prediction.predictedGlucose,
+            predictionHours: prediction.predictionHours,
+            riskLevel: prediction.riskLevel,
+            confidence: prediction.confidence,
+            modelVersion: "1.0.0-stub",
+          },
+        });
+      } catch (error: unknown) {
+        logger.warn("Failed to save glucose prediction", error);
+      }
+    }
+
     if (record.bloodGlucose > 200) {
       try {
-        await sendHighBgAlert(userId, record.bloodGlucose);
+        await sendHighBgAlert(userId, record.bloodGlucose).catch(
+          () => undefined,
+        );
       } catch (error: unknown) {
         logger.warn("sendHighBgAlert failed", error);
       }
     }
 
-    let prediction = null;
-    let predictionAvailable = false;
-
-    try {
-      prediction = await predictGlucose({
-        patientId: userId,
-        bloodGlucose: body.bloodGlucose,
-        weightKg: body.weightKg,
-        heightCm: body.heightCm,
-        bloodPressure: safeBloodPressure,
-        mealDesc: safeMealDesc,
-        calories: body.calories,
-        activityLevel: body.activityLevel,
-        insulinDose: body.insulinDose,
-        hba1c: body.hba1c,
-        notes: safeNotes,
-      });
-      predictionAvailable = prediction !== null;
-    } catch (error: unknown) {
-      logger.warn("predictGlucose failed, returning null prediction", error);
-      prediction = null;
-      predictionAvailable = false;
-    }
-
     sendSuccess(
       res,
-      { record, prediction, predictionAvailable },
+      {
+        record,
+        prediction,
+        predictionAvailable: prediction !== null,
+      },
       201,
-      "Health record saved successfully",
+      "Health record saved",
     );
   } catch (error: unknown) {
     logger.error("logHealthRecord failed", error);
