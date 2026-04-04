@@ -3,36 +3,28 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
+  useState,
 } from "react";
 import { io, Socket } from "socket.io-client";
+import axiosInstance from "../api/axiosInstance";
+import { useAuth } from "./AuthContext";
 
-type SocketUser = {
-  id: number;
-  role?: "PATIENT" | "DOCTOR";
-};
-
-type SocketContextValue = {
+interface SocketContextValue {
   socket: Socket | null;
-  connectSocket: () => Socket;
-  joinRoom: (user: SocketUser, peerId: number) => void;
-  disconnectSocket: () => void;
-};
+  isConnected: boolean;
+}
 
 const SocketContext = createContext<SocketContextValue | undefined>(undefined);
 
-const getChatRoomId = (userIdA: number, userIdB: number): string => {
-  const lowerId = Math.min(userIdA, userIdB);
-  const higherId = Math.max(userIdA, userIdB);
-  return `chat_${lowerId}_${higherId}`;
+const getSocketBaseUrl = (): string => {
+  const apiUrl = axiosInstance.defaults.baseURL ?? "http://localhost:5000/api";
+  return apiUrl.replace(/\/api\/?$/, "");
 };
 
-const createSocket = (): Socket => {
-  return io("http://localhost:5000", {
-    transports: ["websocket"],
-    autoConnect: false,
-    withCredentials: true,
-  });
+const getChatRoomId = (userId: number, doctorId: number): string => {
+  const lowerId = Math.min(userId, doctorId);
+  const higherId = Math.max(userId, doctorId);
+  return `chat_${lowerId}_${higherId}`;
 };
 
 export const SocketProvider = ({
@@ -40,47 +32,57 @@ export const SocketProvider = ({
 }: {
   children: React.ReactNode;
 }): React.JSX.Element => {
-  const socketRef = useRef<Socket | null>(null);
-
-  const connectSocket = (): Socket => {
-    if (!socketRef.current) {
-      socketRef.current = createSocket();
-    }
-
-    if (!socketRef.current.connected) {
-      socketRef.current.connect();
-    }
-
-    return socketRef.current;
-  };
-
-  const joinRoom = (user: SocketUser, peerId: number): void => {
-    const socket = connectSocket();
-    const roomId = getChatRoomId(user.id, peerId);
-    socket.emit("join_room", { roomId, patientId: user.id, doctorId: peerId });
-    socket.emit("authenticate", user.id);
-  };
-
-  const disconnectSocket = (): void => {
-    socketRef.current?.disconnect();
-  };
-
-  const value = useMemo<SocketContextValue>(
-    () => ({
-      socket: socketRef.current,
-      connectSocket,
-      joinRoom,
-      disconnectSocket,
-    }),
-    [],
-  );
+  const { user } = useAuth();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
   useEffect(() => {
+    if (!user) {
+      setSocket((currentSocket) => {
+        currentSocket?.disconnect();
+        return null;
+      });
+      setIsConnected(false);
+      return;
+    }
+
+    const socketClient = io(getSocketBaseUrl(), {
+      transports: ["websocket"],
+      autoConnect: true,
+      reconnection: true,
+    });
+
+    socketClient.on("connect", () => {
+      setIsConnected(true);
+      socketClient.emit("authenticate", user.id);
+
+      if (user.doctorId) {
+        const roomId = getChatRoomId(user.id, user.doctorId);
+        socketClient.emit("join_room", {
+          roomId,
+          patientId: user.id,
+          doctorId: user.doctorId,
+        });
+      }
+    });
+
+    socketClient.on("disconnect", () => {
+      setIsConnected(false);
+    });
+
+    setSocket(socketClient);
+
     return () => {
-      socketRef.current?.disconnect();
-      socketRef.current = null;
+      socketClient.disconnect();
+      setSocket(null);
+      setIsConnected(false);
     };
-  }, []);
+  }, [user]);
+
+  const value = useMemo<SocketContextValue>(
+    () => ({ socket, isConnected }),
+    [isConnected, socket],
+  );
 
   return (
     <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
@@ -89,10 +91,8 @@ export const SocketProvider = ({
 
 export const useSocket = (): SocketContextValue => {
   const context = useContext(SocketContext);
-
   if (!context) {
     throw new Error("useSocket must be used within SocketProvider");
   }
-
   return context;
 };

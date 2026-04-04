@@ -1,0 +1,199 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "Something went wrong. Please try again.",
+    "retry": "Try Again",
+    "noData": "No data yet",
+    "required": "This field is required"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to your AIDiaTrack account",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password",
+      "button": "Sign In",
+      "noAccount": "Don't have an account?",
+      "register": "Register",
+      "error": "Invalid email or password"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join AIDiaTrack to manage your diabetes",
+      "fullNamePlaceholder": "Full name",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password (min 8 characters)",
+      "rolePicker": "I am a...",
+      "rolePatient": "Patient",
+      "roleDoctor": "Doctor",
+      "phonePlaceholder": "Phone number (optional)",
+      "languageLabel": "Preferred language",
+      "languageEn": "English",
+      "languageRw": "Kinyarwanda",
+      "button": "Create Account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign In"
+    }
+  },
+  "dashboard": {
+    "greeting_morning": "Good morning, {{name}}",
+    "greeting_afternoon": "Good afternoon, {{name}}",
+    "greeting_evening": "Good evening, {{name}}",
+    "lastReading": "Last Reading",
+    "noReadings": "No readings yet. Log your first reading!",
+    "logReading": "Log Reading",
+    "todayReadings": "Today's Readings",
+    "averageBg": "Average BG",
+    "nextMedication": "Next Medication",
+    "noMedications": "No medications scheduled",
+    "aiAlert": "AI Alert",
+    "highRiskWarning": "Your recent readings suggest high risk. Please contact your doctor."
+  },
+  "logHealth": {
+    "title": "Log Health Reading",
+    "bloodGlucose": "Blood Glucose (mg/dL) *",
+    "bloodGlucoseHint": "Read this number from your glucometer",
+    "bloodGlucosePlaceholder": "e.g. 145",
+    "weight": "Weight (kg)",
+    "weightHint": "Optional — from your scale",
+    "bloodPressure": "Blood Pressure",
+    "bloodPressureHint": "Optional — from clinic or pharmacy (e.g. 120/80)",
+    "bloodPressurePlaceholder": "120/80",
+    "hba1c": "HbA1c (%)",
+    "hba1cHint": "Optional — from your lab results (every 3 months)",
+    "hba1cPlaceholder": "e.g. 7.5",
+    "insulin": "Insulin Dose (units)",
+    "insulinHint": "Leave 0 if you don't take insulin",
+    "meal": "What did you eat?",
+    "mealSearch": "Search food...",
+    "mealGiHigh": "High GI meal",
+    "mealGiMedium": "Medium GI meal",
+    "mealGiLow": "Low GI meal",
+    "mealSkipped": "Skipped meal",
+    "activity": "Activity Level",
+    "activityNone": "None",
+    "activityLow": "Light",
+    "activityModerate": "Moderate",
+    "activityHigh": "Intense",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "e.g. Felt dizzy after lunch",
+    "save": "Save Reading",
+    "saving": "Saving...",
+    "successTitle": "Reading Saved",
+    "predictionMessage": "In 2 hours your glucose may reach {{value}} mg/dL",
+    "riskLow": "LOW RISK — Keep it up!",
+    "riskMedium": "MEDIUM RISK — Consider light activity",
+    "riskHigh": "HIGH RISK — Please contact your doctor"
+  },
+  "predictions": {
+    "title": "AI Predictions",
+    "noData": "Log health readings to see AI predictions",
+    "predictedValue": "Predicted: {{value}} mg/dL",
+    "inHours": "In {{hours}} hours",
+    "confidence": "Confidence: {{value}}%",
+    "riskLevel": "Risk Level",
+    "riskFactors": "Risk Factors"
+  },
+  "chat": {
+    "title": "Chat with Doctor",
+    "titleDoctor": "Chat with Patient",
+    "messagePlaceholder": "Type a message...",
+    "send": "Send",
+    "noMessages": "No messages yet. Start the conversation!",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "medications": {
+    "title": "My Medications",
+    "add": "Add Medication",
+    "drugName": "Medication Name",
+    "drugNamePlaceholder": "e.g. Metformin",
+    "dosage": "Dosage",
+    "dosagePlaceholder": "e.g. 500mg",
+    "frequency": "Frequency",
+    "frequencyOnce": "Once daily",
+    "frequencyTwice": "Twice daily",
+    "frequencyThrice": "Three times daily",
+    "reminderTimes": "Reminder Times",
+    "addReminder": "Add reminder time",
+    "noMedications": "No medications added yet",
+    "delete": "Remove",
+    "deleteConfirm": "Remove this medication?",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "doctor": {
+    "dashboard": {
+      "title": "My Patients",
+      "noPatients": "No patients assigned yet",
+      "searchPlaceholder": "Search patients...",
+      "lastReading": "Last reading",
+      "riskBadge": "Risk"
+    },
+    "patientDetail": {
+      "title": "Patient Details",
+      "bgHistory": "Blood Glucose History",
+      "lastPrediction": "Latest AI Prediction",
+      "medications": "Active Medications",
+      "messageButton": "Message Patient",
+      "noRecords": "No health records yet"
+    },
+    "assign": {
+      "title": "Assign Patient",
+      "emailPlaceholder": "Patient email address",
+      "button": "Assign Patient",
+      "success": "Patient assigned successfully",
+      "notFound": "No patient found with this email",
+      "alreadyAssigned": "This patient is already assigned to another doctor"
+    }
+  },
+  "notifications": {
+    "medicationReminder": {
+      "title": "Medication Reminder",
+      "body": "Time to take {{drug}} {{dosage}}"
+    },
+    "highBgAlert": {
+      "title": "High Blood Glucose Alert",
+      "body": "Your reading of {{value}} mg/dL is high. Please take action."
+    },
+    "chatMessage": {
+      "title": "New message from {{name}}",
+      "body": "{{preview}}"
+    }
+  },
+  "foods": {
+    "searchTitle": "Select Food",
+    "recentTitle": "Recent Foods",
+    "categories": {
+      "grain": "Grains & Starches",
+      "legume": "Legumes & Beans",
+      "vegetable": "Vegetables",
+      "fruit": "Fruits",
+      "protein": "Proteins",
+      "dairy": "Dairy",
+      "bread": "Bread & Baked",
+      "drink": "Drinks"
+    },
+    "gi": {
+      "low": "Low GI",
+      "medium": "Medium GI",
+      "high": "High GI"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "language": "Language",
+    "languageEn": "English",
+    "languageRw": "Kinyarwanda",
+    "logout": "Sign Out",
+    "logoutConfirm": "Are you sure you want to sign out?"
+  },
+  "bgLabels": {
+    "low": "Low (Hypoglycemia)",
+    "normal": "Normal",
+    "preDiabetic": "Pre-diabetic range",
+    "high": "High (Hyperglycemia)"
+  }
+}

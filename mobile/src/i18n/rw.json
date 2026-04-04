@@ -1,0 +1,199 @@
+{
+  "common": {
+    "save": "Bika",
+    "cancel": "Reka",
+    "loading": "Gutegereza...",
+    "error": "Hari ikibazo. Ongera ugerageze.",
+    "retry": "Ongera Ugerageze",
+    "noData": "Nta makuru arabonetse",
+    "required": "Ubu butaka busabwa"
+  },
+  "auth": {
+    "login": {
+      "title": "Murakaza Neza",
+      "subtitle": "Injira muri konti yawe ya AIDiaTrack",
+      "emailPlaceholder": "Aderesi ya imeyili",
+      "passwordPlaceholder": "Ijambo ry'ibanga",
+      "button": "Injira",
+      "noAccount": "Nta konti ufite?",
+      "register": "Iyandikishe",
+      "error": "Imeyili cyangwa ijambo ry'ibanga sibyo"
+    },
+    "register": {
+      "title": "Fungura Konti",
+      "subtitle": "Injira muri AIDiaTrack kugira ngo ugenzure diyabete yawe",
+      "fullNamePlaceholder": "Amazina yuzuye",
+      "emailPlaceholder": "Aderesi ya imeyili",
+      "passwordPlaceholder": "Ijambo ry'ibanga (nibura inyuguti 8)",
+      "rolePicker": "Ndi...",
+      "rolePatient": "Umurwayi",
+      "roleDoctor": "Umuganga",
+      "phonePlaceholder": "Numero ya telefoni (si ngombwa)",
+      "languageLabel": "Ururimi rw'ibanze",
+      "languageEn": "Icyongereza",
+      "languageRw": "Ikinyarwanda",
+      "button": "Fungura Konti",
+      "hasAccount": "Usanzwe ufite konti?",
+      "login": "Injira"
+    }
+  },
+  "dashboard": {
+    "greeting_morning": "Mwaramutse, {{name}}",
+    "greeting_afternoon": "Mwiriwe, {{name}}",
+    "greeting_evening": "Ijoro ryiza, {{name}}",
+    "lastReading": "Isuzuma Rya Nyuma",
+    "noReadings": "Nta masuzuma arabonetse. Andika isuzuma rya mbere!",
+    "logReading": "Andika Isuzuma",
+    "todayReadings": "Amasuzuma y'Uyu Munsi",
+    "averageBg": "Isukiraguciro Ryaverage",
+    "nextMedication": "Umuti Ukurikira",
+    "noMedications": "Nta miti yashyizweho",
+    "aiAlert": "Imenyesha rya AI",
+    "highRiskWarning": "Amasuzuma yawe ashya yerekana ingaruka nini. Baza umuganga wawe."
+  },
+  "logHealth": {
+    "title": "Andika Isuzuma ry'Ubuzima",
+    "bloodGlucose": "Isukiraguciro mu maraso (mg/dL) *",
+    "bloodGlucoseHint": "Soma umubare uva ku glucometer yawe",
+    "bloodGlucosePlaceholder": "urugero: 145",
+    "weight": "Ibiro (kg)",
+    "weightHint": "Si ngombwa — uva ku gipimo",
+    "bloodPressure": "Umuvuduko w'amaraso",
+    "bloodPressureHint": "Si ngombwa — uva kwa muganga cyangwa farumasi (urugero: 120/80)",
+    "bloodPressurePlaceholder": "120/80",
+    "hba1c": "HbA1c (%)",
+    "hba1cHint": "Si ngombwa — uva ku bisubizo bya laboratwari (buri mezi 3)",
+    "hba1cPlaceholder": "urugero: 7.5",
+    "insulin": "Dose ya Insuline (units)",
+    "insulinHint": "Shyira 0 niba utafata insuline",
+    "meal": "Ni iki watangariye?",
+    "mealSearch": "Shakisha indyo...",
+    "mealGiHigh": "Indyo ifite GI nini",
+    "mealGiMedium": "Indyo ifite GI yo hagati",
+    "mealGiLow": "Indyo ifite GI nto",
+    "mealSkipped": "Ntabwo natangariye",
+    "activity": "Urwego rw'Ibikorwa",
+    "activityNone": "Ntabwo",
+    "activityLow": "Byoroheje",
+    "activityModerate": "Bibangamiye",
+    "activityHigh": "Bikomeye",
+    "notes": "Ibisobanuro (si ngombwa)",
+    "notesPlaceholder": "urugero: Nashoye nyuma y'iyo yangu",
+    "save": "Bika Isuzuma",
+    "saving": "Birabikwa...",
+    "successTitle": "Isuzuma Ribitswe",
+    "predictionMessage": "Mu masaha 2 isukiraguciro ryawe rirashobora kugera kuri {{value}} mg/dL",
+    "riskLow": "INGARUKA NSHURO — Komeza gutyo!",
+    "riskMedium": "INGARUKA YO HAGATI — Fata ibikorwa byoroheje",
+    "riskHigh": "INGARUKA NINI — Baza umuganga wawe vuba"
+  },
+  "predictions": {
+    "title": "Ubushobozi bwa AI",
+    "noData": "Andika amasuzuma y'ubuzima kugira ngo ubone ubushobozi bwa AI",
+    "predictedValue": "Biteganyijwe: {{value}} mg/dL",
+    "inHours": "Mu masaha {{hours}}",
+    "confidence": "Icyizere: {{value}}%",
+    "riskLevel": "Urwego rw'Ingaruka",
+    "riskFactors": "Impamvu z'Ingaruka"
+  },
+  "chat": {
+    "title": "Ganira na Muganga",
+    "titleDoctor": "Ganira n'Umurwayi",
+    "messagePlaceholder": "Andika ubutumwa...",
+    "send": "Ohereza",
+    "noMessages": "Nta butumwa burabaho. Tangira ikiganiro!",
+    "today": "Uyu munsi",
+    "yesterday": "Ejo"
+  },
+  "medications": {
+    "title": "Imiti Yanjye",
+    "add": "Ongeraho Umuti",
+    "drugName": "Izina ry'Umuti",
+    "drugNamePlaceholder": "urugero: Metformin",
+    "dosage": "Ingano ya Dose",
+    "dosagePlaceholder": "urugero: 500mg",
+    "frequency": "Inshuro",
+    "frequencyOnce": "Rimwe ku munsi",
+    "frequencyTwice": "Kabiri ku munsi",
+    "frequencyThrice": "Gatatu ku munsi",
+    "reminderTimes": "Amasaha yo Kwibutsa",
+    "addReminder": "Ongeraho isaha yo kwibutsa",
+    "noMedications": "Nta miti yongeweho",
+    "delete": "Gusiba",
+    "deleteConfirm": "Gusiba uyu muti?",
+    "active": "Bikorwa",
+    "inactive": "Bitagikorwa"
+  },
+  "doctor": {
+    "dashboard": {
+      "title": "Abarwayi Banjye",
+      "noPatients": "Nta barwayi bangenewe",
+      "searchPlaceholder": "Shakisha abarwayi...",
+      "lastReading": "Isuzuma rya nyuma",
+      "riskBadge": "Ingaruka"
+    },
+    "patientDetail": {
+      "title": "Amakuru y'Umurwayi",
+      "bgHistory": "Amateka y'Isukiraguciro",
+      "lastPrediction": "Ubushobozi bwa AI bwa Nyuma",
+      "medications": "Imiti Ikorwa",
+      "messageButton": "Ohereza Ubutumwa Umurwayi",
+      "noRecords": "Nta makuru y'ubuzima arabonetse"
+    },
+    "assign": {
+      "title": "Shyira Umurwayi",
+      "emailPlaceholder": "Aderesi ya imeyili y'umurwayi",
+      "button": "Shyira Umurwayi",
+      "success": "Umurwayi yashyizwe neza",
+      "notFound": "Nta murwayi ubonetse kuri iyi imeyili",
+      "alreadyAssigned": "Uyu murwayi asanzwe afite umuganga"
+    }
+  },
+  "notifications": {
+    "medicationReminder": {
+      "title": "Kwibutsa Umuti",
+      "body": "Ni igihe cyo gufata {{drug}} {{dosage}}"
+    },
+    "highBgAlert": {
+      "title": "Isukiraguciro Riri Hejuru Cyane",
+      "body": "Isuzuma ryawe rya {{value}} mg/dL riri hejuru. Fata ingamba vuba."
+    },
+    "chatMessage": {
+      "title": "Ubutumwa bushya buva kwa {{name}}",
+      "body": "{{preview}}"
+    }
+  },
+  "foods": {
+    "searchTitle": "Hitamo Indyo",
+    "recentTitle": "Indyo za Vuba",
+    "categories": {
+      "grain": "Ibinyampeke n'Ubunyobwa",
+      "legume": "Ibiharage n'Imbuto",
+      "vegetable": "Imboga",
+      "fruit": "Imbuto",
+      "protein": "Inyama n'Amagi",
+      "dairy": "Amata n'Ibikomoka kuri Amata",
+      "bread": "Umutsima n'Ibigati",
+      "drink": "Ibinyobwa"
+    },
+    "gi": {
+      "low": "GI Nto",
+      "medium": "GI yo Hagati",
+      "high": "GI Nini"
+    }
+  },
+  "profile": {
+    "title": "Umwirondoro Wanjye",
+    "language": "Ururimi",
+    "languageEn": "Icyongereza",
+    "languageRw": "Ikinyarwanda",
+    "logout": "Sohoka",
+    "logoutConfirm": "Urashaka gusohoka?"
+  },
+  "bgLabels": {
+    "low": "Hasi (Hypoglycemia)",
+    "normal": "Bisanzwe",
+    "preDiabetic": "Inzira ya Pre-diabete",
+    "high": "Hejuru (Hyperglycemia)"
+  }
+}
