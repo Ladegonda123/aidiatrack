@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
 import numpy as np
+import pandas as pd
 import os
 from dotenv import load_dotenv
 
@@ -11,6 +12,11 @@ app = Flask(__name__)
 CORS(app)
 
 MODEL_PATH = os.getenv('MODEL_PATH', 'models/')
+GLUCOSE_FEATURE_COLS = [
+    'fasting_bg', 'bg_lag_4', 'bg_lag_3', 'bg_lag_2', 'current_bg',
+    'meal_gi', 'meal_calories', 'activity_encoded', 'insulin_dose',
+    'hour_of_day', 'minutes_since_meal',
+]
 
 # Load models at startup — will be None until trained
 glucose_model = None
@@ -58,7 +64,7 @@ def predict_glucose():
         data = request.get_json()
 
         # Expected features from Node.js (see CLAUDE.md Section 7.3)
-        features = np.array([[
+        features = pd.DataFrame([[
             data.get('fasting_bg', data.get('bg_1', 130)),
             data.get('bg_2', data.get('fasting_bg', 130)),
             data.get('bg_3', data.get('fasting_bg', 130)),
@@ -70,7 +76,7 @@ def predict_glucose():
             data.get('insulin_dose', 0),
             data.get('hour_of_day', 12),
             data.get('minutes_since_meal', 30),
-        ]])
+        ]], columns=GLUCOSE_FEATURE_COLS)
 
         prediction = float(glucose_model.predict(features)[0])
         prediction = round(max(65, min(420, prediction)), 1)
