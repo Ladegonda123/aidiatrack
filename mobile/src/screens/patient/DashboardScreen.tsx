@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useTranslation } from "react-i18next";
-import LanguageDropdown from "../../components/LanguageDropdown";
 import { useAuth } from "../../hooks/useAuth";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
@@ -92,7 +92,7 @@ const formatReminderClock = (time: string): string => {
 
 const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
-  const { user, updateLanguage } = useAuth();
+  const { user } = useAuth();
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [lastPrediction, setLastPrediction] = useState<Prediction | null>(null);
@@ -205,74 +205,178 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.dateText}>{formatDate(new Date())}</Text>
+            <View style={styles.headerLeft}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {firstName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.greeting}>{greeting}</Text>
+                <Text style={styles.dateText}>{formatDate(new Date())}</Text>
+              </View>
             </View>
-            <LanguageDropdown onLanguageChange={updateLanguage} />
+            <TouchableOpacity
+              style={styles.bellButton}
+              onPress={() => {
+                // notifications — Phase 4.6
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color="#FFFFFF"
+              />
+              {shouldShowAlert && <View style={styles.bellDot} />}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.streakBar}>
+            <Ionicons name="flame-outline" size={16} color="#FFD700" />
+            <Text style={styles.streakText}>
+              {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
+            </Text>
+            <View style={styles.streakDivider} />
+            <Ionicons
+              name="trending-up-outline"
+              size={16}
+              color="rgba(255,255,255,0.8)"
+            />
+            <Text style={styles.streakText}>
+              {sevenDayAverage > 0
+                ? `${sevenDayAverage} mg/dL avg`
+                : t("dashboard.noReadings")}
+            </Text>
           </View>
         </View>
 
         <View style={styles.content}>
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>{t("dashboard.lastReading")}</Text>
-            {lastReading ? (
-              <>
-                <Text style={[styles.bgValue, { color: bgColor }]}>
-                  {lastReading.bloodGlucose.toFixed(1)}
-                </Text>
-                <Text style={styles.bgUnit}>{t("dashboard.mgdlUnit")}</Text>
-                {bgStatusKey ? (
-                  <Text style={[styles.bgStatus, { color: bgColor }]}>
+            <View style={styles.readingCardHeader}>
+              <Text style={styles.cardLabel}>{t("dashboard.lastReading")}</Text>
+              {lastReading && bgStatusKey ? (
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: `${bgColor}20` },
+                  ]}
+                >
+                  <Text style={[styles.statusBadgeText, { color: bgColor }]}>
                     {t(bgStatusKey)}
                   </Text>
-                ) : null}
-                <Text style={styles.timeAgo}>
-                  {timeAgo(lastReading.recordedAt)}
-                </Text>
-              </>
+                </View>
+              ) : null}
+            </View>
+            {lastReading ? (
+              <View style={styles.readingRow}>
+                <View>
+                  <View style={styles.bgValueRow}>
+                    <Text style={[styles.bgValue, { color: bgColor }]}>
+                      {lastReading.bloodGlucose.toFixed(1)}
+                    </Text>
+                    <Text style={styles.bgUnit}>mg/dL</Text>
+                  </View>
+                  <Text style={styles.timeAgo}>
+                    {timeAgo(lastReading.recordedAt)}
+                  </Text>
+                </View>
+                <View style={styles.miniTrend}>
+                  {(summary?.trend?.slice(-5) ?? []).map((item, index) => {
+                    const trendValues = summary?.trend?.slice(-5) ?? [];
+                    const maxVal = Math.max(
+                      ...trendValues.map((entry) => entry.value),
+                    );
+                    const minVal = Math.min(
+                      ...trendValues.map((entry) => entry.value),
+                    );
+                    const range = maxVal - minVal || 1;
+                    const height = ((item.value - minVal) / range) * 30 + 10;
+
+                    return (
+                      <View
+                        key={`${item.date}-${index}`}
+                        style={styles.miniBarWrapper}
+                      >
+                        <View
+                          style={[
+                            styles.miniBar,
+                            {
+                              height,
+                              backgroundColor: getBgColor(item.value),
+                              opacity: index === 4 ? 1 : 0.4 + index * 0.15,
+                            },
+                          ]}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
             ) : (
-              <>
+              <View style={styles.emptyState}>
                 <Text style={styles.emptyIcon}>📊</Text>
                 <Text style={styles.emptyText}>
                   {t("dashboard.noReadings")}
                 </Text>
-              </>
+              </View>
             )}
           </View>
 
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{todayReadingCount}</Text>
-              <Text style={styles.statLabel}>
-                {t("dashboard.todayReadings")}
-              </Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{sevenDayAverage.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>
-                {t("dashboard.sevenDayAverage")}
-              </Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{summary?.totalRecords ?? 0}</Text>
-              <Text style={styles.statLabel}>
-                {t("dashboard.totalRecords")}
-              </Text>
-            </View>
+            {[
+              {
+                icon: "today-outline",
+                value: todayReadingCount.toString(),
+                label: t("dashboard.todayReadings"),
+                color: COLORS.primary,
+              },
+              {
+                icon: "analytics-outline",
+                value: sevenDayAverage > 0 ? sevenDayAverage.toFixed(0) : "--",
+                label: t("dashboard.sevenDayAverage"),
+                color:
+                  sevenDayAverage > 0
+                    ? getBgColor(sevenDayAverage)
+                    : COLORS.textSecondary,
+              },
+              {
+                icon: "list-outline",
+                value: (summary?.totalRecords ?? 0).toString(),
+                label: t("dashboard.totalRecords"),
+                color: COLORS.primary,
+              },
+            ].map((stat, index) => (
+              <View key={index} style={styles.statCard}>
+                <Ionicons
+                  name={stat.icon as keyof typeof Ionicons.glyphMap}
+                  size={18}
+                  color={stat.color}
+                />
+                <Text style={[styles.statValue, { color: stat.color }]}>
+                  {stat.value}
+                </Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
           </View>
 
           <TouchableOpacity
             style={styles.logButton}
             onPress={() => navigation.navigate("LogHealth")}
-            activeOpacity={0.9}
+            activeOpacity={0.85}
           >
-            <Text style={styles.logButtonText}>+</Text>
-            <Text style={styles.logButtonText}>
-              {t("dashboard.logReading")}
-            </Text>
+            <View style={styles.logButtonInner}>
+              <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
+              <Text style={styles.logButtonText}>
+                {t("dashboard.logReading")}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color="rgba(255,255,255,0.7)"
+            />
           </TouchableOpacity>
 
           {shouldShowAlert ? (
@@ -347,6 +451,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+  },
   greeting: {
     fontSize: 22,
     fontWeight: "700",
@@ -362,6 +484,42 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 16,
   },
+  bellButton: {
+    position: "relative",
+    padding: 4,
+  },
+  bellDot: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.danger,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  streakBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  streakText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  streakDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    marginHorizontal: 4,
+  },
   card: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -372,12 +530,38 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  readingCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   cardLabel: {
     fontSize: 12,
     color: COLORS.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  readingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  bgValueRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 4,
   },
   bgValue: {
     fontSize: 48,
@@ -389,15 +573,29 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  bgStatus: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 4,
-  },
   timeAgo: {
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 4,
+  },
+  miniTrend: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 4,
+    height: 44,
+  },
+  miniBarWrapper: {
+    width: 8,
+    height: 44,
+    justifyContent: "flex-end",
+  },
+  miniBar: {
+    width: 8,
+    borderRadius: 4,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 16,
   },
   statsRow: {
     flexDirection: "row",
@@ -418,7 +616,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    marginTop: 6,
   },
   statLabel: {
     fontSize: 11,
@@ -428,17 +626,22 @@ const styles = StyleSheet.create({
   },
   logButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 16,
+    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    justifyContent: "space-between",
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  logButtonInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   logButtonText: {
     color: "#FFFFFF",
