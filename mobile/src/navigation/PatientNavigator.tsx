@@ -28,9 +28,9 @@ const PatientNavigator = (): React.JSX.Element => {
               : route.name === "LogHealth"
                 ? "add-circle-outline"
                 : route.name === "Predictions"
-                  ? "analytics-outline"
+                  ? "trending-up-outline"
                   : route.name === "Chat"
-                    ? "chatbubble-ellipses-outline"
+                    ? "chatbubble-outline"
                     : "person-outline";
 
           return <Ionicons name={iconName} size={size} color={color} />;

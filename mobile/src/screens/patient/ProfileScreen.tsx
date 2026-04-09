@@ -66,7 +66,7 @@ const ProfileScreen = (): React.JSX.Element => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.avatarLarge}>
@@ -161,6 +161,24 @@ const ProfileScreen = (): React.JSX.Element => {
               {t("profile.patientActionsTitle")}
             </Text>
             <TouchableOpacity
+              style={[styles.infoRow, styles.infoRowBorder]}
+              onPress={() => navigation.navigate("Medications")}
+            >
+              <View style={styles.infoLeft}>
+                <Ionicons
+                  name="medkit-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.infoLabel}>{t("medications.title")}</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={() => navigation.navigate("SelectDoctor")}
               activeOpacity={0.85}
@@ -203,14 +221,23 @@ const ProfileScreen = (): React.JSX.Element => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
   header: {
+    backgroundColor: COLORS.primary,
     alignItems: "center",
-    paddingVertical: 32,
+    paddingTop: 20,
+    paddingBottom: 28,
     paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 16,
   },
   avatarLarge: {
     width: 80,
@@ -234,17 +261,17 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   roleBadge: {
-    backgroundColor: `${COLORS.primary}15`,
+    backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 16,
     paddingVertical: 4,
     borderRadius: 20,
   },
   roleText: {
-    color: COLORS.primary,
+    color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "600",
   },

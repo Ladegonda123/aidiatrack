@@ -15,8 +15,12 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import {
+  CompositeNavigationProp,
+  useNavigation,
+} from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
@@ -35,6 +39,7 @@ import {
   Medication,
   PatientTabParamList,
   Prediction,
+  RootStackParamList,
 } from "../../types";
 import { COLORS, getBgColor } from "../../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../../utils/formatters";
@@ -102,10 +107,14 @@ const formatReminderClock = (time: string): string => {
   return formatTime(date);
 };
 
+type DashboardNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<PatientTabParamList, "Dashboard">,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 const DashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
-  const navigation =
-    useNavigation<BottomTabNavigationProp<PatientTabParamList, "Dashboard">>();
+  const navigation = useNavigation<DashboardNavigationProp>();
   const { user } = useAuth();
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -466,6 +475,26 @@ const DashboardScreen = (): React.JSX.Element => {
                   </Text>
                 )}
               </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.reportButton}
+              onPress={() => navigation.navigate("Reports")}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="bar-chart-outline"
+                size={18}
+                color={COLORS.primary}
+              />
+              <Text style={styles.reportButtonText}>
+                {t("dashboard.viewReport")}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.textSecondary}
+              />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -870,6 +899,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  reportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  reportButtonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.primary,
   },
   emptyText: {
     textAlign: "center",

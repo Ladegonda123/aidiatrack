@@ -10,6 +10,8 @@ import DoctorChat from "../screens/doctor/DoctorChat";
 import AssignPatientScreen from "../screens/doctor/AssignPatientScreen";
 import PatientDetailScreen from "../screens/doctor/PatientDetailScreen";
 import SelectDoctorScreen from "../screens/patient/SelectDoctorScreen";
+import ReportsScreen from "../screens/patient/ReportsScreen";
+import MedicationScreen from "../screens/patient/MedicationScreen";
 import PatientNavigator from "./PatientNavigator";
 import DoctorNavigator from "./DoctorNavigator";
 
@@ -75,6 +77,16 @@ const AppNavigator = (): React.JSX.Element => {
           <Stack.Screen
             name="PatientTabs"
             component={PatientNavigator}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Reports"
+            component={ReportsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Medications"
+            component={MedicationScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen

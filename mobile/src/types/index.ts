@@ -99,6 +99,8 @@ export type RootStackParamList = {
   Register: undefined;
   PatientTabs: undefined;
   DoctorTabs: undefined;
+  Reports: undefined;
+  Medications: undefined;
   PatientDetail: { patientId: number; patientName: string };
   DoctorChat: { patientId: number; patientName: string };
   AssignPatient: undefined;
