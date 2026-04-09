@@ -20,6 +20,17 @@ interface RoomPair {
   doctorId: number;
 }
 
+const onlineUsers = new Map<number, string>();
+const lastSeenMap = new Map<number, string>();
+
+export const isUserOnline = (userId: number): boolean => {
+  return onlineUsers.has(userId);
+};
+
+export const getLastSeen = (userId: number): string | null => {
+  return lastSeenMap.get(userId) ?? null;
+};
+
 const isPositiveInt = (value: unknown): value is number => {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 };
@@ -139,6 +150,9 @@ export const setupSocket = (io: Server): void => {
 
     socket.on("authenticate", (userId: number) => {
       socket.data.userId = userId;
+      onlineUsers.set(userId, socket.id);
+      socket.broadcast.emit("user_online", { userId, online: true });
+      logger.socket("User is now online", { userId, socketId: socket.id });
     });
 
     socket.on("join_room", async (payload: JoinRoomPayload) => {
@@ -215,6 +229,17 @@ export const setupSocket = (io: Server): void => {
     });
 
     socket.on("disconnect", () => {
+      const userId = socket.data.userId as number | undefined;
+
+      if (userId && onlineUsers.get(userId) === socket.id) {
+        onlineUsers.delete(userId);
+        const lastSeen = new Date().toISOString();
+        lastSeenMap.set(userId, lastSeen);
+
+        socket.broadcast.emit("user_offline", { userId, lastSeen });
+        logger.socket("User disconnected", { userId, socketId: socket.id });
+      }
+
       logger.socket("Socket disconnected", { socketId: socket.id });
     });
   });

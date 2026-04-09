@@ -1,20 +1,64 @@
-import React, { useLayoutEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useLayoutEffect, useEffect, useState } from "react";
+import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import ChatUI from "../../components/ChatUI";
 import { useAuth } from "../../hooks/useAuth";
+import axiosInstance from "../../api/axiosInstance";
 import { COLORS } from "../../utils/colors";
+
+interface DoctorItem {
+  id: number;
+  fullName: string;
+}
+
+interface DoctorListResponse {
+  doctors?: DoctorItem[];
+}
+
+interface ApiResponse<T> {
+  data: T;
+}
 
 const ChatScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigation = useNavigation();
+  const [doctorName, setDoctorName] = useState<string>("");
+  const [loadingDoctor, setLoadingDoctor] = useState<boolean>(true);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
+
+  useEffect(() => {
+    const fetchDoctorName = async (): Promise<void> => {
+      if (!user?.doctorId) {
+        setLoadingDoctor(false);
+        return;
+      }
+
+      try {
+        const response =
+          await axiosInstance.get<ApiResponse<DoctorListResponse>>(
+            "/doctor/list",
+          );
+        const doctors = response.data?.data?.doctors ?? [];
+        const doctor = doctors.find((item) => item.id === user.doctorId);
+        setDoctorName(doctor?.fullName ?? t("chat.title"));
+      } catch {
+        setDoctorName(t("chat.title"));
+      } finally {
+        setLoadingDoctor(false);
+      }
+    };
+
+    fetchDoctorName().catch(() => {
+      setDoctorName(t("chat.title"));
+      setLoadingDoctor(false);
+    });
+  }, [t, user?.doctorId]);
 
   if (!user?.doctorId) {
     return (
@@ -32,11 +76,28 @@ const ChatScreen = (): React.JSX.Element => {
     );
   }
 
+  if (loadingDoctor) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <View style={styles.noDoctorContainer}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{t("chat.title")}</Text>
+          </View>
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={styles.loader}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <ChatUI
       currentUserId={user.id}
       otherUserId={user.doctorId}
-      otherUserName={t("chat.titleDoctor")}
+      otherUserName={doctorName || t("chat.title")}
     />
   );
 };
@@ -78,6 +139,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 24,
+  },
+  loader: {
+    marginTop: 40,
   },
 });
 

@@ -144,6 +144,8 @@
     "messagePlaceholder": "Type a message...",
     "send": "Send",
     "online": "Active now",
+    "lastSeen": "Last seen",
+    "offline": "Offline",
     "noDoctor": "You have not been assigned a doctor yet",
     "noMessages": "No messages yet. Start the conversation!",
     "today": "Today",

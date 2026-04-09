@@ -13,10 +13,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import axiosInstance from "../api/axiosInstance";
 import { getMessages, sendMessage } from "../api/chatAPI";
 import { useSocket } from "../hooks/useSocket";
 import { COLORS } from "../utils/colors";
-import { formatDate, formatTime } from "../utils/formatters";
+import { formatDate, formatTime, timeAgo } from "../utils/formatters";
 import { Message } from "../types";
 import { getChatRoomId } from "../utils/helpers";
 
@@ -25,6 +26,16 @@ interface ChatUIProps {
   otherUserId: number;
   otherUserName: string;
   onBack?: () => void;
+}
+
+interface PresenceResponse {
+  userId: number;
+  online: boolean;
+  lastSeen: string | null;
+}
+
+interface ApiResponse<T> {
+  data: T;
 }
 
 const shouldShowDateSeparator = (
@@ -47,6 +58,8 @@ const ChatUI = ({
   const [inputText, setInputText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [sending, setSending] = useState<boolean>(false);
+  const [isOtherOnline, setIsOtherOnline] = useState<boolean>(false);
+  const [lastSeen, setLastSeen] = useState<string | null>(null);
   const flatListRef = useRef<FlatList<Message>>(null);
   const { socket } = useSocket();
   const { t, i18n } = useTranslation();
@@ -92,6 +105,27 @@ const ChatUI = ({
   }, [loadMessages]);
 
   useEffect(() => {
+    const fetchPresence = async (): Promise<void> => {
+      try {
+        const response = await axiosInstance.get<ApiResponse<PresenceResponse>>(
+          `/chat/presence/${otherUserId}`,
+        );
+        const data = response.data?.data;
+        setIsOtherOnline(data?.online ?? false);
+        setLastSeen(data?.lastSeen ?? null);
+      } catch {
+        setIsOtherOnline(false);
+        setLastSeen(null);
+      }
+    };
+
+    fetchPresence().catch(() => {
+      setIsOtherOnline(false);
+      setLastSeen(null);
+    });
+  }, [otherUserId]);
+
+  useEffect(() => {
     if (!socket) return;
 
     socket.emit("join_room", { roomId });
@@ -125,6 +159,35 @@ const ChatUI = ({
       socket.off("receive_message", handleReceive);
     };
   }, [socket, roomId, currentUserId]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOnline = (data: { userId: number }): void => {
+      if (data.userId === otherUserId) {
+        setIsOtherOnline(true);
+        setLastSeen(null);
+      }
+    };
+
+    const handleOffline = (data: {
+      userId: number;
+      lastSeen: string;
+    }): void => {
+      if (data.userId === otherUserId) {
+        setIsOtherOnline(false);
+        setLastSeen(data.lastSeen);
+      }
+    };
+
+    socket.on("user_online", handleOnline);
+    socket.on("user_offline", handleOffline);
+
+    return () => {
+      socket.off("user_online", handleOnline);
+      socket.off("user_offline", handleOffline);
+    };
+  }, [socket, otherUserId]);
 
   useEffect(() => {
     if (messages.length > 0 && !loading) {
@@ -168,7 +231,7 @@ const ChatUI = ({
   }, [currentUserId, inputText, otherUserId, sending]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.header}>
         {onBack ? (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -177,106 +240,130 @@ const ChatUI = ({
         ) : null}
 
         <View style={styles.headerInfo}>
-          <View style={styles.avatarSmall}>
-            <Text style={styles.avatarSmallText}>
-              {otherUserName.charAt(0).toUpperCase()}
-            </Text>
+          <View style={styles.avatarSmallWrapper}>
+            <View style={styles.avatarSmall}>
+              <Text style={styles.avatarSmallText}>
+                {otherUserName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            {isOtherOnline ? <View style={styles.onlineDot} /> : null}
           </View>
           <View>
             <Text style={styles.headerName}>{otherUserName}</Text>
-            <Text style={styles.headerOnline}>{t("chat.online")}</Text>
+            <Text
+              style={[
+                styles.headerOnline,
+                {
+                  color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)",
+                },
+              ]}
+            >
+              {isOtherOnline
+                ? t("chat.online")
+                : lastSeen
+                  ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
+                  : t("chat.offline")}
+            </Text>
           </View>
         </View>
       </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
         keyboardVerticalOffset={0}
       >
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : messages.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
-          </View>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item, index) => `${item.id}_${index}`}
-            contentContainerStyle={styles.messagesList}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item, index }) => {
-              const isMine = item.senderId === currentUserId;
-              const showSeparator = shouldShowDateSeparator(messages, index);
+        <View style={styles.messagesContainer}>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          ) : messages.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>💬</Text>
+              <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item, index) => `${item.id}_${index}`}
+              contentContainerStyle={styles.messagesList}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }}
+              onLayout={() => {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }}
+              renderItem={({ item, index }) => {
+                const isMine = item.senderId === currentUserId;
+                const showSeparator = shouldShowDateSeparator(messages, index);
 
-              return (
-                <>
-                  {showSeparator ? (
-                    <View style={styles.dateSeparator}>
-                      <View style={styles.dateLine} />
-                      <Text style={styles.dateLabel}>
-                        {getDateLabel(item.sentAt)}
-                      </Text>
-                      <View style={styles.dateLine} />
-                    </View>
-                  ) : null}
-
-                  <View
-                    style={[
-                      styles.messageRow,
-                      isMine ? styles.messageRowMine : styles.messageRowOther,
-                    ]}
-                  >
-                    {!isMine ? (
-                      <View style={styles.messageAvatar}>
-                        <Text style={styles.messageAvatarText}>
-                          {otherUserName.charAt(0).toUpperCase()}
+                return (
+                  <>
+                    {showSeparator ? (
+                      <View style={styles.dateSeparator}>
+                        <View style={styles.dateLine} />
+                        <Text style={styles.dateLabel}>
+                          {getDateLabel(item.sentAt)}
                         </Text>
+                        <View style={styles.dateLine} />
                       </View>
                     ) : null}
 
                     <View
                       style={[
-                        styles.bubble,
-                        isMine ? styles.bubbleMine : styles.bubbleOther,
+                        styles.messageRow,
+                        isMine ? styles.messageRowMine : styles.messageRowOther,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.bubbleText,
-                          isMine
-                            ? styles.bubbleTextMine
-                            : styles.bubbleTextOther,
-                        ]}
-                      >
-                        {item.content}
-                      </Text>
+                      {!isMine ? (
+                        <View style={styles.messageAvatar}>
+                          <Text style={styles.messageAvatarText}>
+                            {otherUserName.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      ) : null}
 
-                      <Text
+                      <View
                         style={[
-                          styles.bubbleTime,
-                          isMine
-                            ? styles.bubbleTimeMine
-                            : styles.bubbleTimeOther,
+                          styles.bubble,
+                          isMine ? styles.bubbleMine : styles.bubbleOther,
                         ]}
                       >
-                        {formatTime(item.sentAt)}
-                        {isMine ? <Text> ✓</Text> : null}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.bubbleText,
+                            isMine
+                              ? styles.bubbleTextMine
+                              : styles.bubbleTextOther,
+                          ]}
+                        >
+                          {item.content}
+                        </Text>
+
+                        <Text
+                          style={[
+                            styles.bubbleTime,
+                            isMine
+                              ? styles.bubbleTimeMine
+                              : styles.bubbleTimeOther,
+                          ]}
+                        >
+                          {formatTime(item.sentAt)}
+                          {isMine ? <Text> ✓</Text> : null}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                </>
-              );
-            }}
-          />
-        )}
+                  </>
+                );
+              }}
+            />
+          )}
+        </View>
 
         <View style={styles.inputBar}>
           <TextInput
@@ -338,6 +425,9 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
+  avatarSmallWrapper: {
+    position: "relative",
+  },
   avatarSmall: {
     width: 36,
     height: 36,
@@ -345,6 +435,17 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.25)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  onlineDot: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#4CAF50",
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   avatarSmallText: {
     color: "#FFFFFF",
@@ -361,6 +462,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   loader: { flex: 1, justifyContent: "center" },
+  messagesContainer: { flex: 1 },
   emptyState: {
     flex: 1,
     alignItems: "center",

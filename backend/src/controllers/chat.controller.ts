@@ -159,3 +159,36 @@ export const sendMessage = async (
     sendError(res, 500, "Failed to send message");
   }
 };
+
+export const getUserPresence = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const id = Number.parseInt(String(req.params.userId), 10);
+
+    if (!Number.isFinite(id) || id <= 0) {
+      sendError(res, 400, "Invalid user ID");
+      return;
+    }
+
+    const socketPresence = await import("../config/socket");
+    const online = socketPresence.isUserOnline(id);
+    const lastSeen = online ? null : socketPresence.getLastSeen(id);
+
+    sendSuccess(
+      res,
+      { userId: id, online, lastSeen },
+      200,
+      "Presence retrieved successfully",
+    );
+  } catch (error: unknown) {
+    logger.error("getUserPresence failed", error);
+    sendSuccess(
+      res,
+      { userId: 0, online: false, lastSeen: null },
+      200,
+      "Presence unavailable",
+    );
+  }
+};

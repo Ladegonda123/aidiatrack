@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { COLORS } from "../utils/colors";
 import { DoctorTabParamList } from "../types";
 import DoctorDashboard from "../screens/doctor/DoctorDashboard";
-import DoctorChat from "../screens/doctor/DoctorChat";
+import DoctorChatList from "../screens/doctor/DoctorChatList";
 import ProfileScreen from "../screens/patient/ProfileScreen";
 
 const Tab = createBottomTabNavigator<DoctorTabParamList>();
@@ -38,7 +38,7 @@ const DoctorNavigator = (): React.JSX.Element => {
       />
       <Tab.Screen
         name="DoctorChatList"
-        component={DoctorChat}
+        component={DoctorChatList}
         options={{ title: t("chat.titleDoctor") }}
       />
       <Tab.Screen
