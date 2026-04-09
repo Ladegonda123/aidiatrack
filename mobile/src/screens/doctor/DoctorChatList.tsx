@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getMyPatients } from "../../api/doctorAPI";
 import { COLORS } from "../../utils/colors";
 import { RootStackParamList, User } from "../../types";
@@ -27,7 +28,8 @@ interface PatientsPayload {
 
 const DoctorChatList = (): React.JSX.Element => {
   const { t } = useTranslation();
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [patients, setPatients] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -101,13 +103,10 @@ const DoctorChatList = (): React.JSX.Element => {
               <TouchableOpacity
                 style={styles.patientRow}
                 onPress={() => {
-                  navigation.navigate(
-                    "DoctorChat" as never,
-                    {
-                      patientId: item.id,
-                      patientName: item.fullName,
-                    } as never,
-                  );
+                  navigation.navigate("DoctorChat", {
+                    patientId: item.id,
+                    patientName: item.fullName,
+                  });
                 }}
                 activeOpacity={0.7}
               >
