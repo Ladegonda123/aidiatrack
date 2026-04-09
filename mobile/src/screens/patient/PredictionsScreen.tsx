@@ -47,7 +47,7 @@ const PredictionsScreen = (): React.JSX.Element => {
     try {
       setLoading(true);
       const data = await getPredictionHistory();
-      setPredictions(Array.isArray(data) ? data : (data?.predictions ?? []));
+      setPredictions(data);
     } catch {
       setPredictions([]);
     } finally {
