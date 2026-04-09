@@ -67,155 +67,161 @@ const ProfileScreen = (): React.JSX.Element => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarText}>
-              {user?.fullName?.charAt(0).toUpperCase() ?? "?"}
-            </Text>
-          </View>
-          <Text style={styles.name}>{user?.fullName}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>
-              {user?.role === "PATIENT"
-                ? t("auth.register.rolePatient")
-                : t("auth.register.roleDoctor")}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          {infoRows.map((row, index) => (
-            <View
-              key={row.label}
-              style={[
-                styles.infoRow,
-                index < infoRows.length - 1 && styles.infoRowBorder,
-              ]}
-            >
-              <View style={styles.infoLeft}>
-                <Ionicons
-                  name={row.icon as keyof typeof Ionicons.glyphMap}
-                  size={18}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.infoLabel}>{row.label}</Text>
-              </View>
-              <Text style={styles.infoValue}>{row.value}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("profile.language")}</Text>
-          <View style={styles.languageRow}>
-            <View style={styles.infoLeft}>
-              <Ionicons
-                name="language-outline"
-                size={18}
-                color={COLORS.primary}
-              />
-              <Text style={styles.infoLabel}>{t("profile.language")}</Text>
-            </View>
-            <LanguageDropdown onLanguageChange={updateLanguage} />
-          </View>
-        </View>
-
-        {user?.role === "DOCTOR" ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {t("profile.doctorActionsTitle")}
-            </Text>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate("AssignPatient")}
-              activeOpacity={0.85}
-            >
-              <View style={styles.actionButtonLeft}>
-                <Ionicons
-                  name="person-add-outline"
-                  size={18}
-                  color={COLORS.primary}
-                />
-                <View>
-                  <Text style={styles.actionButtonText}>
-                    {t("profile.assignPatient")}
-                  </Text>
-                  <Text style={styles.actionButtonSubtext}>
-                    {t("profile.assignPatientHint")}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={COLORS.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        {user?.role === "PATIENT" ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {t("profile.patientActionsTitle")}
-            </Text>
-            <TouchableOpacity
-              style={[styles.infoRow, styles.infoRowBorder]}
-              onPress={() => navigation.navigate("Medications")}
-            >
-              <View style={styles.infoLeft}>
-                <Ionicons
-                  name="medkit-outline"
-                  size={18}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.infoLabel}>{t("medications.title")}</Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={COLORS.textSecondary}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate("SelectDoctor")}
-              activeOpacity={0.85}
-            >
-              <View style={styles.actionButtonLeft}>
-                <Ionicons
-                  name="medkit-outline"
-                  size={18}
-                  color={COLORS.primary}
-                />
-                <View>
-                  <Text style={styles.actionButtonText}>
-                    {t("profile.selectDoctor")}
-                  </Text>
-                  <Text style={styles.actionButtonSubtext}>
-                    {t("profile.selectDoctorHint")}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={COLORS.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
         >
-          <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
-          <Text style={styles.logoutText}>{t("profile.logout")}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.profileCard}>
+            <View style={styles.avatarLarge}>
+              <Text style={styles.avatarText}>
+                {user?.fullName?.charAt(0).toUpperCase() ?? "?"}
+              </Text>
+            </View>
+            <Text style={styles.name}>{user?.fullName}</Text>
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {user?.role === "PATIENT"
+                  ? `🏥 ${t("auth.register.rolePatient")}`
+                  : `👨‍⚕️ ${t("auth.register.roleDoctor")}`}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            {infoRows.map((row, index) => (
+              <View
+                key={row.label}
+                style={[
+                  styles.infoRow,
+                  index < infoRows.length - 1 && styles.infoRowBorder,
+                ]}
+              >
+                <View style={styles.infoLeft}>
+                  <Ionicons
+                    name={row.icon as keyof typeof Ionicons.glyphMap}
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.infoLabel}>{row.label}</Text>
+                </View>
+                <Text style={styles.infoValue}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("profile.language")}</Text>
+            <View style={styles.languageRow}>
+              <View style={styles.infoLeft}>
+                <Ionicons
+                  name="language-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.infoLabel}>{t("profile.language")}</Text>
+              </View>
+              <LanguageDropdown onLanguageChange={updateLanguage} />
+            </View>
+          </View>
+
+          {user?.role === "DOCTOR" ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {t("profile.doctorActionsTitle")}
+              </Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => navigation.navigate("AssignPatient")}
+                activeOpacity={0.85}
+              >
+                <View style={styles.actionButtonLeft}>
+                  <Ionicons
+                    name="person-add-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <View>
+                    <Text style={styles.actionButtonText}>
+                      {t("profile.assignPatient")}
+                    </Text>
+                    <Text style={styles.actionButtonSubtext}>
+                      {t("profile.assignPatientHint")}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {user?.role === "PATIENT" ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {t("profile.patientActionsTitle")}
+              </Text>
+              <TouchableOpacity
+                style={[styles.infoRow, styles.infoRowBorder]}
+                onPress={() => navigation.navigate("Medications")}
+              >
+                <View style={styles.infoLeft}>
+                  <Ionicons
+                    name="medkit-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.infoLabel}>{t("medications.title")}</Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => navigation.navigate("SelectDoctor")}
+                activeOpacity={0.85}
+              >
+                <View style={styles.actionButtonLeft}>
+                  <Ionicons
+                    name="medkit-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <View>
+                    <Text style={styles.actionButtonText}>
+                      {t("profile.selectDoctor")}
+                    </Text>
+                    <Text style={styles.actionButtonSubtext}>
+                      {t("profile.selectDoctorHint")}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="log-out-outline" size={20} color={COLORS.danger} />
+            <Text style={styles.logoutText}>{t("profile.logout")}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -229,15 +235,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    backgroundColor: COLORS.primary,
+  scroll: {
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingBottom: 8,
+  },
+  profileCard: {
+    backgroundColor: COLORS.card,
     alignItems: "center",
-    paddingTop: 20,
-    paddingBottom: 28,
+    paddingTop: 32,
+    paddingBottom: 24,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
     marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   avatarLarge: {
     width: 80,
@@ -261,17 +276,17 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   roleBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: `${COLORS.primary}15`,
     paddingHorizontal: 16,
     paddingVertical: 4,
     borderRadius: 20,
   },
   roleText: {
-    color: "#FFFFFF",
+    color: COLORS.primary,
     fontSize: 13,
     fontWeight: "600",
   },
