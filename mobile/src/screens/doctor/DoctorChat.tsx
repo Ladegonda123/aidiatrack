@@ -1,33 +1,70 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import {
+  RouteProp,
+  useNavigation,
+  useRoute,
+  NavigationProp,
+} from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../hooks/useAuth";
+import ChatUI from "../../components/ChatUI";
+import { RootStackParamList } from "../../types";
 import { COLORS } from "../../utils/colors";
+
+type RouteType = RouteProp<RootStackParamList, "DoctorChat">;
 
 const DoctorChat = (): React.JSX.Element => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const route = useRoute<RouteType>();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+  const params = route.params as RootStackParamList["DoctorChat"] | undefined;
+
+  if (!params) {
+    return (
+      <View style={styles.noPatient}>
+        <Text style={styles.noPatientIcon}>💬</Text>
+        <Text style={styles.noPatientText}>{t("chat.noMessages")}</Text>
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <View style={styles.noPatient} />;
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t("chat.titleDoctor")}</Text>
-      <Text style={styles.subtitle}>{t("chat.noMessages")}</Text>
-    </View>
+    <ChatUI
+      currentUserId={user.id}
+      otherUserId={params.patientId}
+      otherUserName={params.patientName}
+      onBack={() => navigation.goBack()}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  noPatient: {
     flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    gap: 12,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
+  noPatientIcon: {
+    fontSize: 52,
   },
-  subtitle: {
-    marginTop: 8,
+  noPatientText: {
+    fontSize: 14,
     color: COLORS.textSecondary,
+    textAlign: "center",
   },
 });
 

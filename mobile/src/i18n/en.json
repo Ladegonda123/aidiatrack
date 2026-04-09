@@ -129,6 +129,12 @@
     "predictedValue": "Predicted: {{value}} mg/dL",
     "inHours": "In {{hours}} hours",
     "confidence": "Confidence: {{value}}%",
+    "riskAssessmentTitle": "Long-term Risk Assessment",
+    "historyTitle": "Prediction History",
+    "runAssessment": "Run Risk Assessment",
+    "noRiskFactors": "No specific risk factors identified",
+    "notEnoughData": "Not enough data",
+    "logMoreReadings": "Log at least one health reading first",
     "riskLevel": "Risk Level",
     "riskFactors": "Risk Factors"
   },
@@ -137,6 +143,8 @@
     "titleDoctor": "Chat with Patient",
     "messagePlaceholder": "Type a message...",
     "send": "Send",
+    "online": "Active now",
+    "noDoctor": "You have not been assigned a doctor yet",
     "noMessages": "No messages yet. Start the conversation!",
     "today": "Today",
     "yesterday": "Yesterday"

@@ -129,6 +129,12 @@
     "predictedValue": "Biteganyijwe: {{value}} mg/dL",
     "inHours": "Mu masaha {{hours}}",
     "confidence": "Icyizere: {{value}}%",
+    "riskAssessmentTitle": "Isuzuma ry'Ingaruka z'Igihe Kirekire",
+    "historyTitle": "Amateka y'Ubushobozi",
+    "runAssessment": "Kora Isuzuma ry'Ingaruka",
+    "noRiskFactors": "Nta mpamvu z'ingaruka zabonetse",
+    "notEnoughData": "Amakuru ntahagije",
+    "logMoreReadings": "Andika nibura isuzuma rimwe ryubuzima",
     "riskLevel": "Urwego rw'Ingaruka",
     "riskFactors": "Impamvu z'Ingaruka"
   },
@@ -137,6 +143,8 @@
     "titleDoctor": "Ganira n'Umurwayi",
     "messagePlaceholder": "Andika ubutumwa...",
     "send": "Ohereza",
+    "online": "Arakorana ubu",
+    "noDoctor": "Ntabwo wagenewe umuganga ubu",
     "noMessages": "Nta butumwa burabaho. Tangira ikiganiro!",
     "today": "Uyu munsi",
     "yesterday": "Ejo"
