@@ -9,8 +9,7 @@ export const getMessages = async (doctorId: number): Promise<Message[]> => {
   const response = await axiosInstance.get<ApiResponse<Message[]>>(
     `/chat/messages/${doctorId}`,
   );
-  const data = response.data?.data;
-  return Array.isArray(data) ? data : (data?.messages ?? []);
+  return response.data.data ?? [];
 };
 
 export const sendMessage = async (

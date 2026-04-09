@@ -15,11 +15,10 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
 import { getMessages, sendMessage } from "../api/chatAPI";
-import { useSocket } from "../hooks/useSocket";
+import { useSocket } from "../context/SocketContext";
 import { COLORS } from "../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../utils/formatters";
 import { Message } from "../types";
-import { getChatRoomId } from "../utils/helpers";
 
 interface ChatUIProps {
   currentUserId: number;
@@ -37,6 +36,11 @@ interface PresenceResponse {
 interface ApiResponse<T> {
   data: T;
 }
+
+const getChatRoomId = (idA: number, idB: number): string => {
+  const [a, b] = [idA, idB].sort((x, y) => x - y);
+  return `chat_${a}_${b}`;
+};
 
 const shouldShowDateSeparator = (
   messages: Message[],
@@ -89,8 +93,7 @@ const ChatUI = ({
     try {
       setLoading(true);
       const data = await getMessages(otherUserId);
-      const chatMessages = Array.isArray(data) ? data : (data?.messages ?? []);
-      setMessages(chatMessages);
+      setMessages(data);
     } catch {
       setMessages([]);
     } finally {
