@@ -48,10 +48,9 @@ const DoctorNavigator = (): React.JSX.Element => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
-        headerStyle: { backgroundColor: COLORS.card },
-        headerTintColor: COLORS.textPrimary,
         tabBarIcon: ({ color, size }) => {
           const iconName: keyof typeof Ionicons.glyphMap =
             route.name === "DoctorDashboard"

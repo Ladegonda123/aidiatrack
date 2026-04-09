@@ -25,6 +25,7 @@ export interface HealthRecord {
   mealDesc?: string;
   mealGi?: number;
   mealCalories?: number;
+  calories?: number;
   activityLevel: ActivityLevel;
   insulinDose?: number;
   hba1c?: number;
@@ -66,6 +67,7 @@ export interface FoodItem {
   id: number;
   name: string;
   nameKin?: string;
+  displayName?: string;
   category: string;
   glycemicIndex: number;
   glycemicLoad: number;

@@ -2,6 +2,7 @@
   "common": {
     "appName": "AIDiaTrack",
     "save": "Save",
+    "ok": "OK",
     "cancel": "Cancel",
     "loading": "Loading...",
     "error": "Something went wrong. Please try again.",
@@ -102,13 +103,23 @@
     "activityHigh": "Intense",
     "notes": "Notes (optional)",
     "notesPlaceholder": "e.g. Felt dizzy after lunch",
+    "optionalSection": "Optional Details",
     "save": "Save Reading",
     "saving": "Saving...",
     "successTitle": "Reading Saved",
     "predictionMessage": "In 2 hours your glucose may reach {{value}} mg/dL",
     "riskLow": "LOW RISK — Keep it up!",
     "riskMedium": "MEDIUM RISK — Consider light activity",
-    "riskHigh": "HIGH RISK — Please contact your doctor"
+    "riskHigh": "HIGH RISK — Please contact your doctor",
+    "validation": {
+      "bloodGlucoseRequired": "Blood glucose is required",
+      "bloodGlucoseRange": "Must be between 20 and 600 mg/dL",
+      "bloodPressureFormat": "Format: 120/80",
+      "weightPositive": "Weight must be greater than 0",
+      "hba1cRange": "HbA1c must be between 0 and 20",
+      "insulinNonNegative": "Insulin dose must not be negative",
+      "notesMax": "Notes must be 500 characters or fewer"
+    }
   },
   "predictions": {
     "title": "AI Predictions",
@@ -192,6 +203,7 @@
   "foods": {
     "searchTitle": "Select Food",
     "recentTitle": "Recent Foods",
+    "caloriesUnit": "cal/100g",
     "categories": {
       "grain": "Grains & Starches",
       "legume": "Legumes & Beans",

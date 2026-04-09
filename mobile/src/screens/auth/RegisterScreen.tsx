@@ -15,7 +15,6 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { z } from "zod";
-import LanguageDropdown from "../../components/LanguageDropdown";
 import { RootStackParamList, UserRole } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
@@ -55,10 +54,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => <LanguageDropdown />,
-      headerStyle: { backgroundColor: COLORS.background },
-      headerTintColor: COLORS.primary,
-      headerShadowVisible: false,
+      headerShown: false,
     });
   }, [navigation, i18n.language]);
 

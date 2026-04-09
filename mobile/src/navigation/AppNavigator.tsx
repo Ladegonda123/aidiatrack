@@ -1,7 +1,6 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../utils/colors";
 import { RootStackParamList } from "../types";
@@ -15,7 +14,6 @@ import DoctorNavigator from "./DoctorNavigator";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = (): React.JSX.Element => {
-  const { t } = useTranslation();
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -33,12 +31,12 @@ const AppNavigator = (): React.JSX.Element => {
           <Stack.Screen
             name="Login"
             component={LoginScreen}
-            options={{ title: t("auth.login.title") }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="Register"
             component={RegisterScreen}
-            options={{ title: t("auth.register.title") }}
+            options={{ headerShown: false }}
           />
         </>
       ) : user.role === "PATIENT" ? (
@@ -57,12 +55,12 @@ const AppNavigator = (): React.JSX.Element => {
           <Stack.Screen
             name="PatientDetail"
             component={PatientDetail}
-            options={{ title: t("doctor.patientDetail.title") }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="DoctorChat"
             component={DoctorChat}
-            options={{ title: t("chat.titleDoctor") }}
+            options={{ headerShown: false }}
           />
         </>
       )}

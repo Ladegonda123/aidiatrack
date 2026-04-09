@@ -19,6 +19,8 @@ export interface HealthRecordInput {
   heightCm?: number;
   bloodPressure?: string;
   mealDesc?: string;
+  mealGi?: number;
+  mealCalories?: number;
   calories?: number;
   activityLevel?: ActivityLevel;
   insulinDose?: number;

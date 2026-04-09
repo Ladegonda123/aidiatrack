@@ -14,6 +14,16 @@ export const healthRecordSchema: ObjectSchema = Joi.object({
     "number.base": "Weight must be a number.",
     "number.positive": "Weight must be greater than 0.",
   }),
+  mealGi: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Meal GI must be a number.",
+    "number.integer": "Meal GI must be a whole number.",
+    "number.min": "Meal GI must not be negative.",
+  }),
+  mealCalories: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Meal calories must be a number.",
+    "number.integer": "Meal calories must be a whole number.",
+    "number.min": "Meal calories must not be negative.",
+  }),
   bloodPressure: Joi.string()
     .pattern(/^\d{2,3}\/\d{2,3}$/)
     .optional()
@@ -24,10 +34,10 @@ export const healthRecordSchema: ObjectSchema = Joi.object({
   mealDesc: Joi.string().trim().optional().allow("").messages({
     "string.base": "Meal description must be a string.",
   }),
-  calories: Joi.number().integer().positive().optional().messages({
+  calories: Joi.number().integer().min(0).optional().messages({
     "number.base": "Calories must be a number.",
     "number.integer": "Calories must be a whole number.",
-    "number.positive": "Calories must be greater than 0.",
+    "number.min": "Calories must not be negative.",
   }),
   activityLevel: Joi.string()
     .valid(...activityLevelValues)
@@ -36,9 +46,9 @@ export const healthRecordSchema: ObjectSchema = Joi.object({
       "string.base": "Activity level must be a string.",
       "any.only": "Activity level must be one of NONE, LOW, MODERATE, or HIGH.",
     }),
-  insulinDose: Joi.number().positive().optional().messages({
+  insulinDose: Joi.number().min(0).optional().messages({
     "number.base": "Insulin dose must be a number.",
-    "number.positive": "Insulin dose must be greater than 0.",
+    "number.min": "Insulin dose must not be negative.",
   }),
   hba1c: Joi.number().min(0).max(20).optional().messages({
     "number.base": "HbA1c must be a number.",

@@ -15,7 +15,6 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { z } from "zod";
-import LanguageDropdown from "../../components/LanguageDropdown";
 import { RootStackParamList } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
@@ -33,7 +32,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -42,12 +41,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => <LanguageDropdown />,
-      headerStyle: { backgroundColor: COLORS.background },
-      headerTintColor: COLORS.primary,
-      headerShadowVisible: false,
+      headerShown: false,
     });
-  }, [navigation, i18n.language]);
+  }, [navigation]);
 
   const {
     control,

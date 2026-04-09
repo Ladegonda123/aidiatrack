@@ -2,6 +2,7 @@
   "common": {
     "appName": "AIDiaTrack",
     "save": "Bika",
+    "ok": "Ni byiza",
     "cancel": "Reka",
     "loading": "Gutegereza...",
     "error": "Hari ikibazo. Ongera ugerageze.",
@@ -102,13 +103,23 @@
     "activityHigh": "Bikomeye",
     "notes": "Ibisobanuro (si ngombwa)",
     "notesPlaceholder": "urugero: Nashoye nyuma y'iyo yangu",
+    "optionalSection": "Amakuru Yongeye (Si Ngombwa)",
     "save": "Bika Isuzuma",
     "saving": "Birabikwa...",
     "successTitle": "Isuzuma Ribitswe",
     "predictionMessage": "Mu masaha 2 isukiraguciro ryawe rirashobora kugera kuri {{value}} mg/dL",
     "riskLow": "INGARUKA NSHURO — Komeza gutyo!",
     "riskMedium": "INGARUKA YO HAGATI — Fata ibikorwa byoroheje",
-    "riskHigh": "INGARUKA NINI — Baza umuganga wawe vuba"
+    "riskHigh": "INGARUKA NINI — Baza umuganga wawe vuba",
+    "validation": {
+      "bloodGlucoseRequired": "Isukiraguciro rirakenewe",
+      "bloodGlucoseRange": "Rigomba kuba hagati ya 20 na 600 mg/dL",
+      "bloodPressureFormat": "Imiterere: 120/80",
+      "weightPositive": "Ibiro bigomba kuba birenze 0",
+      "hba1cRange": "HbA1c igomba kuba hagati ya 0 na 20",
+      "insulinNonNegative": "Dose ya insuline ntigomba kuba munsi ya 0",
+      "notesMax": "Ibisobanuro bigomba kuba inyuguti 500 cyangwa munsi yayo"
+    }
   },
   "predictions": {
     "title": "Ubushobozi bwa AI",
@@ -192,6 +203,7 @@
   "foods": {
     "searchTitle": "Hitamo Indyo",
     "recentTitle": "Indyo za Vuba",
+    "caloriesUnit": "cal/100g",
     "categories": {
       "grain": "Ibinyampeke n'Ubunyobwa",
       "legume": "Ibiharage n'Imbuto",
