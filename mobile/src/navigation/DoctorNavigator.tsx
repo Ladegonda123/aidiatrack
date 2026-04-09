@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { COLORS } from "../utils/colors";
 import { DoctorTabParamList } from "../types";
-import DoctorDashboard from "../screens/doctor/DoctorDashboard";
+import DoctorDashboardScreen from "../screens/doctor/DoctorDashboardScreen";
 import DoctorChatList from "../screens/doctor/DoctorChatList";
 import ProfileScreen from "../screens/patient/ProfileScreen";
 
@@ -33,7 +33,7 @@ const DoctorNavigator = (): React.JSX.Element => {
     >
       <Tab.Screen
         name="DoctorDashboard"
-        component={DoctorDashboard}
+        component={DoctorDashboardScreen}
         options={{ title: t("doctor.dashboard.title") }}
       />
       <Tab.Screen

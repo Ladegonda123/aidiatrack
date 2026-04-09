@@ -173,6 +173,13 @@
   "doctor": {
     "dashboard": {
       "title": "Abarwayi Banjye",
+      "greeting": "Abarwayi Banjye",
+      "patientsCount": "abarwayi bangenewe",
+      "totalPatients": "Bose",
+      "highRisk": "Ingaruka Nini",
+      "mediumRisk": "Ingaruka Hagati",
+      "lowRisk": "Ingaruka Nto",
+      "noResults": "Nta barwayi babonetse",
       "noPatients": "Nta barwayi bangenewe",
       "searchPlaceholder": "Shakisha abarwayi...",
       "lastReading": "Isuzuma rya nyuma",
@@ -184,6 +191,9 @@
       "lastPrediction": "Ubushobozi bwa AI bwa Nyuma",
       "medications": "Imiti Ikorwa",
       "messageButton": "Ohereza Ubutumwa Umurwayi",
+      "yearsOld": "imyaka",
+      "normalRange": "Urwego busanzwe: 70–140 mg/dL",
+      "recentReadings": "Amasuzuma ya Vuba",
       "noRecords": "Nta makuru y'ubuzima arabonetse"
     },
     "assign": {

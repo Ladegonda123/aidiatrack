@@ -7,7 +7,7 @@ import { RootStackParamList } from "../types";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import DoctorChat from "../screens/doctor/DoctorChat";
-import PatientDetail from "../screens/doctor/PatientDetail";
+import PatientDetailScreen from "../screens/doctor/PatientDetailScreen";
 import PatientNavigator from "./PatientNavigator";
 import DoctorNavigator from "./DoctorNavigator";
 
@@ -54,7 +54,7 @@ const AppNavigator = (): React.JSX.Element => {
           />
           <Stack.Screen
             name="PatientDetail"
-            component={PatientDetail}
+            component={PatientDetailScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen

@@ -173,6 +173,13 @@
   "doctor": {
     "dashboard": {
       "title": "My Patients",
+      "greeting": "My Patients",
+      "patientsCount": "patients assigned",
+      "totalPatients": "Total",
+      "highRisk": "High Risk",
+      "mediumRisk": "Medium Risk",
+      "lowRisk": "Low Risk",
+      "noResults": "No patients found",
       "noPatients": "No patients assigned yet",
       "searchPlaceholder": "Search patients...",
       "lastReading": "Last reading",
@@ -184,6 +191,9 @@
       "lastPrediction": "Latest AI Prediction",
       "medications": "Active Medications",
       "messageButton": "Message Patient",
+      "yearsOld": "years old",
+      "normalRange": "Normal range: 70–140 mg/dL",
+      "recentReadings": "Recent Readings",
       "noRecords": "No health records yet"
     },
     "assign": {
