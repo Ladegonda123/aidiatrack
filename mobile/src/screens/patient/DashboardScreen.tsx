@@ -1,6 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  FlatList,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -9,12 +17,19 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useTranslation } from "react-i18next";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
 import { getPredictionHistory } from "../../api/predictionAPI";
+import {
+  AppNotification,
+  getNotifications,
+  markAllRead,
+} from "../../api/notificationAPI";
 import {
   HealthRecord,
   HealthSummary,
@@ -24,8 +39,6 @@ import {
 } from "../../types";
 import { COLORS, getBgColor } from "../../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../../utils/formatters";
-
-type Props = BottomTabScreenProps<PatientTabParamList, "Dashboard">;
 
 const getNextReminder = (
   meds: Medication[],
@@ -90,15 +103,26 @@ const formatReminderClock = (time: string): string => {
   return formatTime(date);
 };
 
-const DashboardScreen: React.FC<Props> = ({ navigation }) => {
+const DashboardScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<PatientTabParamList, "Dashboard">>();
   const { user } = useAuth();
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [lastPrediction, setLastPrediction] = useState<Prediction | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const loadDashboard = useCallback(async (): Promise<void> => {
     try {
@@ -114,6 +138,10 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
       setSummary(summaryData);
       setMedications(medsData.filter((m) => m.isActive));
       setLastPrediction(predictionsData[0] ?? null);
+
+      const notifData = await getNotifications();
+      setNotifications(notifData.notifications);
+      setUnreadCount(notifData.unreadCount);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : JSON.stringify(err);
       console.error("[Dashboard] Load failed:", message);
@@ -192,259 +220,370 @@ const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.primary]}
-          />
-        }
-      >
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {firstName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.greeting}>{greeting}</Text>
-                <Text style={styles.dateText}>{formatDate(new Date())}</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.bellButton}
-              onPress={() => {
-                // notifications — Phase 4.6
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={24}
-                color="#FFFFFF"
-              />
-              {shouldShowAlert && <View style={styles.bellDot} />}
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.streakBar}>
-            <Ionicons name="flame-outline" size={16} color="#FFD700" />
-            <Text style={styles.streakText}>
-              {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
-            </Text>
-            <View style={styles.streakDivider} />
-            <Ionicons
-              name="trending-up-outline"
-              size={16}
-              color="rgba(255,255,255,0.8)"
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <View style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
             />
-            <Text style={styles.streakText}>
-              {sevenDayAverage > 0
-                ? `${sevenDayAverage} mg/dL avg`
-                : t("dashboard.noReadings")}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.card}>
-            <View style={styles.readingCardHeader}>
-              <Text style={styles.cardLabel}>{t("dashboard.lastReading")}</Text>
-              {lastReading && bgStatusKey ? (
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: `${bgColor}20` },
-                  ]}
-                >
-                  <Text style={[styles.statusBadgeText, { color: bgColor }]}>
-                    {t(bgStatusKey)}
+          }
+        >
+          <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {firstName.charAt(0).toUpperCase()}
                   </Text>
                 </View>
-              ) : null}
-            </View>
-            {lastReading ? (
-              <View style={styles.readingRow}>
                 <View>
-                  <View style={styles.bgValueRow}>
-                    <Text style={[styles.bgValue, { color: bgColor }]}>
-                      {lastReading.bloodGlucose.toFixed(1)}
-                    </Text>
-                    <Text style={styles.bgUnit}>mg/dL</Text>
-                  </View>
-                  <Text style={styles.timeAgo}>
-                    {timeAgo(lastReading.recordedAt)}
-                  </Text>
-                </View>
-                <View style={styles.miniTrend}>
-                  {(summary?.trend?.slice(-5) ?? []).map((item, index) => {
-                    const trendValues = summary?.trend?.slice(-5) ?? [];
-                    const maxVal = Math.max(
-                      ...trendValues.map((entry) => entry.value),
-                    );
-                    const minVal = Math.min(
-                      ...trendValues.map((entry) => entry.value),
-                    );
-                    const range = maxVal - minVal || 1;
-                    const height = ((item.value - minVal) / range) * 30 + 10;
-
-                    return (
-                      <View
-                        key={`${item.date}-${index}`}
-                        style={styles.miniBarWrapper}
-                      >
-                        <View
-                          style={[
-                            styles.miniBar,
-                            {
-                              height,
-                              backgroundColor: getBgColor(item.value),
-                              opacity: index === 4 ? 1 : 0.4 + index * 0.15,
-                            },
-                          ]}
-                        />
-                      </View>
-                    );
-                  })}
+                  <Text style={styles.greeting}>{greeting}</Text>
+                  <Text style={styles.dateText}>{formatDate(new Date())}</Text>
                 </View>
               </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>📊</Text>
-                <Text style={styles.emptyText}>
-                  {t("dashboard.noReadings")}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.statsRow}>
-            {[
-              {
-                icon: "today-outline",
-                value: todayReadingCount.toString(),
-                label: t("dashboard.todayReadings"),
-                color: COLORS.primary,
-              },
-              {
-                icon: "analytics-outline",
-                value: sevenDayAverage > 0 ? sevenDayAverage.toFixed(0) : "--",
-                label: t("dashboard.sevenDayAverage"),
-                color:
-                  sevenDayAverage > 0
-                    ? getBgColor(sevenDayAverage)
-                    : COLORS.textSecondary,
-              },
-              {
-                icon: "list-outline",
-                value: (summary?.totalRecords ?? 0).toString(),
-                label: t("dashboard.totalRecords"),
-                color: COLORS.primary,
-              },
-            ].map((stat, index) => (
-              <View key={index} style={styles.statCard}>
+              <TouchableOpacity
+                style={styles.bellButton}
+                onPress={() => setShowNotifications(true)}
+                activeOpacity={0.7}
+              >
                 <Ionicons
-                  name={stat.icon as keyof typeof Ionicons.glyphMap}
-                  size={18}
-                  color={stat.color}
+                  name="notifications-outline"
+                  size={24}
+                  color="#FFFFFF"
                 />
-                <Text style={[styles.statValue, { color: stat.color }]}>
-                  {stat.value}
-                </Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadCount > 9 ? "9+" : unreadCount.toString()}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
 
-          <TouchableOpacity
-            style={styles.logButton}
-            onPress={() => navigation.navigate("LogHealth")}
-            activeOpacity={0.85}
-          >
-            <View style={styles.logButtonInner}>
-              <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
-              <Text style={styles.logButtonText}>
-                {t("dashboard.logReading")}
+            <View style={styles.streakBar}>
+              <Ionicons name="flame-outline" size={16} color="#FFD700" />
+              <Text style={styles.streakText}>
+                {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
+              </Text>
+              <View style={styles.streakDivider} />
+              <Ionicons
+                name="trending-up-outline"
+                size={16}
+                color="rgba(255,255,255,0.8)"
+              />
+              <Text style={styles.streakText}>
+                {sevenDayAverage > 0
+                  ? `${sevenDayAverage} mg/dL avg`
+                  : t("dashboard.noReadings")}
               </Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={18}
-              color="rgba(255,255,255,0.7)"
-            />
-          </TouchableOpacity>
+          </View>
 
-          {shouldShowAlert ? (
-            <TouchableOpacity
-              style={[
-                styles.alertCard,
-                {
-                  backgroundColor:
-                    lastPrediction.riskLevel === "HIGH"
-                      ? COLORS.danger
-                      : COLORS.warning,
-                },
-              ]}
-              onPress={() => navigation.navigate("Predictions")}
-              activeOpacity={0.9}
-            >
-              <Text>⚠️</Text>
-              <View style={styles.alertText}>
-                <Text style={styles.alertTitle}>{t("dashboard.aiAlert")}</Text>
-                <Text style={styles.alertBody}>
-                  {t("dashboard.highRiskWarning")}
+          <View style={styles.content}>
+            <View style={styles.card}>
+              <View style={styles.readingCardHeader}>
+                <Text style={styles.cardLabel}>
+                  {t("dashboard.lastReading")}
                 </Text>
+                {lastReading && bgStatusKey ? (
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: `${bgColor}20` },
+                    ]}
+                  >
+                    <Text style={[styles.statusBadgeText, { color: bgColor }]}>
+                      {t(bgStatusKey)}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-            </TouchableOpacity>
-          ) : null}
+              {lastReading ? (
+                <View style={styles.readingRow}>
+                  <View>
+                    <View style={styles.bgValueRow}>
+                      <Text style={[styles.bgValue, { color: bgColor }]}>
+                        {lastReading.bloodGlucose.toFixed(1)}
+                      </Text>
+                      <Text style={styles.bgUnit}>mg/dL</Text>
+                    </View>
+                    <Text style={styles.timeAgo}>
+                      {timeAgo(lastReading.recordedAt)}
+                    </Text>
+                  </View>
+                  <View style={styles.miniTrend}>
+                    {(summary?.trend?.slice(-5) ?? []).map((item, index) => {
+                      const trendValues = summary?.trend?.slice(-5) ?? [];
+                      const maxVal = Math.max(
+                        ...trendValues.map((entry) => entry.value),
+                      );
+                      const minVal = Math.min(
+                        ...trendValues.map((entry) => entry.value),
+                      );
+                      const range = maxVal - minVal || 1;
+                      const height = ((item.value - minVal) / range) * 30 + 10;
 
-          <TouchableOpacity
-            style={[styles.card, styles.medCard]}
-            onPress={() => navigation.navigate("Profile")}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.medIcon}>💊</Text>
-            <View style={styles.alertText}>
-              <Text style={styles.cardLabel}>
-                {t("dashboard.nextMedication")}
-              </Text>
-              {nextReminder ? (
-                <>
-                  <Text style={styles.medName}>
-                    {nextReminder.med.drugName} {nextReminder.med.dosage}
-                  </Text>
-                  <Text style={styles.medTime}>
-                    {formatReminderClock(nextReminder.time)}
-                  </Text>
-                </>
+                      return (
+                        <View
+                          key={`${item.date}-${index}`}
+                          style={styles.miniBarWrapper}
+                        >
+                          <View
+                            style={[
+                              styles.miniBar,
+                              {
+                                height,
+                                backgroundColor: getBgColor(item.value),
+                                opacity: index === 4 ? 1 : 0.4 + index * 0.15,
+                              },
+                            ]}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
               ) : (
-                <Text style={styles.medTime}>
-                  {t("dashboard.noMedications")}
-                </Text>
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyIcon}>📊</Text>
+                  <Text style={styles.emptyText}>
+                    {t("dashboard.noReadings")}
+                  </Text>
+                </View>
               )}
             </View>
-          </TouchableOpacity>
+
+            <View style={styles.statsRow}>
+              {[
+                {
+                  icon: "today-outline",
+                  value: todayReadingCount.toString(),
+                  label: t("dashboard.todayReadings"),
+                  color: COLORS.primary,
+                },
+                {
+                  icon: "analytics-outline",
+                  value:
+                    sevenDayAverage > 0 ? sevenDayAverage.toFixed(0) : "--",
+                  label: t("dashboard.sevenDayAverage"),
+                  color:
+                    sevenDayAverage > 0
+                      ? getBgColor(sevenDayAverage)
+                      : COLORS.textSecondary,
+                },
+                {
+                  icon: "list-outline",
+                  value: (summary?.totalRecords ?? 0).toString(),
+                  label: t("dashboard.totalRecords"),
+                  color: COLORS.primary,
+                },
+              ].map((stat, index) => (
+                <View key={index} style={styles.statCard}>
+                  <Ionicons
+                    name={stat.icon as keyof typeof Ionicons.glyphMap}
+                    size={18}
+                    color={stat.color}
+                  />
+                  <Text style={[styles.statValue, { color: stat.color }]}>
+                    {stat.value}
+                  </Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.logButton}
+              onPress={() => navigation.navigate("LogHealth")}
+              activeOpacity={0.85}
+            >
+              <View style={styles.logButtonInner}>
+                <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
+                <Text style={styles.logButtonText}>
+                  {t("dashboard.logReading")}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color="rgba(255,255,255,0.7)"
+              />
+            </TouchableOpacity>
+
+            {shouldShowAlert ? (
+              <TouchableOpacity
+                style={[
+                  styles.alertCard,
+                  {
+                    backgroundColor:
+                      lastPrediction.riskLevel === "HIGH"
+                        ? COLORS.danger
+                        : COLORS.warning,
+                  },
+                ]}
+                onPress={() => navigation.navigate("Predictions")}
+                activeOpacity={0.9}
+              >
+                <Text>⚠️</Text>
+                <View style={styles.alertText}>
+                  <Text style={styles.alertTitle}>
+                    {t("dashboard.aiAlert")}
+                  </Text>
+                  <Text style={styles.alertBody}>
+                    {t("dashboard.highRiskWarning")}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.card, styles.medCard]}
+              onPress={() => navigation.navigate("Profile")}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.medIcon}>💊</Text>
+              <View style={styles.alertText}>
+                <Text style={styles.cardLabel}>
+                  {t("dashboard.nextMedication")}
+                </Text>
+                {nextReminder ? (
+                  <>
+                    <Text style={styles.medName}>
+                      {nextReminder.med.drugName} {nextReminder.med.dosage}
+                    </Text>
+                    <Text style={styles.medTime}>
+                      {formatReminderClock(nextReminder.time)}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.medTime}>
+                    {t("dashboard.noMedications")}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+
+      <Modal
+        visible={showNotifications}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowNotifications(false)}
+      >
+        <View style={styles.notifOverlay}>
+          <View style={styles.notifPanel}>
+            <View style={styles.notifHandle} />
+
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifTitle}>
+                {t("notifications.panelTitle")}
+              </Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  await markAllRead();
+                  setUnreadCount(0);
+                  setNotifications((prev) =>
+                    prev.map((notification) => ({
+                      ...notification,
+                      isRead: true,
+                    })),
+                  );
+                }}
+              >
+                <Text style={styles.markReadText}>
+                  {t("notifications.markAllRead")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {notifications.length === 0 ? (
+              <View style={styles.notifEmpty}>
+                <Text style={styles.notifEmptyIcon}>🔔</Text>
+                <Text style={styles.notifEmptyText}>
+                  {t("notifications.empty")}
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={notifications}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const iconMap: Record<AppNotification["type"], string> = {
+                    chat: "💬",
+                    medication: "💊",
+                    bg_alert: "⚠️",
+                    system: "ℹ️",
+                  };
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.notifItem,
+                        !item.isRead && styles.notifItemUnread,
+                      ]}
+                      onPress={() => {
+                        if (item.type === "chat") {
+                          setShowNotifications(false);
+                          navigation.navigate("Chat");
+                        } else if (item.type === "bg_alert") {
+                          setShowNotifications(false);
+                          navigation.navigate("Predictions");
+                        }
+                      }}
+                    >
+                      <Text style={styles.notifIcon}>{iconMap[item.type]}</Text>
+                      <View style={styles.notifContent}>
+                        <Text style={styles.notifItemTitle}>{item.title}</Text>
+                        <Text style={styles.notifItemBody}>{item.body}</Text>
+                        <Text style={styles.notifItemTime}>
+                          {timeAgo(item.createdAt)}
+                        </Text>
+                      </View>
+                      {!item.isRead && <View style={styles.unreadDot} />}
+                    </TouchableOpacity>
+                  );
+                }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
+              />
+            )}
+
+            <TouchableOpacity
+              style={styles.notifClose}
+              onPress={() => setShowNotifications(false)}
+            >
+              <Text style={styles.notifCloseText}>{t("common.cancel")}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
-    </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
   headerRow: {
     flexDirection: "row",
@@ -488,16 +627,24 @@ const styles = StyleSheet.create({
     position: "relative",
     padding: 4,
   },
-  bellDot: {
+  bellBadge: {
     position: "absolute",
-    top: 4,
-    right: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 0,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: COLORS.danger,
-    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
     borderColor: COLORS.primary,
+  },
+  bellBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
   },
   streakBar: {
     flexDirection: "row",
@@ -647,6 +794,111 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+  notifOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  notifPanel: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    maxHeight: "75%",
+  },
+  notifHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.border,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  notifHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  notifTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+  markReadText: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  notifEmpty: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  notifEmptyIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  notifEmptyText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  notifItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    gap: 12,
+  },
+  notifItemUnread: {
+    backgroundColor: `${COLORS.primary}08`,
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  notifIcon: {
+    fontSize: 24,
+    marginTop: 2,
+  },
+  notifContent: {
+    flex: 1,
+  },
+  notifItemTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginBottom: 2,
+  },
+  notifItemBody: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
+  notifItemTime: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    marginTop: 6,
+  },
+  notifClose: {
+    paddingVertical: 16,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    marginTop: 8,
+  },
+  notifCloseText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
   },
   alertCard: {
     borderRadius: 12,

@@ -182,7 +182,10 @@
     "chatMessage": {
       "title": "New message from {{name}}",
       "body": "{{preview}}"
-    }
+    },
+    "panelTitle": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet"
   },
   "foods": {
     "searchTitle": "Select Food",

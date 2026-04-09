@@ -182,7 +182,10 @@
     "chatMessage": {
       "title": "Ubutumwa bushya buva kwa {{name}}",
       "body": "{{preview}}"
-    }
+    },
+    "panelTitle": "Imenyesha",
+    "markAllRead": "Siba byose nk'ibisomwe",
+    "empty": "Nta menyesha arabonetse"
   },
   "foods": {
     "searchTitle": "Hitamo Indyo",
