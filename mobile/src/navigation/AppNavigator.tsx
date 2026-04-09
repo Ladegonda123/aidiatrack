@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +16,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const AppNavigator = (): React.JSX.Element => {
   const { user, loading } = useAuth();
 
+  const destination = useMemo(() => {
+    if (!user) return "auth";
+    if (user.role === "DOCTOR") return "doctor";
+    return "patient";
+  }, [user?.id, user?.role]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -26,7 +32,7 @@ const AppNavigator = (): React.JSX.Element => {
 
   return (
     <Stack.Navigator>
-      {!user ? (
+      {destination === "auth" ? (
         <>
           <Stack.Screen
             name="Login"
@@ -39,13 +45,7 @@ const AppNavigator = (): React.JSX.Element => {
             options={{ headerShown: false }}
           />
         </>
-      ) : user.role === "PATIENT" ? (
-        <Stack.Screen
-          name="PatientTabs"
-          component={PatientNavigator}
-          options={{ headerShown: false }}
-        />
-      ) : (
+      ) : destination === "doctor" ? (
         <>
           <Stack.Screen
             name="DoctorTabs"
@@ -63,6 +63,12 @@ const AppNavigator = (): React.JSX.Element => {
             options={{ headerShown: false }}
           />
         </>
+      ) : (
+        <Stack.Screen
+          name="PatientTabs"
+          component={PatientNavigator}
+          options={{ headerShown: false }}
+        />
       )}
     </Stack.Navigator>
   );

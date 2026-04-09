@@ -134,13 +134,37 @@ const LogHealthScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<Props>();
   const bloodGlucoseRef = useRef<TextInput>(null);
-  const [selectedMeal, setSelectedMeal] = useState<SelectedMeal | null>(null);
+  const [selectedMeals, setSelectedMeals] = useState<SelectedMeal[]>([]);
   const [activityLevel, setActivityLevel] =
     useState<ActivityLevelOption>("NONE");
   const [showPrediction, setShowPrediction] = useState<boolean>(false);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [savedBg, setSavedBg] = useState<number>(0);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  const handleAddMeal = (meal: SelectedMeal): void => {
+    setSelectedMeals((prev) => [...prev, meal]);
+  };
+
+  const handleRemoveMeal = (index: number): void => {
+    setSelectedMeals((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Weighted average GI and total calories from all selected foods
+  const combinedMealData =
+    selectedMeals.length === 0
+      ? { mealGi: undefined, mealCalories: undefined, mealDesc: undefined }
+      : {
+          mealGi: Math.round(
+            selectedMeals.reduce((sum, m) => sum + m.mealGi, 0) /
+              selectedMeals.length,
+          ),
+          mealCalories: selectedMeals.reduce(
+            (sum, m) => sum + m.mealCalories,
+            0,
+          ),
+          mealDesc: selectedMeals.map((m) => m.mealDesc).join(", "),
+        };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -176,6 +200,7 @@ const LogHealthScreen = (): React.JSX.Element => {
       const bloodGlucose = Number(data.bloodGlucose);
       const result = await logHealthRecord({
         bloodGlucose,
+        ...combinedMealData,
         weightKg:
           data.weightKg && data.weightKg.trim().length > 0
             ? Number(data.weightKg)
@@ -190,10 +215,6 @@ const LogHealthScreen = (): React.JSX.Element => {
             ? Number(data.insulinDose)
             : undefined,
         notes: data.notes?.trim() || undefined,
-        mealGi: selectedMeal?.mealGi,
-        mealCalories: selectedMeal?.mealCalories,
-        calories: selectedMeal?.mealCalories,
-        mealDesc: selectedMeal?.mealDesc,
         activityLevel,
       });
 
@@ -270,8 +291,9 @@ const LogHealthScreen = (): React.JSX.Element => {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>{t("logHealth.meal")}</Text>
             <FoodPicker
-              onSelect={setSelectedMeal}
-              selectedDesc={selectedMeal?.mealDesc}
+              selectedMeals={selectedMeals}
+              onAdd={handleAddMeal}
+              onRemove={handleRemoveMeal}
               language={lang}
             />
           </View>

@@ -21,8 +21,9 @@ interface SelectedMeal {
 }
 
 interface Props {
-  onSelect: (meal: SelectedMeal) => void;
-  selectedDesc?: string;
+  selectedMeals: SelectedMeal[];
+  onAdd: (meal: SelectedMeal) => void;
+  onRemove: (index: number) => void;
   language: string;
 }
 
@@ -61,7 +62,12 @@ const GI_COLORS: Record<FoodItem["giCategory"], string> = {
   none: COLORS.textSecondary,
 };
 
-const FoodPicker: React.FC<Props> = ({ onSelect, selectedDesc, language }) => {
+const FoodPicker: React.FC<Props> = ({
+  selectedMeals,
+  onAdd,
+  onRemove,
+  language,
+}) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<FoodItem[]>([]);
@@ -100,7 +106,7 @@ const FoodPicker: React.FC<Props> = ({ onSelect, selectedDesc, language }) => {
           ? food.nameKin
           : (food.displayName ?? food.name);
 
-      onSelect({
+      onAdd({
         mealGi: food.glycemicIndex,
         mealCalories: food.caloriesPer100g,
         mealDesc: displayName,
@@ -109,12 +115,12 @@ const FoodPicker: React.FC<Props> = ({ onSelect, selectedDesc, language }) => {
       setResults([]);
       setShowResults(false);
     },
-    [language, onSelect],
+    [language, onAdd],
   );
 
   const handleQuickSelect = useCallback(
     (option: QuickSelectOption): void => {
-      onSelect({
+      onAdd({
         mealGi: option.gi,
         mealCalories: option.cal,
         mealDesc: t(option.labelKey),
@@ -123,7 +129,7 @@ const FoodPicker: React.FC<Props> = ({ onSelect, selectedDesc, language }) => {
       setResults([]);
       setShowResults(false);
     },
-    [onSelect, t],
+    [onAdd, t],
   );
 
   const getFoodName = (food: FoodItem): string =>
@@ -133,6 +139,42 @@ const FoodPicker: React.FC<Props> = ({ onSelect, selectedDesc, language }) => {
 
   return (
     <View>
+      {selectedMeals.length > 0 && (
+        <View style={styles.selectedList}>
+          {selectedMeals.map((meal, index) => (
+            <View key={index} style={styles.selectedItem}>
+              <Ionicons
+                name="checkmark-circle"
+                size={14}
+                color={COLORS.success}
+              />
+              <Text style={styles.selectedItemText} numberOfLines={1}>
+                {meal.mealDesc}
+              </Text>
+              <Text style={styles.selectedItemGi}>GI:{meal.mealGi}</Text>
+              <TouchableOpacity
+                onPress={() => onRemove(index)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close" size={14} color={COLORS.danger} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {selectedMeals.length > 1 && (
+            <View style={styles.avgRow}>
+              <Text style={styles.avgText}>
+                {t("logHealth.combinedGi") ?? "Combined GI average"}:{" "}
+                <Text style={{ fontWeight: "700", color: COLORS.primary }}>
+                  {Math.round(
+                    selectedMeals.reduce((sum, m) => sum + m.mealGi, 0) /
+                      selectedMeals.length,
+                  )}
+                </Text>
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
       <View style={styles.searchContainer}>
         <Ionicons
           name={"search-outline" as keyof typeof Ionicons.glyphMap}
@@ -219,19 +261,6 @@ const FoodPicker: React.FC<Props> = ({ onSelect, selectedDesc, language }) => {
               <View style={styles.resultSeparator} />
             )}
           />
-        </View>
-      ) : null}
-
-      {selectedDesc && !showResults ? (
-        <View style={styles.selectedMeal}>
-          <Ionicons
-            name={"checkmark-circle" as keyof typeof Ionicons.glyphMap}
-            size={16}
-            color={COLORS.success}
-          />
-          <Text style={styles.selectedText} numberOfLines={1}>
-            {selectedDesc}
-          </Text>
         </View>
       ) : null}
 
@@ -334,18 +363,37 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginHorizontal: 14,
   },
-  selectedMeal: {
+  selectedList: {
+    marginBottom: 10,
+    gap: 6,
+  },
+  selectedItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 8,
-    paddingHorizontal: 4,
+    backgroundColor: COLORS.success + "10",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  selectedText: {
-    fontSize: 13,
-    color: COLORS.success,
-    fontWeight: "500",
+  selectedItemText: {
     flex: 1,
+    fontSize: 13,
+    color: COLORS.textPrimary,
+    fontWeight: "500",
+  },
+  selectedItemGi: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: "600",
+  },
+  avgRow: {
+    paddingHorizontal: 4,
+    paddingTop: 2,
+  },
+  avgText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
   quickRow: {
     flexDirection: "row",

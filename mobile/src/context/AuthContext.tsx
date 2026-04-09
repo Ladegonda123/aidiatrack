@@ -109,11 +109,23 @@ export const AuthProvider = ({
   }, []);
 
   const updateLanguage = useCallback(async (lang: Language): Promise<void> => {
-    const updatedUser = await updateProfile({ language: lang });
-    await i18n.changeLanguage(lang);
-    await saveLanguage(lang);
-    await saveUser(updatedUser);
-    setUser(updatedUser);
+    try {
+      // 1. Change i18n immediately for UI responsiveness
+      await i18n.changeLanguage(lang);
+
+      // 2. Save to local storage
+      await saveLanguage(lang);
+
+      // 3. Update backend silently — do NOT await this
+      //    Awaiting causes re-render timing issues
+      updateProfile({ language: lang }).catch(() => {});
+
+      // 4. Update only the language field in user state
+      //    Use functional update to avoid stale closure
+      setUser((prev) => (prev ? { ...prev, language: lang } : prev));
+    } catch (error) {
+      // Silent failure — language already changed locally
+    }
   }, []);
 
   const value = useMemo<AuthContextType>(

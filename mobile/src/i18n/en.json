@@ -96,6 +96,8 @@
     "mealGiMedium": "Medium GI meal",
     "mealGiLow": "Low GI meal",
     "mealSkipped": "Skipped meal",
+    "combinedGi": "Combined GI average",
+    "addMoreFood": "Add another food",
     "activity": "Activity Level",
     "activityNone": "None",
     "activityLow": "Light",

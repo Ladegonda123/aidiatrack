@@ -68,7 +68,9 @@ const ProfileScreen = (): React.JSX.Element => {
           <Text style={styles.name}>{user?.fullName}</Text>
           <View style={styles.roleBadge}>
             <Text style={styles.roleText}>
-              {user?.role === "PATIENT" ? "🏥 Patient" : "👨‍⚕️ Doctor"}
+              {user?.role === "PATIENT"
+                ? `🏥 ${t("auth.register.rolePatient")}`
+                : `👨‍⚕️ ${t("auth.register.roleDoctor")}`}
             </Text>
           </View>
         </View>
