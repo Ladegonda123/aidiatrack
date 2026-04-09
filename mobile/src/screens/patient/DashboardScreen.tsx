@@ -243,7 +243,9 @@ const DashboardScreen = (): React.JSX.Element => {
                 </View>
                 <View>
                   <Text style={styles.greeting}>{greeting}</Text>
-                  <Text style={styles.dateText}>{formatDate(new Date(), lang)}</Text>
+                  <Text style={styles.dateText}>
+                    {formatDate(new Date(), lang)}
+                  </Text>
                 </View>
               </View>
               <TouchableOpacity

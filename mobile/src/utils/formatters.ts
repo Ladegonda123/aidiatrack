@@ -45,10 +45,7 @@ const EN_TIME_AGO = (seconds: number): string => {
   return `${months} months ago`;
 };
 
-export const formatDate = (
-  date: string | Date,
-  language = "rw",
-): string => {
+export const formatDate = (date: string | Date, language = "rw"): string => {
   const value = new Date(date);
   const base = format(value, "MMM dd, yyyy");
 
@@ -72,10 +69,7 @@ export const formatDateTime = (
   return `${datePart} ${timePart}`;
 };
 
-export const timeAgo = (
-  date: string | Date,
-  language = "rw",
-): string => {
+export const timeAgo = (date: string | Date, language = "rw"): string => {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
   return language === "rw" ? RW_TIME_AGO(seconds) : EN_TIME_AGO(seconds);
 };
