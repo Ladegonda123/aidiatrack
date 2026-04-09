@@ -104,7 +104,7 @@ const formatReminderClock = (time: string): string => {
 };
 
 const DashboardScreen = (): React.JSX.Element => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigation =
     useNavigation<BottomTabNavigationProp<PatientTabParamList, "Dashboard">>();
   const { user } = useAuth();
@@ -117,6 +117,7 @@ const DashboardScreen = (): React.JSX.Element => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const lang = i18n.language as "en" | "rw";
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -242,7 +243,7 @@ const DashboardScreen = (): React.JSX.Element => {
                 </View>
                 <View>
                   <Text style={styles.greeting}>{greeting}</Text>
-                  <Text style={styles.dateText}>{formatDate(new Date())}</Text>
+                  <Text style={styles.dateText}>{formatDate(new Date(), lang)}</Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -278,7 +279,7 @@ const DashboardScreen = (): React.JSX.Element => {
               />
               <Text style={styles.streakText}>
                 {sevenDayAverage > 0
-                  ? `${sevenDayAverage} mg/dL avg`
+                  ? t("dashboard.mgdlAvg", { value: sevenDayAverage })
                   : t("dashboard.noReadings")}
               </Text>
             </View>
@@ -313,7 +314,7 @@ const DashboardScreen = (): React.JSX.Element => {
                       <Text style={styles.bgUnit}>mg/dL</Text>
                     </View>
                     <Text style={styles.timeAgo}>
-                      {timeAgo(lastReading.recordedAt)}
+                      {timeAgo(lastReading.recordedAt, lang)}
                     </Text>
                   </View>
                   <View style={styles.miniTrend}>
@@ -543,7 +544,7 @@ const DashboardScreen = (): React.JSX.Element => {
                         <Text style={styles.notifItemTitle}>{item.title}</Text>
                         <Text style={styles.notifItemBody}>{item.body}</Text>
                         <Text style={styles.notifItemTime}>
-                          {timeAgo(item.createdAt)}
+                          {timeAgo(item.createdAt, lang)}
                         </Text>
                       </View>
                       {!item.isRead && <View style={styles.unreadDot} />}

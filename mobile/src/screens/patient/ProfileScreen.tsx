@@ -16,8 +16,9 @@ import { COLORS } from "../../utils/colors";
 import { formatDate } from "../../utils/formatters";
 
 const ProfileScreen = (): React.JSX.Element => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout, updateLanguage } = useAuth();
+  const lang = i18n.language as "en" | "rw";
 
   const handleLogout = (): void => {
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -51,7 +52,7 @@ const ProfileScreen = (): React.JSX.Element => {
     {
       icon: "calendar-outline",
       label: "Member since",
-      value: user ? formatDate(new Date()) : "--",
+      value: user ? formatDate(new Date(), lang) : "--",
     },
   ];
 

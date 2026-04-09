@@ -65,6 +65,8 @@
     "todayReadings": "Amasuzuma y'Uyu Munsi",
     "sevenDayAverage": "Impuzandengo y'Iminsi 7",
     "totalRecords": "Amasuzuma Yose",
+    "avgLabel": "avg",
+    "mgdlAvg": "{{value}} mg/dL kuri hagati",
     "averageBg": "Isukiraguciro Ryaverage",
     "mgdlUnit": "mg/dL",
     "nextMedication": "Umuti Ukurikira",

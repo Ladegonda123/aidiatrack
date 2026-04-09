@@ -65,6 +65,8 @@
     "todayReadings": "Today's Readings",
     "sevenDayAverage": "7-day Average",
     "totalRecords": "Total Records",
+    "avgLabel": "avg",
+    "mgdlAvg": "{{value}} mg/dL avg",
     "averageBg": "Average BG",
     "mgdlUnit": "mg/dL",
     "nextMedication": "Next Medication",
