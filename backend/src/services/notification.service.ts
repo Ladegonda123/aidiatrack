@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import prisma from "../config/database";
 import { ENV } from "../config/env";
 import logger from "../utils/logger";
+import { addNotification } from "../controllers/notification.controller";
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -143,6 +144,19 @@ export const sendMedicationReminder = async (
       channelId: "medication_reminders",
       data: { type: "medication_reminder", drugName },
     });
+
+    addNotification({
+      id: `med_${userId}_${Date.now()}`,
+      userId,
+      type: "medication",
+      title: lang === "rw" ? "Kwibutsa Umuti" : "Medication Reminder",
+      body:
+        lang === "rw"
+          ? `Ni igihe cyo gufata ${drugName} ${dosage}`
+          : `Time to take ${drugName} ${dosage}`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    });
   } catch (error: unknown) {
     logger.error("Failed to send medication reminder", { userId, error });
   }
@@ -167,6 +181,19 @@ export const sendHighBgAlert = async (
       body,
       channelId: "bg_alerts",
       data: { type: "bg_alert", bgValue: bgValue.toString() },
+    });
+
+    addNotification({
+      id: `bg_${userId}_${Date.now()}`,
+      userId,
+      type: "bg_alert",
+      title: lang === "rw" ? "Isukiraguciro Riri Hejuru" : "High Blood Glucose",
+      body:
+        lang === "rw"
+          ? `Isuzuma ryawe rya ${bgValue} mg/dL riri hejuru`
+          : `Your reading of ${bgValue} mg/dL is high`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error("Failed to send BG alert", { userId, error });
@@ -198,6 +225,19 @@ export const sendChatNotification = async (
       body,
       channelId: "general",
       data: { type: "chat_message", senderName },
+    });
+
+    addNotification({
+      id: `chat_${receiverId}_${Date.now()}`,
+      userId: receiverId,
+      type: "chat",
+      title:
+        lang === "rw"
+          ? `Ubutumwa buva kwa ${senderName}`
+          : `Message from ${senderName}`,
+      body: preview,
+      isRead: false,
+      createdAt: new Date().toISOString(),
     });
   } catch (error: unknown) {
     logger.error("Failed to send chat notification", { receiverId, error });
