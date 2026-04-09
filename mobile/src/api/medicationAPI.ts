@@ -13,9 +13,9 @@ interface AddMedicationData {
 }
 
 export const getMyMedications = async (): Promise<Medication[]> => {
-  const response =
-    await axiosInstance.get<ApiResponse<Medication[]>>("/medications/list");
-  return response.data.data;
+  const response = await axiosInstance.get("/medications/list");
+  const data = response.data?.data;
+  return Array.isArray(data) ? data : (data?.medications ?? []);
 };
 
 export const addMedication = async (
@@ -25,7 +25,11 @@ export const addMedication = async (
     "/medications/schedule",
     data,
   );
-  return response.data.data;
+  const medication = response.data.data ?? null;
+  if (!medication) {
+    throw new Error("Missing medication response data");
+  }
+  return medication;
 };
 
 export const deleteMedication = async (id: number): Promise<void> => {

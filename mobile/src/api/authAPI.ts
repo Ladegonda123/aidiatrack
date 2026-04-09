@@ -36,7 +36,11 @@ export const login = async (
     },
   );
 
-  return response.data.data;
+  const authData = response.data.data ?? null;
+  if (!authData) {
+    throw new Error("Missing login response data");
+  }
+  return authData;
 };
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
@@ -45,12 +49,20 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
     data,
   );
 
-  return response.data.data;
+  const authData = response.data.data ?? null;
+  if (!authData) {
+    throw new Error("Missing register response data");
+  }
+  return authData;
 };
 
 export const getMe = async (): Promise<User> => {
   const response = await axiosInstance.get<ApiResponse<User>>("/auth/me");
-  return response.data.data;
+  const user = response.data.data ?? null;
+  if (!user) {
+    throw new Error("Missing current user response data");
+  }
+  return user;
 };
 
 export const updateProfile = async (

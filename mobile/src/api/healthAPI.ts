@@ -25,16 +25,20 @@ export const getHealthHistory = async (
   page = 1,
   limit = 20,
 ): Promise<HealthRecord[]> => {
-  const response = await axiosInstance.get<ApiResponse<HealthRecord[]>>(
-    "/health-records/history",
-    { params: { page, limit } },
-  );
-  return response.data.data;
+  const response = await axiosInstance.get<
+    ApiResponse<HealthRecord[] | { records: HealthRecord[] }>
+  >("/health-records/history", { params: { page, limit } });
+  const data = response.data?.data;
+  return Array.isArray(data) ? data : (data?.records ?? []);
 };
 
 export const getHealthSummary = async (): Promise<HealthSummary> => {
   const response = await axiosInstance.get<ApiResponse<HealthSummary>>(
     "/health-records/summary",
   );
-  return response.data.data;
+  const summary = response.data.data ?? null;
+  if (!summary) {
+    throw new Error("Missing health summary response data");
+  }
+  return summary;
 };

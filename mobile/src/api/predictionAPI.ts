@@ -12,11 +12,9 @@ interface RiskAssessment {
 }
 
 export const getPredictionHistory = async (page = 1): Promise<Prediction[]> => {
-  const response = await axiosInstance.get<ApiResponse<Prediction[]>>(
-    "/predictions/history",
-    { params: { page } },
-  );
-  return response.data.data;
+  const response = await axiosInstance.get(`/predictions/history?page=${page}`);
+  const data = response.data?.data;
+  return Array.isArray(data) ? data : (data?.predictions ?? []);
 };
 
 export const getRiskAssessment = async (): Promise<RiskAssessment> => {

@@ -13,8 +13,11 @@ type PatientDetailResponse = User & {
 
 export const getMyPatients = async (): Promise<User[]> => {
   const response =
-    await axiosInstance.get<ApiResponse<User[]>>("/doctor/patients");
-  return response.data.data;
+    await axiosInstance.get<ApiResponse<User[] | { patients: User[] }>>(
+      "/doctor/patients",
+    );
+  const data = response.data?.data;
+  return Array.isArray(data) ? data : (data?.patients ?? []);
 };
 
 export const getPatientDetail = async (
