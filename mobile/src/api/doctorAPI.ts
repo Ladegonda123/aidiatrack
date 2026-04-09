@@ -11,6 +11,28 @@ type PatientDetailResponse = User & {
   medications: Medication[];
 };
 
+export interface DoctorListItem {
+  id: number;
+  fullName: string;
+  email: string;
+  phone?: string;
+  createdAt?: string;
+}
+
+export interface AssignedPatient {
+  id: number;
+  fullName: string;
+  email: string;
+  phone?: string;
+  role: "PATIENT";
+  dateOfBirth?: string;
+  gender?: string;
+  doctorId?: number | null;
+  fcmToken?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export const getMyPatients = async (): Promise<User[]> => {
   const response =
     await axiosInstance.get<ApiResponse<User[] | { patients: User[] }>>(
@@ -29,10 +51,12 @@ export const getPatientDetail = async (
   return response.data.data;
 };
 
-export const assignPatient = async (email: string): Promise<User> => {
-  const response = await axiosInstance.post<ApiResponse<User>>(
+export const assignPatient = async (
+  patientEmail: string,
+): Promise<AssignedPatient> => {
+  const response = await axiosInstance.post<ApiResponse<AssignedPatient>>(
     "/admin/assign-patient",
-    { email },
+    { patientEmail },
   );
   return response.data.data;
 };
@@ -40,6 +64,20 @@ export const assignPatient = async (email: string): Promise<User> => {
 export const getUnassignedPatients = async (): Promise<User[]> => {
   const response = await axiosInstance.get<ApiResponse<User[]>>(
     "/admin/unassigned-patients",
+  );
+  return response.data.data;
+};
+
+export const listDoctors = async (): Promise<DoctorListItem[]> => {
+  const response =
+    await axiosInstance.get<ApiResponse<DoctorListItem[]>>("/doctor/list");
+  return response.data.data ?? [];
+};
+
+export const assignDoctor = async (doctorId: number): Promise<User> => {
+  const response = await axiosInstance.post<ApiResponse<User>>(
+    "/doctor/assign",
+    { doctorId },
   );
   return response.data.data;
 };

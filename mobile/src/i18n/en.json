@@ -9,6 +9,7 @@
     "retry": "Try Again",
     "noData": "No data yet",
     "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
     "optional": "optional",
     "languageKinShort": "KIN",
     "languageEngShort": "ENG"
@@ -244,11 +245,44 @@
   },
   "profile": {
     "title": "My Profile",
+    "fullName": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "memberSince": "Member since",
     "language": "Language",
     "languageEn": "English",
     "languageRw": "Kinyarwanda",
+    "doctorActionsTitle": "Doctor tools",
+    "patientActionsTitle": "Your doctor",
+    "assignPatient": "Assign patient",
+    "assignPatientHint": "Look up a patient by email and assign them to you",
+    "selectDoctor": "Select doctor",
+    "selectDoctorHint": "Choose the doctor you want to work with",
     "logout": "Sign Out",
     "logoutConfirm": "Are you sure you want to sign out?"
+  },
+  "assignPatient": {
+    "title": "Assign Patient",
+    "subtitle": "Enter the patient email address to assign them to your care",
+    "emailLabel": "Patient email",
+    "emailPlaceholder": "patient@example.com",
+    "helper": "The patient must already have an account",
+    "button": "Assign Patient",
+    "success": "Patient assigned successfully",
+    "noPatient": "No patient found with that email",
+    "alreadyAssigned": "This patient is already assigned to another doctor",
+    "alreadyAssignedToYou": "This patient is already assigned to you"
+  },
+  "selectDoctor": {
+    "title": "Select Doctor",
+    "subtitle": "Choose the doctor you want to connect with",
+    "searchPlaceholder": "Search doctors...",
+    "loading": "Loading doctors...",
+    "noDoctors": "No doctors found",
+    "selected": "Selected doctor",
+    "button": "Choose Doctor",
+    "success": "Doctor assigned successfully",
+    "invalidSelection": "Please select a doctor first"
   },
   "bgLabels": {
     "low": "Low (Hypoglycemia)",

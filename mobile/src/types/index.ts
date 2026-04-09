@@ -14,6 +14,8 @@ export interface User {
   doctorId?: number;
   language: Language;
   fcmToken?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface HealthRecord {
@@ -99,6 +101,8 @@ export type RootStackParamList = {
   DoctorTabs: undefined;
   PatientDetail: { patientId: number; patientName: string };
   DoctorChat: { patientId: number; patientName: string };
+  AssignPatient: undefined;
+  SelectDoctor: undefined;
 };
 
 export type PatientTabParamList = {

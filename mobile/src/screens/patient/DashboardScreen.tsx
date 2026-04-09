@@ -7,8 +7,6 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
-  FlatList,
-  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -22,6 +20,7 @@ import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
+import NotificationPanel from "../../components/NotificationPanel";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
 import { getPredictionHistory } from "../../api/predictionAPI";
@@ -143,9 +142,7 @@ const DashboardScreen = (): React.JSX.Element => {
       const notifData = await getNotifications();
       setNotifications(notifData.notifications);
       setUnreadCount(notifData.unreadCount);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : JSON.stringify(err);
-      console.error("[Dashboard] Load failed:", message);
+    } catch {
       setError(t("common.error"));
     } finally {
       setLoading(false);
@@ -474,99 +471,32 @@ const DashboardScreen = (): React.JSX.Element => {
         </ScrollView>
       </View>
 
-      <Modal
+      <NotificationPanel
         visible={showNotifications}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowNotifications(false)}
-      >
-        <View style={styles.notifOverlay}>
-          <View style={styles.notifPanel}>
-            <View style={styles.notifHandle} />
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onClose={() => setShowNotifications(false)}
+        onMarkAllRead={async () => {
+          await markAllRead();
+          setUnreadCount(0);
+          setNotifications((prev) =>
+            prev.map((notification) => ({
+              ...notification,
+              isRead: true,
+            })),
+          );
+        }}
+        onNotificationPress={(item) => {
+          setShowNotifications(false);
+          if (item.type === "chat") {
+            navigation.navigate("Chat");
+          }
 
-            <View style={styles.notifHeader}>
-              <Text style={styles.notifTitle}>
-                {t("notifications.panelTitle")}
-              </Text>
-              <TouchableOpacity
-                onPress={async () => {
-                  await markAllRead();
-                  setUnreadCount(0);
-                  setNotifications((prev) =>
-                    prev.map((notification) => ({
-                      ...notification,
-                      isRead: true,
-                    })),
-                  );
-                }}
-              >
-                <Text style={styles.markReadText}>
-                  {t("notifications.markAllRead")}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {notifications.length === 0 ? (
-              <View style={styles.notifEmpty}>
-                <Text style={styles.notifEmptyIcon}>🔔</Text>
-                <Text style={styles.notifEmptyText}>
-                  {t("notifications.empty")}
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={notifications}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                  const iconMap: Record<AppNotification["type"], string> = {
-                    chat: "💬",
-                    medication: "💊",
-                    bg_alert: "⚠️",
-                    system: "ℹ️",
-                  };
-
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.notifItem,
-                        !item.isRead && styles.notifItemUnread,
-                      ]}
-                      onPress={() => {
-                        if (item.type === "chat") {
-                          setShowNotifications(false);
-                          navigation.navigate("Chat");
-                        } else if (item.type === "bg_alert") {
-                          setShowNotifications(false);
-                          navigation.navigate("Predictions");
-                        }
-                      }}
-                    >
-                      <Text style={styles.notifIcon}>{iconMap[item.type]}</Text>
-                      <View style={styles.notifContent}>
-                        <Text style={styles.notifItemTitle}>{item.title}</Text>
-                        <Text style={styles.notifItemBody}>{item.body}</Text>
-                        <Text style={styles.notifItemTime}>
-                          {timeAgo(item.createdAt, lang)}
-                        </Text>
-                      </View>
-                      {!item.isRead && <View style={styles.unreadDot} />}
-                    </TouchableOpacity>
-                  );
-                }}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
-              />
-            )}
-
-            <TouchableOpacity
-              style={styles.notifClose}
-              onPress={() => setShowNotifications(false)}
-            >
-              <Text style={styles.notifCloseText}>{t("common.cancel")}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+          if (item.type === "bg_alert") {
+            navigation.navigate("Predictions");
+          }
+        }}
+      />
     </SafeAreaView>
   );
 };

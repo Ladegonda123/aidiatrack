@@ -23,7 +23,12 @@ import { getMyPatients } from "../../api/doctorAPI";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 import { timeAgo } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
-import LanguageDropdown from "../../components/LanguageDropdown";
+import NotificationPanel from "../../components/NotificationPanel";
+import {
+  AppNotification,
+  getNotifications,
+  markAllRead,
+} from "../../api/notificationAPI";
 import { RootStackParamList, User } from "../../types";
 
 interface DashboardPatient extends User {
@@ -42,8 +47,11 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, updateLanguage } = useAuth();
+  const { user } = useAuth();
   const [patients, setPatients] = useState<DashboardPatient[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -67,11 +75,23 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
     }
   }, []);
 
+  const loadNotifications = useCallback(async (): Promise<void> => {
+    try {
+      const notifData = await getNotifications();
+      setNotifications(notifData.notifications);
+      setUnreadCount(notifData.unreadCount);
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     loadPatients().catch(() => {
       setLoading(false);
     });
-  }, [loadPatients]);
+    loadNotifications().catch(() => undefined);
+  }, [loadNotifications, loadPatients]);
 
   const filteredPatients = patients.filter(
     (patient) =>
@@ -82,8 +102,9 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
     await loadPatients();
+    await loadNotifications();
     setRefreshing(false);
-  }, [loadPatients]);
+  }, [loadNotifications, loadPatients]);
 
   const highRiskCount = patients.filter(
     (patient) => patient.lastPrediction?.riskLevel === "HIGH",
@@ -104,7 +125,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
             <View style={styles.headerLeft}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
-                  {user?.fullName.charAt(0).toUpperCase() ?? "D"}
+                  {user?.fullName?.charAt(0).toUpperCase() ?? "D"}
                 </Text>
               </View>
               <View>
@@ -118,7 +139,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
             </View>
             <TouchableOpacity
               style={styles.bellButton}
-              onPress={() => undefined}
+              onPress={() => setShowNotifications(true)}
               activeOpacity={0.7}
             >
               <Ionicons
@@ -126,6 +147,13 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
                 size={24}
                 color="#FFFFFF"
               />
+              {unreadCount > 0 ? (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>
+                    {unreadCount > 9 ? "9+" : unreadCount.toString()}
+                  </Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
           </View>
 
@@ -138,7 +166,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
             <TextInput
               style={styles.searchInput}
               placeholder={t("doctor.dashboard.searchPlaceholder")}
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor="rgba(255,255,255,0.72)"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -151,10 +179,6 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
                 />
               </TouchableOpacity>
             ) : null}
-          </View>
-
-          <View style={styles.languageRow}>
-            <LanguageDropdown onLanguageChange={updateLanguage} />
           </View>
         </View>
 
@@ -310,6 +334,23 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
           />
         )}
       </View>
+
+      <NotificationPanel
+        visible={showNotifications}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onClose={() => setShowNotifications(false)}
+        onMarkAllRead={async () => {
+          await markAllRead();
+          setUnreadCount(0);
+          setNotifications((prev) =>
+            prev.map((notification) => ({
+              ...notification,
+              isRead: true,
+            })),
+          );
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -360,6 +401,25 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   bellButton: { padding: 4 },
+  bellBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.danger,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+  },
+  bellBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -374,9 +434,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#FFFFFF",
     padding: 0,
-  },
-  languageRow: {
-    alignItems: "flex-end",
   },
   statsRow: {
     flexDirection: "row",

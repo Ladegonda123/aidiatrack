@@ -9,6 +9,7 @@
     "retry": "Ongera Ugerageze",
     "noData": "Nta makuru arabonetse",
     "required": "Ubu butaka busabwa",
+    "invalidEmail": "Andika aderesi ya imeyili ikoreshwa",
     "optional": "si ngombwa",
     "languageKinShort": "KIN",
     "languageEngShort": "ENG"
@@ -244,11 +245,44 @@
   },
   "profile": {
     "title": "Umwirondoro Wanjye",
+    "fullName": "Amazina yuzuye",
+    "email": "Imeyili",
+    "phone": "Numero ya telefoni",
+    "memberSince": "Umuntu yabayeho kuva",
     "language": "Ururimi",
     "languageEn": "Icyongereza",
     "languageRw": "Ikinyarwanda",
+    "doctorActionsTitle": "Ibikorwa bya muganga",
+    "patientActionsTitle": "Muganga wawe",
+    "assignPatient": "Shyira umurwayi",
+    "assignPatientHint": "Shaka umurwayi ukoresheje imeyili hanyuma umukorere assignment",
+    "selectDoctor": "Hitamo umuganga",
+    "selectDoctorHint": "Hitamo umuganga ushaka gukorana nawe",
     "logout": "Sohoka",
     "logoutConfirm": "Urashaka gusohoka?"
+  },
+  "assignPatient": {
+    "title": "Shyira Umurwayi",
+    "subtitle": "Andika aderesi ya imeyili y'umurwayi kugira ngo umushyire mu kwita ku buzima bwe",
+    "emailLabel": "Imeyili y'umurwayi",
+    "emailPlaceholder": "urugero@domain.com",
+    "helper": "Umurwayi agomba kuba asanzwe afite konti",
+    "button": "Shyira Umurwayi",
+    "success": "Umurwayi yashyizwe neza",
+    "noPatient": "Nta murwayi ubonetse kuri iyo imeyili",
+    "alreadyAssigned": "Uyu murwayi asanzwe afite undi muganga",
+    "alreadyAssignedToYou": "Uyu murwayi asanzwe ari uwe"
+  },
+  "selectDoctor": {
+    "title": "Hitamo Umuganga",
+    "subtitle": "Hitamo umuganga ushaka gukorana nawe",
+    "searchPlaceholder": "Shakisha abaganga...",
+    "loading": "Barimo gushakishwa...",
+    "noDoctors": "Nta baganga babonetse",
+    "selected": "Umuganga wahisemo",
+    "button": "Hitamo Umuganga",
+    "success": "Umuganga yashyizwe neza",
+    "invalidSelection": "Banza uhitemo umuganga"
   },
   "bgLabels": {
     "low": "Hasi (Hypoglycemia)",

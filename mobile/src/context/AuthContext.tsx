@@ -32,6 +32,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateLanguage: (lang: Language) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -61,6 +62,7 @@ export const AuthProvider = ({
         const me = await getMe();
         setUser(me);
         await saveUser(me);
+        await saveLanguage(me.language);
         await i18n.changeLanguage(me.language);
       } catch {
         await removeToken();
@@ -128,6 +130,14 @@ export const AuthProvider = ({
     }
   }, []);
 
+  const refreshUser = useCallback(async (): Promise<void> => {
+    const me = await getMe();
+    setUser(me);
+    await saveUser(me);
+    await saveLanguage(me.language);
+    await i18n.changeLanguage(me.language);
+  }, []);
+
   const value = useMemo<AuthContextType>(
     () => ({
       user,
@@ -136,9 +146,19 @@ export const AuthProvider = ({
       login,
       register,
       logout,
+      refreshUser,
       updateLanguage,
     }),
-    [loading, login, logout, register, token, updateLanguage, user],
+    [
+      loading,
+      login,
+      logout,
+      refreshUser,
+      register,
+      token,
+      updateLanguage,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

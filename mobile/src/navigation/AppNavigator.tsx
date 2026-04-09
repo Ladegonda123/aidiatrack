@@ -7,7 +7,9 @@ import { RootStackParamList } from "../types";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import DoctorChat from "../screens/doctor/DoctorChat";
+import AssignPatientScreen from "../screens/doctor/AssignPatientScreen";
 import PatientDetailScreen from "../screens/doctor/PatientDetailScreen";
+import SelectDoctorScreen from "../screens/patient/SelectDoctorScreen";
 import PatientNavigator from "./PatientNavigator";
 import DoctorNavigator from "./DoctorNavigator";
 
@@ -62,13 +64,25 @@ const AppNavigator = (): React.JSX.Element => {
             component={DoctorChat}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="AssignPatient"
+            component={AssignPatientScreen}
+            options={{ headerShown: false }}
+          />
         </>
       ) : (
-        <Stack.Screen
-          name="PatientTabs"
-          component={PatientNavigator}
-          options={{ headerShown: false }}
-        />
+        <>
+          <Stack.Screen
+            name="PatientTabs"
+            component={PatientNavigator}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="SelectDoctor"
+            component={SelectDoctorScreen}
+            options={{ headerShown: false }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );

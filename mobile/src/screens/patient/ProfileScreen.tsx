@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import {
   Alert,
   ScrollView,
@@ -10,15 +10,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import LanguageDropdown from "../../components/LanguageDropdown";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
 import { formatDate } from "../../utils/formatters";
+import { RootStackParamList } from "../../types";
 
 const ProfileScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, logout, updateLanguage } = useAuth();
   const lang = i18n.language as "en" | "rw";
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const handleLogout = (): void => {
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -36,23 +45,23 @@ const ProfileScreen = (): React.JSX.Element => {
   const infoRows = [
     {
       icon: "person-outline",
-      label: "Full Name",
+      label: t("profile.fullName"),
       value: user?.fullName ?? "--",
     },
     {
       icon: "mail-outline",
-      label: "Email",
+      label: t("profile.email"),
       value: user?.email ?? "--",
     },
     {
       icon: "call-outline",
-      label: "Phone",
+      label: t("profile.phone"),
       value: user?.phone ?? "--",
     },
     {
       icon: "calendar-outline",
-      label: "Member since",
-      value: user ? formatDate(new Date(), lang) : "--",
+      label: t("profile.memberSince"),
+      value: user?.createdAt ? formatDate(user.createdAt, lang) : "--",
     },
   ];
 
@@ -62,15 +71,15 @@ const ProfileScreen = (): React.JSX.Element => {
         <View style={styles.header}>
           <View style={styles.avatarLarge}>
             <Text style={styles.avatarText}>
-              {user?.fullName.charAt(0).toUpperCase() ?? "?"}
+              {user?.fullName?.charAt(0).toUpperCase() ?? "?"}
             </Text>
           </View>
           <Text style={styles.name}>{user?.fullName}</Text>
           <View style={styles.roleBadge}>
             <Text style={styles.roleText}>
               {user?.role === "PATIENT"
-                ? `🏥 ${t("auth.register.rolePatient")}`
-                : `👨‍⚕️ ${t("auth.register.roleDoctor")}`}
+                ? t("auth.register.rolePatient")
+                : t("auth.register.roleDoctor")}
             </Text>
           </View>
         </View>
@@ -111,6 +120,74 @@ const ProfileScreen = (): React.JSX.Element => {
             <LanguageDropdown onLanguageChange={updateLanguage} />
           </View>
         </View>
+
+        {user?.role === "DOCTOR" ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {t("profile.doctorActionsTitle")}
+            </Text>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate("AssignPatient")}
+              activeOpacity={0.85}
+            >
+              <View style={styles.actionButtonLeft}>
+                <Ionicons
+                  name="person-add-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <View>
+                  <Text style={styles.actionButtonText}>
+                    {t("profile.assignPatient")}
+                  </Text>
+                  <Text style={styles.actionButtonSubtext}>
+                    {t("profile.assignPatientHint")}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {user?.role === "PATIENT" ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {t("profile.patientActionsTitle")}
+            </Text>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate("SelectDoctor")}
+              activeOpacity={0.85}
+            >
+              <View style={styles.actionButtonLeft}>
+                <Ionicons
+                  name="medkit-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <View>
+                  <Text style={styles.actionButtonText}>
+                    {t("profile.selectDoctor")}
+                  </Text>
+                  <Text style={styles.actionButtonSubtext}>
+                    {t("profile.selectDoctorHint")}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <TouchableOpacity
           style={styles.logoutButton}
@@ -216,6 +293,29 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     maxWidth: 180,
     textAlign: "right",
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  actionButtonLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+    paddingRight: 12,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+  },
+  actionButtonSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   languageRow: {
     flexDirection: "row",
