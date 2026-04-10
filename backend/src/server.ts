@@ -20,6 +20,7 @@ import { errorMiddleware } from "./middleware/error.middleware";
 import chatRoutes from "./routes/chat.routes";
 import foodRoutes from "./routes/food.routes";
 import dietRoutes from "./routes/diet.routes";
+import uploadRoutes from "./routes/upload.routes";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -65,6 +66,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/diet", dietRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });

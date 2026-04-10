@@ -65,14 +65,39 @@ export const getMe = async (): Promise<User> => {
   return user;
 };
 
-export const updateProfile = async (
-  data: Partial<Omit<User, "id" | "role" | "email">>,
-): Promise<User> => {
-  const response = await axiosInstance.put<ApiResponse<User>>(
+export const updateProfile = async (data: Partial<User>): Promise<User> => {
+  const response = await axiosInstance.put<ApiResponse<{ user: User }>>(
     "/auth/profile",
     data,
   );
-  return response.data.data;
+  const payload = response.data.data;
+  return payload.user;
+};
+
+export const changePassword = async (
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> => {
+  await axiosInstance.put("/auth/change-password", {
+    currentPassword,
+    newPassword,
+  });
+};
+
+export const requestPasswordReset = async (email: string): Promise<void> => {
+  await axiosInstance.post("/auth/forgot-password", { email });
+};
+
+export const verifyOtpAndReset = async (
+  email: string,
+  otp: string,
+  newPassword: string,
+): Promise<void> => {
+  await axiosInstance.post("/auth/reset-password", {
+    email,
+    otp,
+    newPassword,
+  });
 };
 
 export const updateFcmToken = async (token: string): Promise<void> => {

@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
 import NotificationPanel from "../../components/NotificationPanel";
+import Avatar from "../../components/Avatar";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
 import { getPredictionHistory } from "../../api/predictionAPI";
@@ -230,6 +231,7 @@ const DashboardScreen = (): React.JSX.Element => {
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
         <ScrollView
+          style={styles.scroll}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -239,57 +241,60 @@ const DashboardScreen = (): React.JSX.Element => {
             />
           }
         >
-          <View style={styles.header}>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {firstName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={styles.greeting}>{greeting}</Text>
-                  <Text style={styles.dateText}>
-                    {formatDate(new Date(), lang)}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.bellButton}
-                onPress={() => setShowNotifications(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="notifications-outline"
-                  size={24}
-                  color="#FFFFFF"
-                />
-                {unreadCount > 0 && (
-                  <View style={styles.bellBadge}>
-                    <Text style={styles.bellBadgeText}>
-                      {unreadCount > 9 ? "9+" : unreadCount.toString()}
+          <View style={styles.headerBackground}>
+            <View style={styles.header}>
+              <View style={styles.headerRow}>
+                <View style={styles.headerLeft}>
+                  <Avatar
+                    photoUrl={user?.photoUrl ?? null}
+                    name={user?.fullName ?? firstName}
+                    size={52}
+                    style={styles.avatar}
+                  />
+                  <View>
+                    <Text style={styles.greeting}>{greeting}</Text>
+                    <Text style={styles.dateText}>
+                      {formatDate(new Date(), lang)}
                     </Text>
                   </View>
-                )}
-              </TouchableOpacity>
-            </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.bellButton}
+                  onPress={() => setShowNotifications(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="notifications-outline"
+                    size={24}
+                    color="#FFFFFF"
+                  />
+                  {unreadCount > 0 && (
+                    <View style={styles.bellBadge}>
+                      <Text style={styles.bellBadgeText}>
+                        {unreadCount > 9 ? "9+" : unreadCount.toString()}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.streakBar}>
-              <Ionicons name="flame-outline" size={16} color="#FFD700" />
-              <Text style={styles.streakText}>
-                {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
-              </Text>
-              <View style={styles.streakDivider} />
-              <Ionicons
-                name="trending-up-outline"
-                size={16}
-                color="rgba(255,255,255,0.8)"
-              />
-              <Text style={styles.streakText}>
-                {sevenDayAverage > 0
-                  ? t("dashboard.mgdlAvg", { value: sevenDayAverage })
-                  : t("dashboard.noReadings")}
-              </Text>
+              <View style={styles.streakBar}>
+                <Ionicons name="flame-outline" size={16} color="#FFD700" />
+                <Text style={styles.streakText}>
+                  {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
+                </Text>
+                <View style={styles.streakDivider} />
+                <Ionicons
+                  name="trending-up-outline"
+                  size={16}
+                  color="rgba(255,255,255,0.8)"
+                />
+                <Text style={styles.streakText}>
+                  {sevenDayAverage > 0
+                    ? t("dashboard.mgdlAvg", { value: sevenDayAverage })
+                    : t("dashboard.noReadings")}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -538,6 +543,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    overflow: "hidden",
+  },
+  scroll: {
+    backgroundColor: COLORS.background,
+  },
+  headerBackground: {
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -561,9 +573,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
   },
   avatarText: {
     color: "#FFFFFF",

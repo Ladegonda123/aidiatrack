@@ -25,6 +25,7 @@
       "button": "Sign In",
       "noAccount": "Don't have an account?",
       "register": "Register",
+      "forgotPassword": "Forgot Password?",
       "error": "Invalid email or password"
     },
     "register": {
@@ -46,6 +47,42 @@
       "button": "Create Account",
       "hasAccount": "Already have an account?",
       "login": "Sign In"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "subtitle": "Enter your email to receive a reset code",
+      "emailLabel": "Email Address",
+      "sendCode": "Send Reset Code",
+      "sending": "Sending...",
+      "step2Title": "Enter Reset Code",
+      "step2Subtitle": "Check your email for the 6-digit code",
+      "otpPlaceholder": "000000",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "resetButton": "Reset Password",
+      "success": "Password reset successfully"
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm New Password",
+      "button": "Update Password",
+      "success": "Password changed successfully",
+      "wrongCurrent": "Current password is incorrect"
+    },
+    "editProfile": {
+      "title": "Edit Profile",
+      "fullName": "Full Name",
+      "phone": "Phone Number",
+      "gender": "Gender",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "genderOther": "Other",
+      "dob": "Date of Birth",
+      "dobHint": "Format: YYYY-MM-DD",
+      "button": "Save Changes",
+      "success": "Profile updated successfully"
     },
     "validation": {
       "emailRequired": "Email is required",
@@ -272,6 +309,11 @@
     "language": "Language",
     "languageEn": "English",
     "languageRw": "Kinyarwanda",
+    "security": "Security",
+    "editProfile": "Edit Profile",
+    "changePassword": "Change Password",
+    "photoPermission": "Photo Permission Needed",
+    "photoPermissionMsg": "Please allow photo access to update profile picture",
     "doctorActionsTitle": "Doctor tools",
     "patientActionsTitle": "Your doctor",
     "assignPatient": "Assign patient",

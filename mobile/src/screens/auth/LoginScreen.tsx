@@ -81,8 +81,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         extraHeight={120}
       >
         <View style={styles.heroBlock}>
-          <Text style={styles.logo}>{t("common.appName")}</Text>
-          <Text style={styles.tagline}>{t("auth.login.subtitle")}</Text>
+          <Text style={styles.appName}>AIDiaTrack</Text>
+          <Text style={styles.subtitle}>{t("auth.login.subtitle")}</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -160,6 +160,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           )}
 
           <TouchableOpacity
+            onPress={() => navigation.navigate("ForgotPassword")}
+            style={styles.forgotWrapper}
+          >
+            <Text style={styles.forgotText}>
+              {t("auth.login.forgotPassword")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.button, loading ? styles.buttonDisabled : undefined]}
             onPress={handleSubmit(onLogin)}
             disabled={loading}
@@ -205,6 +214,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 26,
     alignItems: "center",
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: "800",
+    color: COLORS.primary,
+    textAlign: "center",
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    textAlign: "center",
+    color: COLORS.textSecondary,
+    fontSize: 14,
   },
   logo: {
     fontSize: 34,
@@ -287,6 +309,16 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
     fontWeight: "600",
     textAlign: "center",
+  },
+  forgotWrapper: {
+    alignSelf: "flex-end",
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  forgotText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: "600",
   },
   bottomLinkContainer: {
     marginTop: "auto",

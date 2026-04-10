@@ -25,6 +25,7 @@
       "button": "Injira",
       "noAccount": "Nta konti ufite?",
       "register": "Iyandikishe",
+      "forgotPassword": "Wibagiwe Ijambo ry'Ibanga?",
       "error": "Imeyili cyangwa ijambo ry'ibanga sibyo"
     },
     "register": {
@@ -46,6 +47,42 @@
       "button": "Fungura Konti",
       "hasAccount": "Usanzwe ufite konti?",
       "login": "Injira"
+    },
+    "forgotPassword": {
+      "title": "Wibagiwe Ijambo ry'Ibanga",
+      "subtitle": "Injiza imeyili yawe kugira ngo ubone kode yo gusubiramo",
+      "emailLabel": "Aderesi ya Imeyili",
+      "sendCode": "Ohereza Kode",
+      "sending": "Boherezwa...",
+      "step2Title": "Injiza Kode",
+      "step2Subtitle": "Reba imeyili yawe kode y'imibare 6",
+      "otpPlaceholder": "000000",
+      "newPassword": "Ijambo ry'Ibanga Rishya",
+      "confirmPassword": "Emeza Ijambo ry'Ibanga",
+      "resetButton": "Subiramo Ijambo ry'Ibanga",
+      "success": "Ijambo ry'ibanga ryahinduwe neza"
+    },
+    "changePassword": {
+      "title": "Hindura Ijambo ry'Ibanga",
+      "current": "Ijambo ry'Ibanga rya None",
+      "new": "Ijambo ry'Ibanga Rishya",
+      "confirm": "Emeza Ijambo ry'Ibanga Rishya",
+      "button": "Hindura Ijambo ry'Ibanga",
+      "success": "Ijambo ry'ibanga ryahinduwe neza",
+      "wrongCurrent": "Ijambo ry'ibanga rya none sibyo"
+    },
+    "editProfile": {
+      "title": "Hindura Umwirondoro",
+      "fullName": "Amazina Yuzuye",
+      "phone": "Numero ya Telefoni",
+      "gender": "Igitsina",
+      "genderMale": "Gabo",
+      "genderFemale": "Gore",
+      "genderOther": "Ibindi",
+      "dob": "Itariki y'Amavuko",
+      "dobHint": "Imiterere: YYYY-MM-DD",
+      "button": "Bika Impinduka",
+      "success": "Umwirondoro wahinduwe neza"
     },
     "validation": {
       "emailRequired": "Aderesi ya imeyili irakenewe",
@@ -272,6 +309,11 @@
     "language": "Ururimi",
     "languageEn": "Icyongereza",
     "languageRw": "Ikinyarwanda",
+    "security": "Umutekano",
+    "editProfile": "Hindura Umwirondoro",
+    "changePassword": "Hindura Ijambo ry'Ibanga",
+    "photoPermission": "Uburenganzira bwa Ifoto Busabwa",
+    "photoPermissionMsg": "Emera gufungura amafoto kugira ngo uhindure ifoto y'umwirondoro",
     "doctorActionsTitle": "Ibikorwa bya muganga",
     "patientActionsTitle": "Muganga wawe",
     "assignPatient": "Shyira umurwayi",

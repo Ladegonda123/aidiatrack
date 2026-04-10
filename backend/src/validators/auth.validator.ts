@@ -74,3 +74,93 @@ export const loginSchema: ObjectSchema = Joi.object({
 }).messages({
   "object.unknown": "Request contains an unsupported field.",
 });
+
+export const updateProfileSchema: ObjectSchema = Joi.object({
+  fullName: Joi.string().trim().min(2).optional().messages({
+    "string.base": "Full name must be a string.",
+    "string.min": "Full name must be at least 2 characters long.",
+  }),
+  phone: Joi.string()
+    .pattern(/^\d{10,15}$/)
+    .optional()
+    .allow("")
+    .messages({
+      "string.base": "Phone number must be a string of digits.",
+      "string.pattern.base": "Phone number must contain 10 to 15 digits.",
+    }),
+  gender: Joi.string().trim().optional().allow("").messages({
+    "string.base": "Gender must be a string.",
+  }),
+  dateOfBirth: Joi.date().iso().optional().messages({
+    "date.base": "Date of birth must be a valid date.",
+    "date.format": "Date of birth must be in a valid ISO date format.",
+    "date.isoDate": "Date of birth must be in ISO date format.",
+  }),
+  language: Joi.string().valid("en", "rw").optional().messages({
+    "string.base": "Language must be a string.",
+    "any.only": "Language must be either en or rw.",
+  }),
+  fcmToken: Joi.string().trim().optional().allow("").messages({
+    "string.base": "FCM token must be a string.",
+  }),
+}).messages({
+  "object.unknown": "Request contains an unsupported field.",
+});
+
+export const changePasswordSchema: ObjectSchema = Joi.object({
+  currentPassword: Joi.string().required().messages({
+    "string.base": "Current password must be a string.",
+    "string.empty": "Current password is required.",
+    "any.required": "Current password is required.",
+  }),
+  newPassword: Joi.string().min(8).required().messages({
+    "string.base": "New password must be a string.",
+    "string.empty": "New password is required.",
+    "string.min": "New password must be at least 8 characters long.",
+    "any.required": "New password is required.",
+  }),
+}).messages({
+  "object.unknown": "Request contains an unsupported field.",
+});
+
+export const forgotPasswordSchema: ObjectSchema = Joi.object({
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      "string.base": "Email must be a string.",
+      "string.empty": "Email is required.",
+      "string.email": "Email must be a valid email address.",
+      "any.required": "Email is required.",
+    }),
+}).messages({
+  "object.unknown": "Request contains an unsupported field.",
+});
+
+export const resetPasswordSchema: ObjectSchema = Joi.object({
+  email: Joi.string()
+    .trim()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      "string.base": "Email must be a string.",
+      "string.empty": "Email is required.",
+      "string.email": "Email must be a valid email address.",
+      "any.required": "Email is required.",
+    }),
+  otp: Joi.string().length(6).required().messages({
+    "string.base": "OTP must be a string.",
+    "string.length": "OTP must be 6 digits.",
+    "string.empty": "OTP is required.",
+    "any.required": "OTP is required.",
+  }),
+  newPassword: Joi.string().min(8).required().messages({
+    "string.base": "New password must be a string.",
+    "string.empty": "New password is required.",
+    "string.min": "New password must be at least 8 characters long.",
+    "any.required": "New password is required.",
+  }),
+}).messages({
+  "object.unknown": "Request contains an unsupported field.",
+});

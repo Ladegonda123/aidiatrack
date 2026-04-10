@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { isAxiosError } from "axios";
 import { assignDoctor, DoctorListItem, listDoctors } from "../../api/doctorAPI";
+import Avatar from "../../components/Avatar";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
 import { RootStackParamList } from "../../types";
@@ -146,9 +147,12 @@ const SelectDoctorScreen = (): React.JSX.Element => {
         activeOpacity={0.85}
       >
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {item.fullName.charAt(0).toUpperCase()}
-          </Text>
+          <Avatar
+            photoUrl={item.photoUrl ?? null}
+            name={item.fullName}
+            size={44}
+            style={styles.avatarImage}
+          />
         </View>
         <View style={styles.doctorInfo}>
           <Text style={styles.doctorName}>{item.fullName}</Text>
@@ -375,14 +379,11 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: `${COLORS.primary}15`,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
   },
-  avatarText: {
-    color: COLORS.primary,
-    fontSize: 18,
-    fontWeight: "700",
+  avatarImage: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   doctorInfo: {
     flex: 1,

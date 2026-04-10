@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LineChart } from "react-native-chart-kit";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getPatientDetail } from "../../api/doctorAPI";
+import Avatar from "../../components/Avatar";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 import { formatDate, timeAgo } from "../../utils/formatters";
 import {
@@ -190,11 +191,14 @@ const PatientDetailScreen = (): React.JSX.Element => {
           >
             <View style={styles.card}>
               <View style={styles.patientHeader}>
-                <View style={styles.bigAvatar}>
-                  <Text style={styles.bigAvatarText}>
-                    {patientName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+                <Avatar
+                  photoUrl={
+                    patient?.photoUrl ?? route.params.patientPhotoUrl ?? null
+                  }
+                  name={patient?.fullName ?? patientName}
+                  size={88}
+                  style={styles.bigAvatar}
+                />
                 <View style={styles.patientMeta}>
                   <Text style={styles.patientFullName}>{patientName}</Text>
                   {patient?.gender ? (
@@ -467,23 +471,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
   },
-  bigAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: `${COLORS.primary}20`,
-    alignItems: "center",
-    justifyContent: "center",
+  patientMeta: {
+    flex: 1,
   },
-  bigAvatarText: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
-  patientMeta: { flex: 1, gap: 3 },
   patientFullName: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: "700",
+    color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  bigAvatar: {
+    borderWidth: 3,
+    borderColor: COLORS.card,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
     color: COLORS.textPrimary,
   },
   metaText: {

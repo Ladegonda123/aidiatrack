@@ -35,6 +35,7 @@ export const getMyPatients = async (
         email: true,
         role: true,
         phone: true,
+        photoUrl: true,
         createdAt: true,
         healthRecords: {
           select: { recordedAt: true, bloodGlucose: true },
@@ -213,6 +214,7 @@ export const listDoctors = async (
         fullName: true,
         email: true,
         phone: true,
+        photoUrl: true,
         createdAt: true,
       },
     });

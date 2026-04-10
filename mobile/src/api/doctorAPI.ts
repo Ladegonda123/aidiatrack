@@ -16,6 +16,7 @@ export interface DoctorListItem {
   fullName: string;
   email: string;
   phone?: string;
+  photoUrl?: string | null;
   createdAt?: string;
 }
 
@@ -24,6 +25,7 @@ export interface AssignedPatient {
   fullName: string;
   email: string;
   phone?: string;
+  photoUrl?: string | null;
   role: "PATIENT";
   dateOfBirth?: string;
   gender?: string;

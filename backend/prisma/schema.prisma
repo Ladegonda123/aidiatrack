@@ -34,6 +34,7 @@ model User {
   phone        String?
   dateOfBirth  DateTime? @map("date_of_birth")
   gender       String?
+  photoUrl     String?   @map("photo_url")
   fcmToken     String?   @map("fcm_token")
   language     String    @default("rw")  @map("language")
   doctorId     Int?      @map("doctor_id")

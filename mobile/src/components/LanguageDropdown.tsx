@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -24,9 +24,29 @@ const LANGUAGES = [
 const LanguageDropdown: React.FC<Props> = ({ onLanguageChange }) => {
   const { i18n } = useTranslation();
   const [visible, setVisible] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 60,
+    right: 16,
+  });
+  const triggerRef = useRef<View | null>(null);
 
   const current =
     LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES[0];
+
+  const handleOpen = (): void => {
+    if (triggerRef.current) {
+      triggerRef.current.measureInWindow(
+        (_x: number, y: number, _width: number, height: number) => {
+          setDropdownPosition({
+            top: y + height + 6,
+            right: 16,
+          });
+        },
+      );
+    }
+
+    setVisible(true);
+  };
 
   const handleSelect = async (lang: Language): Promise<void> => {
     await i18n.changeLanguage(lang);
@@ -38,8 +58,9 @@ const LanguageDropdown: React.FC<Props> = ({ onLanguageChange }) => {
   return (
     <>
       <TouchableOpacity
+        ref={triggerRef as any}
         style={styles.trigger}
-        onPress={() => setVisible(true)}
+        onPress={handleOpen}
         activeOpacity={0.7}
       >
         <Text style={styles.globe}>🌐</Text>
@@ -54,7 +75,16 @@ const LanguageDropdown: React.FC<Props> = ({ onLanguageChange }) => {
         onRequestClose={() => setVisible(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
-          <Pressable style={styles.dropdown}>
+          <Pressable
+            style={[
+              styles.dropdown,
+              {
+                position: "absolute",
+                top: dropdownPosition.top,
+                right: dropdownPosition.right,
+              },
+            ]}
+          >
             {LANGUAGES.map((lang) => (
               <TouchableOpacity
                 key={lang.code}
@@ -111,9 +141,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.3)",
-    alignItems: "flex-end",
-    paddingTop: 60,
-    paddingRight: 16,
   },
   dropdown: {
     backgroundColor: COLORS.card,

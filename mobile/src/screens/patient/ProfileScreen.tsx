@@ -1,6 +1,8 @@
-import React, { useLayoutEffect } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,17 +14,21 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as ImagePicker from "expo-image-picker";
 import LanguageDropdown from "../../components/LanguageDropdown";
+import { uploadProfilePhoto } from "../../api/uploadAPI";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
 import { formatDate } from "../../utils/formatters";
+import { saveUser } from "../../utils/storage";
 import { RootStackParamList } from "../../types";
 
 const ProfileScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, logout, updateLanguage } = useAuth();
+  const { user, logout, updateLanguage, setUser } = useAuth();
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
   const lang = i18n.language as "en" | "rw";
 
   useLayoutEffect(() => {
@@ -40,6 +46,40 @@ const ProfileScreen = (): React.JSX.Element => {
         },
       },
     ]);
+  };
+
+  const handlePickPhoto = async (): Promise<void> => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(t("profile.photoPermission"), t("profile.photoPermissionMsg"));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) {
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      const updatedUser = await uploadProfilePhoto(result.assets[0].uri);
+      setUser((prev) => (prev ? { ...prev, photoUrl: updatedUser.photoUrl } : prev));
+
+      if (user) {
+        await saveUser({ ...user, photoUrl: updatedUser.photoUrl });
+      }
+    } catch {
+      Alert.alert(t("common.error"));
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const infoRows = [
@@ -73,23 +113,65 @@ const ProfileScreen = (): React.JSX.Element => {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
         >
-          <View style={styles.profileCard}>
-            <View style={styles.avatarLarge}>
-              <Text style={styles.avatarText}>
-                {user?.fullName?.charAt(0).toUpperCase() ?? "?"}
-              </Text>
-            </View>
-            <Text style={styles.name}>{user?.fullName}</Text>
+          <View style={styles.profileHeader}>
+            <TouchableOpacity
+              style={styles.avatarWrapper}
+              onPress={() => {
+                handlePickPhoto().catch(() => undefined);
+              }}
+              activeOpacity={0.85}
+            >
+              {user?.photoUrl ? (
+                <Image source={{ uri: user.photoUrl }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarText}>
+                    {user?.fullName?.charAt(0)?.toUpperCase() ?? "?"}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.cameraOverlay}>
+                <Ionicons name="camera" size={14} color="#FFFFFF" />
+              </View>
+              {uploadingPhoto ? (
+                <View style={styles.uploadOverlay}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                </View>
+              ) : null}
+            </TouchableOpacity>
+
+            <Text style={styles.profileName}>{user?.fullName}</Text>
             <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>
-                {user?.role === "PATIENT"
-                  ? `🏥 ${t("auth.register.rolePatient")}`
-                  : `👨‍⚕️ ${t("auth.register.roleDoctor")}`}
-              </Text>
+              <View style={styles.roleBadgeInner}>
+                <Text style={styles.roleEmoji}>
+                  {user?.role === "PATIENT" ? "🏥" : "👨‍⚕️"}
+                </Text>
+                <Text style={styles.roleText}>
+                  {user?.role === "PATIENT"
+                    ? t("auth.register.rolePatient")
+                    : t("auth.register.roleDoctor")}
+                </Text>
+              </View>
             </View>
+            <Text style={styles.profileEmail}>{user?.email}</Text>
           </View>
 
           <View style={styles.section}>
+            <TouchableOpacity
+              style={[styles.infoRow, styles.infoRowBorder]}
+              onPress={() => navigation.navigate("EditProfile")}
+            >
+              <View style={styles.infoLeft}>
+                <Ionicons name="create-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.infoLabel}>{t("profile.editProfile")}</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+
             {infoRows.map((row, index) => (
               <View
                 key={row.label}
@@ -115,66 +197,62 @@ const ProfileScreen = (): React.JSX.Element => {
             <Text style={styles.sectionTitle}>{t("profile.language")}</Text>
             <View style={styles.languageRow}>
               <View style={styles.infoLeft}>
-                <Ionicons
-                  name="language-outline"
-                  size={18}
-                  color={COLORS.primary}
-                />
+                <Ionicons name="language-outline" size={18} color={COLORS.primary} />
                 <Text style={styles.infoLabel}>{t("profile.language")}</Text>
               </View>
               <LanguageDropdown onLanguageChange={updateLanguage} />
             </View>
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("profile.security")}</Text>
+            <TouchableOpacity
+              style={styles.infoRow}
+              onPress={() => navigation.navigate("ChangePassword")}
+            >
+              <View style={styles.infoLeft}>
+                <Ionicons name="lock-closed-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.infoLabel}>{t("profile.changePassword")}</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
           {user?.role === "DOCTOR" ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {t("profile.doctorActionsTitle")}
-              </Text>
+              <Text style={styles.sectionTitle}>{t("profile.doctorActionsTitle")}</Text>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => navigation.navigate("AssignPatient")}
                 activeOpacity={0.85}
               >
                 <View style={styles.actionButtonLeft}>
-                  <Ionicons
-                    name="person-add-outline"
-                    size={18}
-                    color={COLORS.primary}
-                  />
+                  <Ionicons name="person-add-outline" size={18} color={COLORS.primary} />
                   <View>
-                    <Text style={styles.actionButtonText}>
-                      {t("profile.assignPatient")}
-                    </Text>
+                    <Text style={styles.actionButtonText}>{t("profile.assignPatient")}</Text>
                     <Text style={styles.actionButtonSubtext}>
                       {t("profile.assignPatientHint")}
                     </Text>
                   </View>
                 </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={COLORS.textSecondary}
-                />
+                <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : null}
 
           {user?.role === "PATIENT" ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {t("profile.patientActionsTitle")}
-              </Text>
+              <Text style={styles.sectionTitle}>{t("profile.patientActionsTitle")}</Text>
               <TouchableOpacity
                 style={[styles.infoRow, styles.infoRowBorder]}
                 onPress={() => navigation.navigate("Medications")}
               >
                 <View style={styles.infoLeft}>
-                  <Ionicons
-                    name="medkit-outline"
-                    size={18}
-                    color={COLORS.primary}
-                  />
+                  <Ionicons name="medkit-outline" size={18} color={COLORS.primary} />
                   <Text style={styles.infoLabel}>{t("medications.title")}</Text>
                 </View>
                 <Ionicons
@@ -189,25 +267,15 @@ const ProfileScreen = (): React.JSX.Element => {
                 activeOpacity={0.85}
               >
                 <View style={styles.actionButtonLeft}>
-                  <Ionicons
-                    name="medkit-outline"
-                    size={18}
-                    color={COLORS.primary}
-                  />
+                  <Ionicons name="medkit-outline" size={18} color={COLORS.primary} />
                   <View>
-                    <Text style={styles.actionButtonText}>
-                      {t("profile.selectDoctor")}
-                    </Text>
+                    <Text style={styles.actionButtonText}>{t("profile.selectDoctor")}</Text>
                     <Text style={styles.actionButtonSubtext}>
                       {t("profile.selectDoctorHint")}
                     </Text>
                   </View>
                 </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={COLORS.textSecondary}
-                />
+                <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -229,7 +297,7 @@ const ProfileScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
   },
   container: {
     flex: 1,
@@ -241,7 +309,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 8,
   },
-  profileCard: {
+  profileHeader: {
     backgroundColor: COLORS.card,
     alignItems: "center",
     paddingTop: 32,
@@ -249,19 +317,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 2,
   },
-  avatarLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  avatarWrapper: {
+    position: "relative",
+    marginBottom: 16,
+  },
+  avatarImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+  },
+  avatarCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -270,20 +346,54 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: "#FFFFFF",
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: "700",
   },
-  name: {
+  cameraOverlay: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.primaryDark,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: COLORS.card,
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileName: {
     fontSize: 22,
     fontWeight: "700",
     color: COLORS.textPrimary,
     marginBottom: 8,
+    textAlign: "center",
+  },
+  profileEmail: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   roleBadge: {
     backgroundColor: `${COLORS.primary}15`,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 4,
     borderRadius: 20,
+  },
+  roleBadgeInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  roleEmoji: {
+    fontSize: 14,
   },
   roleText: {
     color: COLORS.primary,
@@ -325,6 +435,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    flex: 1,
   },
   infoLabel: {
     fontSize: 14,

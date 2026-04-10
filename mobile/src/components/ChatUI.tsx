@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
 import { getMessages, sendMessage } from "../api/chatAPI";
 import { useSocket } from "../context/SocketContext";
+import Avatar from "./Avatar";
 import { COLORS } from "../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../utils/formatters";
 import { Message } from "../types";
@@ -24,6 +25,7 @@ interface ChatUIProps {
   currentUserId: number;
   otherUserId: number;
   otherUserName: string;
+  otherUserPhotoUrl?: string | null;
   onBack?: () => void;
 }
 
@@ -56,6 +58,7 @@ const ChatUI = ({
   currentUserId,
   otherUserId,
   otherUserName,
+  otherUserPhotoUrl,
   onBack,
 }: ChatUIProps): React.JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -244,11 +247,12 @@ const ChatUI = ({
 
         <View style={styles.headerInfo}>
           <View style={styles.avatarSmallWrapper}>
-            <View style={styles.avatarSmall}>
-              <Text style={styles.avatarSmallText}>
-                {otherUserName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            <Avatar
+              photoUrl={otherUserPhotoUrl}
+              name={otherUserName}
+              size={36}
+              style={styles.avatarSmall}
+            />
             {isOtherOnline ? <View style={styles.onlineDot} /> : null}
           </View>
           <View>
@@ -325,9 +329,12 @@ const ChatUI = ({
                     >
                       {!isMine ? (
                         <View style={styles.messageAvatar}>
-                          <Text style={styles.messageAvatarText}>
-                            {otherUserName.charAt(0).toUpperCase()}
-                          </Text>
+                          <Avatar
+                            photoUrl={otherUserPhotoUrl}
+                            name={otherUserName}
+                            size={28}
+                            style={styles.messageAvatarAvatar}
+                          />
                         </View>
                       ) : null}
 
@@ -432,12 +439,8 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   avatarSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
   },
   onlineDot: {
     position: "absolute",
@@ -508,17 +511,11 @@ const styles = StyleSheet.create({
   messageRowMine: { justifyContent: "flex-end" },
   messageRowOther: { justifyContent: "flex-start" },
   messageAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: `${COLORS.primary}20`,
-    alignItems: "center",
-    justifyContent: "center",
+    marginTop: 2,
   },
-  messageAvatarText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
+  messageAvatarAvatar: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   bubble: {
     maxWidth: "75%",

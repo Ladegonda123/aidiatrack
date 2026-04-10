@@ -44,6 +44,7 @@ const DoctorChat = (): React.JSX.Element => {
       currentUserId={user.id}
       otherUserId={params.patientId}
       otherUserName={params.patientName}
+      otherUserPhotoUrl={params.patientPhotoUrl ?? null}
       onBack={() => navigation.goBack()}
     />
   );

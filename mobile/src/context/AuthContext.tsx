@@ -26,6 +26,7 @@ import { Language, User } from "../types";
 
 interface AuthContextType {
   user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -141,6 +142,7 @@ export const AuthProvider = ({
   const value = useMemo<AuthContextType>(
     () => ({
       user,
+      setUser,
       token,
       loading,
       login,

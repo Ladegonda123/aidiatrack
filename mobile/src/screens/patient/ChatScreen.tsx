@@ -5,27 +5,14 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import ChatUI from "../../components/ChatUI";
 import { useAuth } from "../../hooks/useAuth";
-import axiosInstance from "../../api/axiosInstance";
+import { DoctorListItem, listDoctors } from "../../api/doctorAPI";
 import { COLORS } from "../../utils/colors";
-
-interface DoctorItem {
-  id: number;
-  fullName: string;
-}
-
-interface DoctorListResponse {
-  doctors?: DoctorItem[];
-}
-
-interface ApiResponse<T> {
-  data: T;
-}
 
 const ChatScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigation = useNavigation();
-  const [doctorName, setDoctorName] = useState<string>("");
+  const [doctor, setDoctor] = useState<DoctorListItem | null>(null);
   const [loadingDoctor, setLoadingDoctor] = useState<boolean>(true);
 
   useLayoutEffect(() => {
@@ -40,22 +27,18 @@ const ChatScreen = (): React.JSX.Element => {
       }
 
       try {
-        const response =
-          await axiosInstance.get<ApiResponse<DoctorListResponse>>(
-            "/doctor/list",
-          );
-        const doctors = response.data?.data?.doctors ?? [];
-        const doctor = doctors.find((item) => item.id === user.doctorId);
-        setDoctorName(doctor?.fullName ?? t("chat.title"));
+        const doctors = await listDoctors();
+        const matchedDoctor = doctors.find((item) => item.id === user.doctorId);
+        setDoctor(matchedDoctor ?? null);
       } catch {
-        setDoctorName(t("chat.title"));
+        setDoctor(null);
       } finally {
         setLoadingDoctor(false);
       }
     };
 
     fetchDoctorName().catch(() => {
-      setDoctorName(t("chat.title"));
+      setDoctor(null);
       setLoadingDoctor(false);
     });
   }, [t, user?.doctorId]);
@@ -97,7 +80,8 @@ const ChatScreen = (): React.JSX.Element => {
     <ChatUI
       currentUserId={user.id}
       otherUserId={user.doctorId}
-      otherUserName={doctorName || t("chat.title")}
+      otherUserName={doctor?.fullName || t("chat.title")}
+      otherUserPhotoUrl={doctor?.photoUrl ?? null}
     />
   );
 };

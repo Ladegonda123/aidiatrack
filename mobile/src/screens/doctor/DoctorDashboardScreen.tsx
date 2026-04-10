@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getMyPatients } from "../../api/doctorAPI";
+import Avatar from "../../components/Avatar";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 import { timeAgo } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
@@ -123,11 +124,12 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {user?.fullName?.charAt(0).toUpperCase() ?? "D"}
-                </Text>
-              </View>
+              <Avatar
+                photoUrl={user?.photoUrl ?? null}
+                name={user?.fullName ?? "Doctor"}
+                size={52}
+                style={styles.avatar}
+              />
               <View>
                 <Text style={styles.greeting}>
                   {t("doctor.dashboard.greeting")}
@@ -275,9 +277,12 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
                           : undefined,
                       ]}
                     >
-                      <Text style={styles.patientAvatarText}>
-                        {item.fullName.charAt(0).toUpperCase()}
-                      </Text>
+                      <Avatar
+                        photoUrl={item.photoUrl ?? null}
+                        name={item.fullName}
+                        size={44}
+                        style={styles.patientAvatarImage}
+                      />
                     </View>
                     <View style={styles.patientInfo}>
                       <Text style={styles.patientName}>{item.fullName}</Text>
@@ -365,6 +370,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
     gap: 14,
   },
   headerRow: {
@@ -378,12 +385,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
   },
   avatarText: {
     color: "#FFFFFF",
@@ -508,14 +514,14 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: `${COLORS.primary}15`,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
   },
   patientAvatarHigh: {
-    backgroundColor: `${COLORS.danger}20`,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: COLORS.danger,
+  },
+  patientAvatarImage: {
+    borderWidth: 0,
   },
   patientAvatarText: {
     fontSize: 18,

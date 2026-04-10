@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getMyPatients } from "../../api/doctorAPI";
+import Avatar from "../../components/Avatar";
 import { COLORS } from "../../utils/colors";
 import { RootStackParamList, User } from "../../types";
 
@@ -106,15 +107,17 @@ const DoctorChatList = (): React.JSX.Element => {
                   navigation.navigate("DoctorChat", {
                     patientId: item.id,
                     patientName: item.fullName,
+                    patientPhotoUrl: item.photoUrl ?? null,
                   });
                 }}
                 activeOpacity={0.7}
               >
-                <View style={styles.patientAvatar}>
-                  <Text style={styles.patientAvatarText}>
-                    {item.fullName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+                <Avatar
+                  photoUrl={item.photoUrl ?? null}
+                  name={item.fullName}
+                  size={44}
+                  style={styles.patientAvatar}
+                />
                 <View style={styles.patientInfo}>
                   <Text style={styles.patientName}>{item.fullName}</Text>
                   <Text style={styles.patientEmail}>{item.email}</Text>
@@ -174,17 +177,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   patientAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: `${COLORS.primary}20`,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  patientAvatarText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   patientInfo: { flex: 1 },
   patientName: {

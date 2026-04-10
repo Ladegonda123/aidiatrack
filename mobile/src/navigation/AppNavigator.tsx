@@ -5,10 +5,13 @@ import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../utils/colors";
 import { RootStackParamList } from "../types";
 import LoginScreen from "../screens/auth/LoginScreen";
+import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
 import DoctorChat from "../screens/doctor/DoctorChat";
 import AssignPatientScreen from "../screens/doctor/AssignPatientScreen";
 import PatientDetailScreen from "../screens/doctor/PatientDetailScreen";
+import EditProfileScreen from "../screens/patient/EditProfileScreen";
+import ChangePasswordScreen from "../screens/patient/ChangePasswordScreen";
 import SelectDoctorScreen from "../screens/patient/SelectDoctorScreen";
 import ReportsScreen from "../screens/patient/ReportsScreen";
 import MedicationScreen from "../screens/patient/MedicationScreen";
@@ -48,6 +51,11 @@ const AppNavigator = (): React.JSX.Element => {
             component={RegisterScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+            options={{ headerShown: false }}
+          />
         </>
       ) : destination === "doctor" ? (
         <>
@@ -71,6 +79,16 @@ const AppNavigator = (): React.JSX.Element => {
             component={AssignPatientScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
+            options={{ headerShown: false }}
+          />
         </>
       ) : (
         <>
@@ -92,6 +110,16 @@ const AppNavigator = (): React.JSX.Element => {
           <Stack.Screen
             name="SelectDoctor"
             component={SelectDoctorScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
             options={{ headerShown: false }}
           />
         </>

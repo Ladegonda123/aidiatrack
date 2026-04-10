@@ -12,6 +12,7 @@ export interface User {
   gender?: string;
   dateOfBirth?: string;
   doctorId?: number;
+  photoUrl?: string | null;
   language: Language;
   fcmToken?: string;
   createdAt?: string;
@@ -97,14 +98,25 @@ export interface DietRecommendation {
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
   PatientTabs: undefined;
   DoctorTabs: undefined;
   Reports: undefined;
   Medications: undefined;
-  PatientDetail: { patientId: number; patientName: string };
-  DoctorChat: { patientId: number; patientName: string };
+  PatientDetail: {
+    patientId: number;
+    patientName: string;
+    patientPhotoUrl?: string | null;
+  };
+  DoctorChat: {
+    patientId: number;
+    patientName: string;
+    patientPhotoUrl?: string | null;
+  };
   AssignPatient: undefined;
   SelectDoctor: undefined;
+  EditProfile: undefined;
+  ChangePassword: undefined;
 };
 
 export type PatientTabParamList = {
