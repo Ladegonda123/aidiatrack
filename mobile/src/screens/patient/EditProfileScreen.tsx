@@ -145,10 +145,11 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
               <TouchableOpacity
                 key={option.value}
                 style={[
-                  styles.genderChip,
-                  gender === option.value && styles.genderChipActive,
+                  styles.genderButton,
+                  gender === option.value && styles.genderButtonActive,
                 ]}
                 onPress={() => setGender(option.value)}
+                activeOpacity={0.7}
               >
                 <Text
                   style={[
@@ -229,27 +230,30 @@ const styles = StyleSheet.create({
   errorText: { color: COLORS.danger, fontSize: 12, marginTop: 4 },
   genderRow: {
     flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 20,
   },
-  genderChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
+  genderButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    alignItems: "center",
   },
-  genderChipActive: {
-    backgroundColor: `${COLORS.primary}15`,
+  genderButtonActive: {
     borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + "10",
   },
   genderText: {
-    color: COLORS.textPrimary,
-    fontWeight: "600",
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
   },
   genderTextActive: {
     color: COLORS.primary,
+    fontWeight: "700",
   },
   button: {
     marginTop: 18,
