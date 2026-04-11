@@ -19,7 +19,6 @@ import { RootStackParamList } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
 import { updateProfile } from "../../api/authAPI";
-import { saveUser } from "../../utils/storage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditProfile">;
 
@@ -30,6 +29,7 @@ const editProfileSchema = z.object({
 });
 
 type EditProfileValues = z.infer<typeof editProfileSchema>;
+type FormData = EditProfileValues;
 
 const GENDER_OPTIONS = [
   { value: "Male", labelKey: "auth.editProfile.genderMale" },
@@ -40,7 +40,7 @@ const GENDER_OPTIONS = [
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
   const { user, setUser } = useAuth();
-  const [saving, setSaving] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [gender, setGender] = useState<string>(user?.gender ?? "");
 
   useLayoutEffect(() => {
@@ -76,24 +76,54 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     },
   });
 
-  const onSubmit = async (values: EditProfileValues): Promise<void> => {
+  const onSubmit = async (data: FormData): Promise<void> => {
     try {
-      setSaving(true);
-      const updatedUser = await updateProfile({
-        fullName: values.fullName.trim(),
-        phone: values.phone?.trim() || undefined,
-        gender: gender || undefined,
-        dateOfBirth: values.dateOfBirth?.trim() || undefined,
-      });
-      setUser(updatedUser);
-      await saveUser(updatedUser);
-      Alert.alert(t("auth.editProfile.success"), undefined, [
-        { text: t("common.ok"), onPress: () => navigation.goBack() },
+      setSubmitting(true);
+
+      const payload: Record<string, unknown> = {
+        fullName: data.fullName,
+      };
+
+      if (data.phone?.trim()) {
+        payload.phone = data.phone.trim();
+      }
+
+      if (gender) {
+        payload.gender = gender;
+      }
+
+      if (data.dateOfBirth?.trim()) {
+        const dateObj = new Date(data.dateOfBirth.trim());
+        if (!isNaN(dateObj.getTime())) {
+          payload.dateOfBirth = dateObj.toISOString();
+        }
+      }
+
+      const updatedUser = await updateProfile(payload);
+
+      if (updatedUser) {
+        setUser((prev) => (prev ? { ...prev, ...updatedUser } : prev));
+      } else {
+        setUser((prev) => (prev ? { ...prev, ...payload } : prev));
+      }
+
+      Alert.alert(t("auth.editProfile.title"), t("auth.editProfile.success"), [
+        { text: "OK", onPress: () => navigation.goBack() },
       ]);
-    } catch {
-      Alert.alert(t("common.error"));
+    } catch (err: unknown) {
+      const backendMessage =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: unknown } } }).response
+          ?.data?.message === "string"
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : undefined;
+      console.error("[EditProfile] Save failed:", backendMessage);
+      Alert.alert(t("common.error"), backendMessage ?? t("common.error"));
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   };
 
@@ -180,11 +210,11 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.hint}>{t("auth.editProfile.dobHint")}</Text>
 
           <TouchableOpacity
-            style={[styles.button, saving && styles.buttonDisabled]}
+            style={[styles.button, submitting && styles.buttonDisabled]}
             onPress={handleSubmit(onSubmit)}
-            disabled={saving}
+            disabled={submitting}
           >
-            {saving ? (
+            {submitting ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <Text style={styles.buttonText}>
