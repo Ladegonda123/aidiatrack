@@ -8,13 +8,12 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
 import { getMessages, sendMessage } from "../api/chatAPI";
 import { useSocket } from "../context/SocketContext";
-import Avatar from "./Avatar";
 import { COLORS } from "../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../utils/formatters";
 import { Message } from "../types";
@@ -56,7 +55,6 @@ const ChatUI = ({
   currentUserId,
   otherUserId,
   otherUserName,
-  otherUserPhotoUrl,
   onBack,
 }: ChatUIProps): React.JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -66,12 +64,13 @@ const ChatUI = ({
   const [isOtherOnline, setIsOtherOnline] = useState<boolean>(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const flatListRef = useRef<FlatList<Message>>(null);
+  const insets = useSafeAreaInsets();
   const { socket } = useSocket();
   const { t, i18n } = useTranslation();
   const roomId = getChatRoomId(currentUserId, otherUserId);
 
   const getDateLabel = useCallback(
-    (dateStr: string): string => {
+    (dateStr: string, _language: string): string => {
       const date = new Date(dateStr);
       const today = new Date();
       const yesterday = new Date();
@@ -235,7 +234,7 @@ const ChatUI = ({
   }, [currentUserId, inputText, otherUserId, sending]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         {onBack ? (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -245,12 +244,11 @@ const ChatUI = ({
 
         <View style={styles.headerInfo}>
           <View style={styles.avatarSmallWrapper}>
-            <Avatar
-              photoUrl={otherUserPhotoUrl}
-              name={otherUserName}
-              size={36}
-              style={styles.avatarSmall}
-            />
+            <View style={styles.avatarSmall}>
+              <Text style={styles.avatarSmallText}>
+                {otherUserName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
             {isOtherOnline ? <View style={styles.onlineDot} /> : null}
           </View>
           <View>
@@ -264,7 +262,7 @@ const ChatUI = ({
               ]}
             >
               {isOtherOnline
-                ? t("chat.online")
+                ? (t("chat.online") ?? "Active now")
                 : lastSeen
                   ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
                   : t("chat.offline")}
@@ -273,145 +271,138 @@ const ChatUI = ({
         </View>
       </View>
 
-      <View style={styles.chatContainer}>
-        <View style={styles.messagesContainer}>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={COLORS.primary}
-              style={styles.loader}
-            />
-          ) : messages.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>💬</Text>
-              <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
-            </View>
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={(item, index) => `${item.id}_${index}`}
-              contentContainerStyle={styles.messagesList}
-              showsVerticalScrollIndicator={false}
-              inverted={false}
-              onContentSizeChange={() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-              }}
-              onLayout={() => {
-                flatListRef.current?.scrollToEnd({ animated: false });
-              }}
-              renderItem={({ item, index }) => {
-                const isMine = item.senderId === currentUserId;
-                const showSeparator = shouldShowDateSeparator(messages, index);
-
-                return (
-                  <>
-                    {showSeparator ? (
-                      <View style={styles.dateSeparator}>
-                        <View style={styles.dateLine} />
-                        <Text style={styles.dateLabel}>
-                          {getDateLabel(item.sentAt)}
+      <View style={styles.messagesArea}>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={styles.loader}
+          />
+        ) : messages.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>💬</Text>
+            <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item, index) => `${item.id}_${index}`}
+            contentContainerStyle={styles.messagesList}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+            onLayout={() =>
+              flatListRef.current?.scrollToEnd({ animated: false })
+            }
+            renderItem={({ item, index }) => {
+              const isMine = item.senderId === currentUserId;
+              const showSeparator = shouldShowDateSeparator(messages, index);
+              return (
+                <>
+                  {showSeparator && (
+                    <View style={styles.dateSeparator}>
+                      <View style={styles.dateLine} />
+                      <Text style={styles.dateLabel}>
+                        {getDateLabel(item.sentAt, i18n.language)}
+                      </Text>
+                      <View style={styles.dateLine} />
+                    </View>
+                  )}
+                  <View
+                    style={[
+                      styles.messageRow,
+                      isMine ? styles.messageRowMine : styles.messageRowOther,
+                    ]}
+                  >
+                    {!isMine && (
+                      <View style={styles.messageAvatar}>
+                        <Text style={styles.messageAvatarText}>
+                          {otherUserName.charAt(0).toUpperCase()}
                         </Text>
-                        <View style={styles.dateLine} />
                       </View>
-                    ) : null}
-
+                    )}
                     <View
                       style={[
-                        styles.messageRow,
-                        isMine ? styles.messageRowMine : styles.messageRowOther,
+                        styles.bubble,
+                        isMine ? styles.bubbleMine : styles.bubbleOther,
                       ]}
                     >
-                      {!isMine ? (
-                        <View style={styles.messageAvatar}>
-                          <Avatar
-                            photoUrl={otherUserPhotoUrl}
-                            name={otherUserName}
-                            size={28}
-                            style={styles.messageAvatarAvatar}
-                          />
-                        </View>
-                      ) : null}
-
-                      <View
+                      <Text
                         style={[
-                          styles.bubble,
-                          isMine ? styles.bubbleMine : styles.bubbleOther,
+                          styles.bubbleText,
+                          isMine
+                            ? styles.bubbleTextMine
+                            : styles.bubbleTextOther,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.bubbleText,
-                            isMine
-                              ? styles.bubbleTextMine
-                              : styles.bubbleTextOther,
-                          ]}
-                        >
-                          {item.content}
-                        </Text>
-
-                        <Text
-                          style={[
-                            styles.bubbleTime,
-                            isMine
-                              ? styles.bubbleTimeMine
-                              : styles.bubbleTimeOther,
-                          ]}
-                        >
-                          {formatTime(item.sentAt)}
-                          {isMine ? <Text> ✓</Text> : null}
-                        </Text>
-                      </View>
+                        {item.content}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.bubbleTime,
+                          isMine
+                            ? styles.bubbleTimeMine
+                            : styles.bubbleTimeOther,
+                        ]}
+                      >
+                        {formatTime(item.sentAt)}
+                        {isMine && " ✓"}
+                      </Text>
                     </View>
-                  </>
-                );
-              }}
-            />
-          )}
-        </View>
-
-        <View style={styles.inputBar}>
-          <TextInput
-            style={styles.messageInput}
-            placeholder={t("chat.messagePlaceholder")}
-            placeholderTextColor={COLORS.textSecondary}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={500}
-            returnKeyType="send"
-            onSubmitEditing={() => {
-              handleSend().catch(() => undefined);
+                  </View>
+                </>
+              );
             }}
-            blurOnSubmit={false}
           />
-
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!inputText.trim() || sending) && styles.sendButtonDisabled,
-            ]}
-            onPress={() => {
-              handleSend().catch(() => undefined);
-            }}
-            disabled={!inputText.trim() || sending}
-            activeOpacity={0.8}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Ionicons name="send" size={18} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
-    </SafeAreaView>
+
+      <View
+        style={[
+          styles.inputBar,
+          { paddingBottom: Math.max(insets.bottom, 16) },
+        ]}
+      >
+        <TextInput
+          style={styles.messageInput}
+          placeholder={t("chat.messagePlaceholder")}
+          placeholderTextColor={COLORS.textSecondary}
+          value={inputText}
+          onChangeText={setInputText}
+          multiline
+          maxLength={500}
+          returnKeyType="send"
+          onSubmitEditing={handleSend}
+          blurOnSubmit={false}
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            (!inputText.trim() || sending) && styles.sendButtonDisabled,
+          ]}
+          onPress={handleSend}
+          disabled={!inputText.trim() || sending}
+          activeOpacity={0.8}
+        >
+          {sending ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Ionicons name="send" size={18} color="#FFFFFF" />
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  chatContainer: { flex: 1, backgroundColor: COLORS.background },
+  root: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
   header: {
     backgroundColor: COLORS.primary,
     flexDirection: "row",
@@ -430,12 +421,14 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  avatarSmallWrapper: {
-    position: "relative",
-  },
+  avatarSmallWrapper: { position: "relative" },
   avatarSmall: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   onlineDot: {
     position: "absolute",
@@ -459,11 +452,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   headerOnline: {
-    color: "rgba(255,255,255,0.75)",
     fontSize: 12,
   },
-  loader: { flex: 1, justifyContent: "center" },
-  messagesContainer: { flex: 1 },
+  messagesArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+  },
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -479,7 +477,6 @@ const styles = StyleSheet.create({
   messagesList: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 4,
   },
   dateSeparator: {
     flexDirection: "row",
@@ -506,11 +503,21 @@ const styles = StyleSheet.create({
   messageRowMine: { justifyContent: "flex-end" },
   messageRowOther: { justifyContent: "flex-start" },
   messageAvatar: {
-    marginTop: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary + "20",
+    alignItems: "center",
+    justifyContent: "center",
   },
   messageAvatarAvatar: {
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  messageAvatarText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
   },
   bubble: {
     maxWidth: "75%",
@@ -545,8 +552,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    paddingBottom: 16,
+    paddingTop: 10,
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -572,6 +578,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 0,
   },
   sendButtonDisabled: {
     backgroundColor: COLORS.textSecondary,
