@@ -52,12 +52,15 @@ const ProfileScreen = (): React.JSX.Element => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert(t("profile.photoPermission"), t("profile.photoPermissionMsg"));
+      Alert.alert(
+        t("profile.photoPermission"),
+        t("profile.photoPermissionMsg"),
+      );
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"] as ImagePicker.MediaType[],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -70,7 +73,9 @@ const ProfileScreen = (): React.JSX.Element => {
     try {
       setUploadingPhoto(true);
       const updatedUser = await uploadProfilePhoto(result.assets[0].uri);
-      setUser((prev) => (prev ? { ...prev, photoUrl: updatedUser.photoUrl } : prev));
+      setUser((prev) =>
+        prev ? { ...prev, photoUrl: updatedUser.photoUrl } : prev,
+      );
 
       if (user) {
         await saveUser({ ...user, photoUrl: updatedUser.photoUrl });
@@ -122,7 +127,10 @@ const ProfileScreen = (): React.JSX.Element => {
               activeOpacity={0.85}
             >
               {user?.photoUrl ? (
-                <Image source={{ uri: user.photoUrl }} style={styles.avatarImage} />
+                <Image
+                  source={{ uri: user.photoUrl }}
+                  style={styles.avatarImage}
+                />
               ) : (
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarText}>
@@ -162,7 +170,11 @@ const ProfileScreen = (): React.JSX.Element => {
               onPress={() => navigation.navigate("EditProfile")}
             >
               <View style={styles.infoLeft}>
-                <Ionicons name="create-outline" size={18} color={COLORS.primary} />
+                <Ionicons
+                  name="create-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
                 <Text style={styles.infoLabel}>{t("profile.editProfile")}</Text>
               </View>
               <Ionicons
@@ -197,7 +209,11 @@ const ProfileScreen = (): React.JSX.Element => {
             <Text style={styles.sectionTitle}>{t("profile.language")}</Text>
             <View style={styles.languageRow}>
               <View style={styles.infoLeft}>
-                <Ionicons name="language-outline" size={18} color={COLORS.primary} />
+                <Ionicons
+                  name="language-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
                 <Text style={styles.infoLabel}>{t("profile.language")}</Text>
               </View>
               <LanguageDropdown onLanguageChange={updateLanguage} />
@@ -211,8 +227,14 @@ const ProfileScreen = (): React.JSX.Element => {
               onPress={() => navigation.navigate("ChangePassword")}
             >
               <View style={styles.infoLeft}>
-                <Ionicons name="lock-closed-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.infoLabel}>{t("profile.changePassword")}</Text>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.infoLabel}>
+                  {t("profile.changePassword")}
+                </Text>
               </View>
               <Ionicons
                 name="chevron-forward"
@@ -224,35 +246,53 @@ const ProfileScreen = (): React.JSX.Element => {
 
           {user?.role === "DOCTOR" ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t("profile.doctorActionsTitle")}</Text>
+              <Text style={styles.sectionTitle}>
+                {t("profile.doctorActionsTitle")}
+              </Text>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => navigation.navigate("AssignPatient")}
                 activeOpacity={0.85}
               >
                 <View style={styles.actionButtonLeft}>
-                  <Ionicons name="person-add-outline" size={18} color={COLORS.primary} />
+                  <Ionicons
+                    name="person-add-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
                   <View>
-                    <Text style={styles.actionButtonText}>{t("profile.assignPatient")}</Text>
+                    <Text style={styles.actionButtonText}>
+                      {t("profile.assignPatient")}
+                    </Text>
                     <Text style={styles.actionButtonSubtext}>
                       {t("profile.assignPatientHint")}
                     </Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             </View>
           ) : null}
 
           {user?.role === "PATIENT" ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t("profile.patientActionsTitle")}</Text>
+              <Text style={styles.sectionTitle}>
+                {t("profile.patientActionsTitle")}
+              </Text>
               <TouchableOpacity
                 style={[styles.infoRow, styles.infoRowBorder]}
                 onPress={() => navigation.navigate("Medications")}
               >
                 <View style={styles.infoLeft}>
-                  <Ionicons name="medkit-outline" size={18} color={COLORS.primary} />
+                  <Ionicons
+                    name="medkit-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
                   <Text style={styles.infoLabel}>{t("medications.title")}</Text>
                 </View>
                 <Ionicons
@@ -267,15 +307,25 @@ const ProfileScreen = (): React.JSX.Element => {
                 activeOpacity={0.85}
               >
                 <View style={styles.actionButtonLeft}>
-                  <Ionicons name="medkit-outline" size={18} color={COLORS.primary} />
+                  <Ionicons
+                    name="medkit-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
                   <View>
-                    <Text style={styles.actionButtonText}>{t("profile.selectDoctor")}</Text>
+                    <Text style={styles.actionButtonText}>
+                      {t("profile.selectDoctor")}
+                    </Text>
                     <Text style={styles.actionButtonSubtext}>
                       {t("profile.selectDoctorHint")}
                     </Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             </View>
           ) : null}

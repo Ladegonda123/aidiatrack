@@ -1,38 +1,9 @@
 import { Request, Response } from "express";
-import { Readable } from "stream";
-import cloudinary from "../config/cloudinary";
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
 import prisma from "../config/database";
 import { sendSuccess, sendError } from "../utils/response";
 import { logger } from "../utils/logger";
-
-const uploadBufferToCloudinary = async (
-  buffer: Buffer,
-  userId: number,
-): Promise<{ secure_url: string }> => {
-  return await new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: "aidiatrack/profiles",
-        public_id: `user_${userId}`,
-        overwrite: true,
-        transformation: [
-          { width: 200, height: 200, crop: "fill", gravity: "face" },
-          { quality: "auto", fetch_format: "auto" },
-        ],
-      },
-      (error, result) => {
-        if (error || !result) {
-          reject(error ?? new Error("Cloudinary upload failed"));
-          return;
-        }
-
-        resolve({ secure_url: result.secure_url });
-      },
-    );
-
-    Readable.from(buffer).pipe(uploadStream);
-  });
-};
 
 export const uploadProfilePhoto = async (
   req: Request,
@@ -46,29 +17,57 @@ export const uploadProfilePhoto = async (
       return;
     }
 
-    const uploaded = await uploadBufferToCloudinary(req.file.buffer, userId);
+    const uploadToCloudinary = (): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "aidiatrack/profiles",
+            public_id: `user_${userId}`,
+            overwrite: true,
+            transformation: [
+              {
+                width: 200,
+                height: 200,
+                crop: "fill",
+                gravity: "face",
+              },
+              { quality: "auto", fetch_format: "auto" },
+            ],
+          },
+          (error, result) => {
+            if (error || !result) {
+              reject(error ?? new Error("Upload failed"));
+            } else {
+              resolve(result.secure_url);
+            }
+          },
+        );
 
-    const updatedUser = await prisma.user.update({
+        streamifier.createReadStream(req.file!.buffer).pipe(uploadStream);
+      });
+    };
+
+    const photoUrl = await uploadToCloudinary();
+
+    const updated = await prisma.user.update({
       where: { id: userId },
-      data: { photoUrl: uploaded.secure_url },
+      data: { photoUrl },
       select: {
         id: true,
         fullName: true,
         email: true,
         role: true,
+        photoUrl: true,
+        language: true,
+        doctorId: true,
         phone: true,
         gender: true,
         dateOfBirth: true,
-        photoUrl: true,
-        language: true,
-        fcmToken: true,
-        doctorId: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
-    sendSuccess(res, { user: updatedUser }, 200, "Photo updated");
+    logger.success("Profile photo uploaded", { userId, photoUrl });
+    sendSuccess(res, { user: updated }, 200, "Photo updated successfully");
   } catch (error: unknown) {
     logger.error("uploadProfilePhoto failed", error);
     sendError(res, 500, "Photo upload failed");
