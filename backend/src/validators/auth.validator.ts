@@ -76,33 +76,18 @@ export const loginSchema: ObjectSchema = Joi.object({
 });
 
 export const updateProfileSchema: ObjectSchema = Joi.object({
-  fullName: Joi.string().trim().min(2).optional().messages({
-    "string.base": "Full name must be a string.",
-    "string.min": "Full name must be at least 2 characters long.",
-  }),
+  fullName: Joi.string().min(2).max(100).optional(),
   phone: Joi.string()
-    .pattern(/^\d{10,15}$/)
+    .pattern(/^\+?[0-9]{10,15}$/)
     .optional()
-    .allow("")
-    .messages({
-      "string.base": "Phone number must be a string of digits.",
-      "string.pattern.base": "Phone number must contain 10 to 15 digits.",
-    }),
-  gender: Joi.string().trim().optional().allow("").messages({
-    "string.base": "Gender must be a string.",
-  }),
-  dateOfBirth: Joi.date().iso().optional().messages({
-    "date.base": "Date of birth must be a valid date.",
-    "date.format": "Date of birth must be in a valid ISO date format.",
-    "date.isoDate": "Date of birth must be in ISO date format.",
-  }),
-  language: Joi.string().valid("en", "rw").optional().messages({
-    "string.base": "Language must be a string.",
-    "any.only": "Language must be either en or rw.",
-  }),
-  fcmToken: Joi.string().trim().optional().allow("").messages({
-    "string.base": "FCM token must be a string.",
-  }),
+    .allow("", null),
+  gender: Joi.string()
+    .valid("Male", "Female", "Other")
+    .optional()
+    .allow("", null),
+  dateOfBirth: Joi.date().max("now").optional().allow(null),
+  language: Joi.string().valid("en", "rw").optional(),
+  fcmToken: Joi.string().optional().allow("", null),
 }).messages({
   "object.unknown": "Request contains an unsupported field.",
 });

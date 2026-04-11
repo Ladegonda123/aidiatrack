@@ -188,32 +188,37 @@ export const updateProfile = async (
 ): Promise<void> => {
   try {
     const currentUserId = req.user!.userId;
-    const body = req.body as UpdateProfileBody;
-    const updateData = stripUndefined({
-      fullName: body.fullName,
-      phone: body.phone,
-      gender: body.gender,
-      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
-      fcmToken: body.fcmToken?.trim() || undefined,
-      language: body.language,
-    });
+    const { fullName, phone, gender, dateOfBirth, language, fcmToken } =
+      req.body as UpdateProfileBody;
 
-    if (Object.keys(updateData).length === 0) {
-      sendError(res, 400, "No profile fields provided");
-      return;
-    }
+    const updateData = stripUndefined({
+      fullName,
+      phone: phone || null,
+      gender: gender || null,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      language,
+      fcmToken,
+    });
 
     const updatedUser = await prisma.user.update({
       where: { id: currentUserId },
       data: updateData,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        language: true,
+        photoUrl: true,
+        doctorId: true,
+        fcmToken: true,
+      },
     });
 
-    sendSuccess(
-      res,
-      { user: sanitizeUser(updatedUser) },
-      200,
-      "Profile updated successfully",
-    );
+    sendSuccess(res, { user: updatedUser }, 200, "Profile updated");
   } catch (error: unknown) {
     logger.error("updateProfile failed", error);
     sendError(res, 500, "Failed to update profile");
