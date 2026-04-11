@@ -15,7 +15,6 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
@@ -31,6 +30,12 @@ const editProfileSchema = z.object({
 });
 
 type EditProfileValues = z.infer<typeof editProfileSchema>;
+
+const GENDER_OPTIONS = [
+  { value: "Male", labelKey: "auth.editProfile.genderMale" },
+  { value: "Female", labelKey: "auth.editProfile.genderFemale" },
+  { value: "Other", labelKey: "auth.editProfile.genderOther" },
+];
 
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { t } = useTranslation();
@@ -65,7 +70,9 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     defaultValues: {
       fullName: user?.fullName ?? "",
       phone: user?.phone ?? "",
-      dateOfBirth: user?.dateOfBirth?.slice(0, 10) ?? "",
+      dateOfBirth: user?.dateOfBirth
+        ? new Date(user.dateOfBirth).toISOString().split("T")[0]
+        : "",
     },
   });
 
@@ -98,97 +105,92 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
         enableOnAndroid
       >
         <View style={styles.formCard}>
+          <Text style={styles.label}>{t("auth.editProfile.fullName")}</Text>
+          <Controller
+            control={control}
+            name="fullName"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.editProfile.fullName")}
+              />
+            )}
+          />
+          {errors.fullName ? (
+            <Text style={styles.errorText}>{t("common.required")}</Text>
+          ) : null}
 
-            <Text style={styles.label}>{t("auth.editProfile.fullName")}</Text>
-            <Controller
-              control={control}
-              name="fullName"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={styles.input}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder={t("auth.editProfile.fullName")}
-                />
-              )}
-            />
-            {errors.fullName ? (
-              <Text style={styles.errorText}>{t("common.required")}</Text>
-            ) : null}
+          <Text style={styles.label}>{t("auth.editProfile.phone")}</Text>
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.editProfile.phone")}
+                keyboardType="phone-pad"
+              />
+            )}
+          />
 
-            <Text style={styles.label}>{t("auth.editProfile.phone")}</Text>
-            <Controller
-              control={control}
-              name="phone"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={styles.input}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder={t("auth.editProfile.phone")}
-                  keyboardType="phone-pad"
-                />
-              )}
-            />
-
-            <Text style={styles.label}>{t("auth.editProfile.gender")}</Text>
-            <View style={styles.genderRow}>
-              {[
-                { key: "male", label: t("auth.editProfile.genderMale") },
-                { key: "female", label: t("auth.editProfile.genderFemale") },
-                { key: "other", label: t("auth.editProfile.genderOther") },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.key}
+          <Text style={styles.label}>{t("auth.editProfile.gender")}</Text>
+          <View style={styles.genderRow}>
+            {GENDER_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.genderChip,
+                  gender === option.value && styles.genderChipActive,
+                ]}
+                onPress={() => setGender(option.value)}
+              >
+                <Text
                   style={[
-                    styles.genderChip,
-                    gender === option.key && styles.genderChipActive,
+                    styles.genderText,
+                    gender === option.value && styles.genderTextActive,
                   ]}
-                  onPress={() => setGender(option.key)}
                 >
-                  <Text
-                    style={[
-                      styles.genderText,
-                      gender === option.key && styles.genderTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.label}>{t("auth.editProfile.dob")}</Text>
-            <Controller
-              control={control}
-              name="dateOfBirth"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={styles.input}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder={t("auth.editProfile.dobHint")}
-                />
-              )}
-            />
-            <Text style={styles.hint}>{t("auth.editProfile.dobHint")}</Text>
-
-            <TouchableOpacity
-              style={[styles.button, saving && styles.buttonDisabled]}
-              onPress={handleSubmit(onSubmit)}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  {t("auth.editProfile.button")}
+                  {t(option.labelKey)}
                 </Text>
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>{t("auth.editProfile.dob")}</Text>
+          <Controller
+            control={control}
+            name="dateOfBirth"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder={t("auth.editProfile.dobHint")}
+              />
+            )}
+          />
+          <Text style={styles.hint}>{t("auth.editProfile.dobHint")}</Text>
+
+          <TouchableOpacity
+            style={[styles.button, saving && styles.buttonDisabled]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {t("auth.editProfile.button")}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
     </SafeAreaView>
