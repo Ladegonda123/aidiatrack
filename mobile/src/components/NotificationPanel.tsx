@@ -1,43 +1,135 @@
 import React from "react";
 import {
-  FlatList,
   Modal,
-  StyleSheet,
+  View,
   Text,
   TouchableOpacity,
-  View,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  AppNotification,
+  markOneRead,
+  markAllRead,
+  deleteNotification,
+  deleteAllNotifications,
+} from "../api/notificationAPI";
 import { COLORS } from "../utils/colors";
 import { timeAgo } from "../utils/formatters";
-import { AppNotification } from "../api/notificationAPI";
 
-interface NotificationPanelProps {
+interface Props {
   visible: boolean;
   notifications: AppNotification[];
-  unreadCount: number;
   onClose: () => void;
-  onMarkAllRead: () => Promise<void>;
-  onNotificationPress?: (notification: AppNotification) => void;
+  onUpdate: (updated: AppNotification[]) => void;
+  language: string;
 }
 
-const iconMap: Record<AppNotification["type"], string> = {
-  chat: "💬",
-  medication: "💊",
-  bg_alert: "⚠️",
-  system: "ℹ️",
+const TYPE_CONFIG: Record<
+  string,
+  {
+    icon: string;
+    color: string;
+    bgColor: string;
+  }
+> = {
+  medication: {
+    icon: "medical-outline",
+    color: COLORS.primary,
+    bgColor: `${COLORS.primary}15`,
+  },
+  bg_alert: {
+    icon: "warning-outline",
+    color: COLORS.danger,
+    bgColor: `${COLORS.danger}15`,
+  },
+  chat: {
+    icon: "chatbubble-outline",
+    color: COLORS.success,
+    bgColor: `${COLORS.success}15`,
+  },
+  system: {
+    icon: "information-circle-outline",
+    color: COLORS.textSecondary,
+    bgColor: COLORS.border,
+  },
 };
 
-const NotificationPanel = ({
+const NotificationPanel: React.FC<Props> = ({
   visible,
   notifications,
-  unreadCount,
   onClose,
-  onMarkAllRead,
-  onNotificationPress,
-}: NotificationPanelProps): React.JSX.Element => {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language as "en" | "rw";
+  onUpdate,
+  language,
+}) => {
+  const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+
+  const handleMarkOneRead = async (notif: AppNotification): Promise<void> => {
+    if (notif.isRead) return;
+
+    await markOneRead(notif.id);
+    onUpdate(
+      notifications.map((n) =>
+        n.id === notif.id ? { ...n, isRead: true } : n,
+      ),
+    );
+  };
+
+  const handleMarkAllRead = async (): Promise<void> => {
+    await markAllRead();
+    onUpdate(notifications.map((n) => ({ ...n, isRead: true })));
+  };
+
+  const handleDeleteOne = async (id: number): Promise<void> => {
+    await deleteNotification(id);
+    onUpdate(notifications.filter((n) => n.id !== id));
+  };
+
+  const handleDeleteAll = (): void => {
+    Alert.alert(
+      t("notifications.deleteAllTitle") || "Delete All",
+      t("notifications.deleteAllConfirm") ||
+        "Delete all notifications?",
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("notifications.deleteAll") || "Delete All",
+          style: "destructive",
+          onPress: async () => {
+            await deleteAllNotifications();
+            onUpdate([]);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleNavigate = (notif: AppNotification): void => {
+    void handleMarkOneRead(notif);
+    onClose();
+
+    switch (notif.type) {
+      case "chat":
+        navigation.navigate("PatientTabs", { screen: "Chat" });
+        break;
+      case "bg_alert":
+        navigation.navigate("PatientTabs", { screen: "Predictions" });
+        break;
+      case "medication":
+        navigation.navigate("Medications");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <Modal
@@ -47,71 +139,151 @@ const NotificationPanel = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={styles.panel}>
           <View style={styles.handle} />
 
           <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
+            <View style={styles.headerLeft}>
               <Text style={styles.title}>{t("notifications.panelTitle")}</Text>
-              {unreadCount > 0 ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadCount > 9 ? "9+" : unreadCount.toString()}
-                  </Text>
+              {unreadCount > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
                 </View>
-              ) : null}
+              )}
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                onMarkAllRead().catch(() => undefined);
-              }}
-              disabled={notifications.length === 0}
-            >
-              <Text style={styles.markReadText}>
-                {t("notifications.markAllRead")}
-              </Text>
-            </TouchableOpacity>
+
+            <View style={styles.headerActions}>
+              {unreadCount > 0 && (
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => {
+                    void handleMarkAllRead();
+                  }}
+                >
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                </TouchableOpacity>
+              )}
+              {notifications.length > 0 && (
+                <TouchableOpacity style={styles.actionBtn} onPress={handleDeleteAll}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color={COLORS.danger}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
+          {(unreadCount > 0 || notifications.length > 0) && (
+            <View style={styles.actionLabels}>
+              {unreadCount > 0 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    void handleMarkAllRead();
+                  }}
+                >
+                  <Text style={styles.markReadText}>
+                    {t("notifications.markAllRead")}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {notifications.length > 0 && (
+                <TouchableOpacity onPress={handleDeleteAll}>
+                  <Text style={styles.deleteAllText}>
+                    {t("notifications.deleteAll") || "Delete All"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {notifications.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🔔</Text>
+            <View style={styles.empty}>
+              <View style={styles.emptyIconCircle}>
+                <Ionicons
+                  name="notifications-off-outline"
+                  size={40}
+                  color={COLORS.textSecondary}
+                />
+              </View>
               <Text style={styles.emptyText}>{t("notifications.empty")}</Text>
             </View>
           ) : (
             <FlatList
               data={notifications}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.item, !item.isRead && styles.itemUnread]}
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    if (onNotificationPress) {
-                      onNotificationPress(item);
-                    } else {
-                      onClose();
-                    }
-                  }}
-                >
-                  <Text style={styles.itemIcon}>{iconMap[item.type]}</Text>
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemBody}>{item.body}</Text>
-                    <Text style={styles.itemTime}>
-                      {timeAgo(item.createdAt, lang)}
-                    </Text>
-                  </View>
-                  {!item.isRead ? <View style={styles.unreadDot} /> : null}
-                </TouchableOpacity>
-              )}
+              contentContainerStyle={styles.list}
+              renderItem={({ item }) => {
+                const config = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.system;
+
+                return (
+                  <TouchableOpacity
+                    style={[styles.item, !item.isRead && styles.itemUnread]}
+                    onPress={() => handleNavigate(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.iconCircle,
+                        { backgroundColor: config.bgColor },
+                      ]}
+                    >
+                      <Ionicons
+                        name={config.icon as any}
+                        size={20}
+                        color={config.color}
+                      />
+                    </View>
+
+                    <View style={styles.itemContent}>
+                      <Text
+                        style={[
+                          styles.itemTitle,
+                          !item.isRead && styles.itemTitleUnread,
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text style={styles.itemBody} numberOfLines={2}>
+                        {item.body}
+                      </Text>
+                      <Text style={styles.itemTime}>
+                        {timeAgo(item.createdAt, language as "en" | "rw")}
+                      </Text>
+                    </View>
+
+                    <View style={styles.itemRight}>
+                      {!item.isRead && <View style={styles.unreadDot} />}
+
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => {
+                          void handleDeleteOne(item.id);
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={16}
+                          color={COLORS.textSecondary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
             />
           )}
 
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>{t("common.cancel")}</Text>
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <Text style={styles.closeBtnText}>{t("common.cancel")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -122,16 +294,18 @@ const NotificationPanel = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   panel: {
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 12,
-    paddingHorizontal: 16,
-    maxHeight: "75%",
+    maxHeight: "80%",
   },
   handle: {
     width: 40,
@@ -139,84 +313,121 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.border,
     alignSelf: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    marginBottom: 4,
   },
-  headerTitleRow: {
+  headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   title: {
     fontSize: 18,
     fontWeight: "700",
     color: COLORS.textPrimary,
   },
-  badge: {
+  unreadBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
     minWidth: 20,
     height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
   },
-  badgeText: {
+  unreadBadgeText: {
     color: "#FFFFFF",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   markReadText: {
     fontSize: 13,
     color: COLORS.primary,
     fontWeight: "600",
   },
-  emptyState: {
+  deleteAllText: {
+    fontSize: 13,
+    color: COLORS.danger,
+    fontWeight: "600",
+  },
+  list: {
+    paddingVertical: 8,
+    paddingBottom: 16,
+  },
+  empty: {
     alignItems: "center",
     paddingVertical: 40,
+    gap: 14,
   },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: 12,
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.background,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyText: {
     color: COLORS.textSecondary,
     fontSize: 14,
-  },
-  listContent: {
-    paddingBottom: 12,
+    textAlign: "center",
   },
   item: {
     flexDirection: "row",
     alignItems: "flex-start",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     gap: 12,
   },
   itemUnread: {
-    backgroundColor: `${COLORS.primary}08`,
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: `${COLORS.primary}06`,
   },
-  itemIcon: {
-    fontSize: 24,
-    marginTop: 2,
+  iconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   itemContent: {
     flex: 1,
+    gap: 3,
   },
   itemTitle: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "500",
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    lineHeight: 18,
+  },
+  itemTitleUnread: {
+    fontWeight: "700",
   },
   itemBody: {
     fontSize: 13,
@@ -226,23 +437,30 @@ const styles = StyleSheet.create({
   itemTime: {
     fontSize: 11,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: 2,
+  },
+  itemRight: {
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 2,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.primary,
-    marginTop: 6,
   },
-  closeButton: {
+  deleteBtn: {
+    padding: 2,
+  },
+  closeBtn: {
     paddingVertical: 16,
     alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    marginTop: 8,
+    marginTop: 4,
   },
-  closeText: {
+  closeBtnText: {
     fontSize: 15,
     color: COLORS.textSecondary,
     fontWeight: "500",

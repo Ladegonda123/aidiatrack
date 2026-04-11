@@ -149,7 +149,12 @@ export const sendMessage = async (
       });
 
       if (sender) {
-        await sendChatNotification(receiverId, sender.fullName, content);
+        await sendChatNotification(
+          receiverId,
+          user.userId,
+          sender.fullName,
+          content,
+        );
       }
     }
 

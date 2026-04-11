@@ -49,8 +49,24 @@ model User {
   receivedMessages    Message[] @relation("ReceivedMessages")
   medications         Medication[]
   dietRecommendations DietRecommendation[]
+  notifications       Notification[]
  
   @@map("users")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
 
 model HealthRecord {

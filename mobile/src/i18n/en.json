@@ -285,7 +285,11 @@
     },
     "panelTitle": "Notifications",
     "markAllRead": "Mark all read",
-    "empty": "No notifications yet"
+    "empty": "No notifications yet",
+    "deleteAll": "Delete All",
+    "deleteAllTitle": "Delete All Notifications",
+    "deleteAllConfirm": "This will permanently delete all your notifications.",
+    "navigateTo": "View"
   },
   "foods": {
     "searchTitle": "Select Food",

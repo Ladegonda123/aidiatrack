@@ -2,7 +2,7 @@ import * as admin from "firebase-admin";
 import prisma from "../config/database";
 import { ENV } from "../config/env";
 import logger from "../utils/logger";
-import { addNotification } from "../controllers/notification.controller";
+import { createNotification } from "../controllers/notification.controller";
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -145,8 +145,7 @@ export const sendMedicationReminder = async (
       data: { type: "medication_reminder", drugName },
     });
 
-    addNotification({
-      id: `med_${userId}_${Date.now()}`,
+    await createNotification({
       userId,
       type: "medication",
       title: lang === "rw" ? "Kwibutsa Umuti" : "Medication Reminder",
@@ -154,8 +153,7 @@ export const sendMedicationReminder = async (
         lang === "rw"
           ? `Ni igihe cyo gufata ${drugName} ${dosage}`
           : `Time to take ${drugName} ${dosage}`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
+      data: { drugName, dosage },
     });
   } catch (error: unknown) {
     logger.error("Failed to send medication reminder", { userId, error });
@@ -183,17 +181,18 @@ export const sendHighBgAlert = async (
       data: { type: "bg_alert", bgValue: bgValue.toString() },
     });
 
-    addNotification({
-      id: `bg_${userId}_${Date.now()}`,
+    await createNotification({
       userId,
       type: "bg_alert",
-      title: lang === "rw" ? "Isukiraguciro Riri Hejuru" : "High Blood Glucose",
+      title:
+        lang === "rw"
+          ? "Isukiraguciro Riri Hejuru"
+          : "High Blood Glucose Alert",
       body:
         lang === "rw"
-          ? `Isuzuma ryawe rya ${bgValue} mg/dL riri hejuru`
-          : `Your reading of ${bgValue} mg/dL is high`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
+          ? `Isuzuma ryawe rya ${bgValue} mg/dL riri hejuru. Fata ingamba vuba.`
+          : `Your reading of ${bgValue} mg/dL is high. Please take action.`,
+      data: { bgValue: bgValue.toString() },
     });
   } catch (error: unknown) {
     logger.error("Failed to send BG alert", { userId, error });
@@ -202,6 +201,7 @@ export const sendHighBgAlert = async (
 
 export const sendChatNotification = async (
   receiverId: number,
+  senderId: number,
   senderName: string,
   messagePreview: string,
 ): Promise<void> => {
@@ -227,8 +227,7 @@ export const sendChatNotification = async (
       data: { type: "chat_message", senderName },
     });
 
-    addNotification({
-      id: `chat_${receiverId}_${Date.now()}`,
+    await createNotification({
       userId: receiverId,
       type: "chat",
       title:
@@ -236,8 +235,7 @@ export const sendChatNotification = async (
           ? `Ubutumwa buva kwa ${senderName}`
           : `Message from ${senderName}`,
       body: preview,
-      isRead: false,
-      createdAt: new Date().toISOString(),
+      data: { senderName, senderId: senderId.toString() },
     });
   } catch (error: unknown) {
     logger.error("Failed to send chat notification", { receiverId, error });

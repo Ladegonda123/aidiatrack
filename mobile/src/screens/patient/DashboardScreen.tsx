@@ -29,11 +29,7 @@ import Avatar from "../../components/Avatar";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
 import { getPredictionHistory } from "../../api/predictionAPI";
-import {
-  AppNotification,
-  getNotifications,
-  markAllRead,
-} from "../../api/notificationAPI";
+import { AppNotification, getNotifications } from "../../api/notificationAPI";
 import {
   HealthRecord,
   HealthSummary,
@@ -508,27 +504,13 @@ const DashboardScreen = (): React.JSX.Element => {
       <NotificationPanel
         visible={showNotifications}
         notifications={notifications}
-        unreadCount={unreadCount}
+        language={i18n.language}
         onClose={() => setShowNotifications(false)}
-        onMarkAllRead={async () => {
-          await markAllRead();
-          setUnreadCount(0);
-          setNotifications((prev) =>
-            prev.map((notification) => ({
-              ...notification,
-              isRead: true,
-            })),
+        onUpdate={(updated) => {
+          setNotifications(updated);
+          setUnreadCount(
+            updated.filter((notification) => !notification.isRead).length,
           );
-        }}
-        onNotificationPress={(item) => {
-          setShowNotifications(false);
-          if (item.type === "chat") {
-            navigation.navigate("Chat");
-          }
-
-          if (item.type === "bg_alert") {
-            navigation.navigate("Predictions");
-          }
         }}
       />
     </SafeAreaView>

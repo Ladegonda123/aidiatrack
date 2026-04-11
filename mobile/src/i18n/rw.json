@@ -285,7 +285,11 @@
     },
     "panelTitle": "Imenyesha",
     "markAllRead": "Siba byose nk'ibisomwe",
-    "empty": "Nta menyesha arabonetse"
+    "empty": "Nta menyesha arabonetse",
+    "deleteAll": "Siba Byose",
+    "deleteAllTitle": "Siba Imenyesha Yose",
+    "deleteAllConfirm": "Ibi bizasiba burundu imenyesha yawe yose.",
+    "navigateTo": "Reba"
   },
   "foods": {
     "searchTitle": "Hitamo Indyo",

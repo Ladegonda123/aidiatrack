@@ -25,11 +25,7 @@ import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 import { timeAgo } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
 import NotificationPanel from "../../components/NotificationPanel";
-import {
-  AppNotification,
-  getNotifications,
-  markAllRead,
-} from "../../api/notificationAPI";
+import { AppNotification, getNotifications } from "../../api/notificationAPI";
 import { RootStackParamList, User } from "../../types";
 
 interface DashboardPatient extends User {
@@ -343,16 +339,12 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
       <NotificationPanel
         visible={showNotifications}
         notifications={notifications}
-        unreadCount={unreadCount}
+        language={i18n.language}
         onClose={() => setShowNotifications(false)}
-        onMarkAllRead={async () => {
-          await markAllRead();
-          setUnreadCount(0);
-          setNotifications((prev) =>
-            prev.map((notification) => ({
-              ...notification,
-              isRead: true,
-            })),
+        onUpdate={(updated) => {
+          setNotifications(updated);
+          setUnreadCount(
+            updated.filter((notification) => !notification.isRead).length,
           );
         }}
       />

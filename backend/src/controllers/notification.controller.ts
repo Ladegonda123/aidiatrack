@@ -1,27 +1,32 @@
 import { Request, Response } from "express";
 import prisma from "../config/database";
-import { sendSuccess } from "../utils/response";
+import { sendSuccess, sendError } from "../utils/response";
 import logger from "../utils/logger";
 
-// In-memory notification store per user (resets on server restart)
-// For production this would be a DB table — sufficient for final year project
-const notificationStore = new Map<number, AppNotification[]>();
-
-export interface AppNotification {
-  id: string;
+export interface CreateNotificationInput {
   userId: number;
-  type: "chat" | "medication" | "bg_alert" | "system";
+  type: "medication" | "bg_alert" | "chat" | "system";
   title: string;
   body: string;
-  isRead: boolean;
-  createdAt: string;
+  data?: Record<string, string>;
 }
 
-export const addNotification = (notification: AppNotification): void => {
-  const existing = notificationStore.get(notification.userId) ?? [];
-  // Keep max 50 notifications per user
-  const updated = [notification, ...existing].slice(0, 50);
-  notificationStore.set(notification.userId, updated);
+export const createNotification = async (
+  input: CreateNotificationInput,
+): Promise<void> => {
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: input.userId,
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        data: input.data ?? {},
+      },
+    });
+  } catch (error: unknown) {
+    logger.error("createNotification failed", error);
+  }
 };
 
 export const getNotifications = async (
@@ -30,17 +35,41 @@ export const getNotifications = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const notifications = notificationStore.get(userId) ?? [];
+
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
     const unreadCount = notifications.filter(
       (notification) => !notification.isRead,
     ).length;
-
-    void prisma;
 
     sendSuccess(res, { notifications, unreadCount });
   } catch (error: unknown) {
     logger.error("getNotifications failed", error);
     sendSuccess(res, { notifications: [], unreadCount: 0 });
+  }
+};
+
+export const markOneRead = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const id = Number.parseInt(String(req.params.id), 10);
+
+    await prisma.notification.updateMany({
+      where: { id, userId },
+      data: { isRead: true },
+    });
+
+    sendSuccess(res, null, 200, "Marked as read");
+  } catch (error: unknown) {
+    logger.error("markOneRead failed", error);
+    sendError(res, 500, "Failed to mark as read");
   }
 };
 
@@ -50,16 +79,52 @@ export const markAllRead = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const notifications = notificationStore.get(userId) ?? [];
-    const updated = notifications.map((notification) => ({
-      ...notification,
-      isRead: true,
-    }));
 
-    notificationStore.set(userId, updated);
-    sendSuccess(res, { notifications: updated, unreadCount: 0 });
+    await prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
+
+    sendSuccess(res, null, 200, "All marked as read");
   } catch (error: unknown) {
     logger.error("markAllRead failed", error);
-    sendSuccess(res, { notifications: [], unreadCount: 0 });
+    sendError(res, 500, "Failed to mark all as read");
+  }
+};
+
+export const deleteOneNotification = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+    const id = Number.parseInt(String(req.params.id), 10);
+
+    await prisma.notification.deleteMany({
+      where: { id, userId },
+    });
+
+    sendSuccess(res, null, 200, "Notification deleted");
+  } catch (error: unknown) {
+    logger.error("deleteOneNotification failed", error);
+    sendError(res, 500, "Failed to delete notification");
+  }
+};
+
+export const deleteAllNotifications = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+
+    await prisma.notification.deleteMany({
+      where: { userId },
+    });
+
+    sendSuccess(res, null, 200, "All notifications deleted");
+  } catch (error: unknown) {
+    logger.error("deleteAllNotifications failed", error);
+    sendError(res, 500, "Failed to delete notifications");
   }
 };
