@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { Server } from "socket.io";
 import { ENV } from "./config/env";
+import "./config/cloudinary";
 import { globalRateLimit } from "./middleware/rateLimit.middleware";
 import { sanitizeInput } from "./middleware/sanitize.middleware";
 import { verifyDatabaseConnection } from "./config/database";

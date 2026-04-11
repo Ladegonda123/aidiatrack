@@ -8,7 +8,8 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET as string,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   AI_SERVICE_URL: process.env.AI_SERVICE_URL || "http://localhost:8000",
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUD_NAME ?? "",
+  CLOUDINARY_CLOUD_NAME:
+    process.env.CLOUD_NAME ?? process.env.CLOUDINARY_CLOUD_NAME ?? "",
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ?? "",
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? "",
   EMAIL_USER: process.env.EMAIL_USER ?? "",
