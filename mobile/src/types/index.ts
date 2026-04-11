@@ -99,6 +99,8 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  VerifyOtp: { email: string };
+  ResetPassword: { email: string; otp: string };
   PatientTabs: undefined;
   DoctorTabs: undefined;
   Reports: undefined;

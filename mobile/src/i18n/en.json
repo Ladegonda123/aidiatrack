@@ -60,7 +60,13 @@
       "newPassword": "New Password",
       "confirmPassword": "Confirm Password",
       "resetButton": "Reset Password",
-      "success": "Password reset successfully"
+      "success": "Password reset successfully",
+      "verifyButton": "Verify Code",
+      "resendCode": "Resend Code",
+      "resendIn": "Resend in",
+      "resetTitle": "Set New Password",
+      "resetSubtitle": "Choose a strong password for your account",
+      "invalidOtp": "Invalid or expired code. Go back and try again."
     },
     "changePassword": {
       "title": "Change Password",
@@ -89,6 +95,7 @@
       "emailInvalid": "Please enter a valid email",
       "passwordRequired": "Password is required",
       "passwordMin8": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
       "fullNameMin": "Full name must be at least 2 characters",
       "roleRequired": "Please select a role",
       "phoneDigits": "Phone number must be 10 to 15 digits"

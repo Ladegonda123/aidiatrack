@@ -60,7 +60,13 @@
       "newPassword": "Ijambo ry'Ibanga Rishya",
       "confirmPassword": "Emeza Ijambo ry'Ibanga",
       "resetButton": "Subiramo Ijambo ry'Ibanga",
-      "success": "Ijambo ry'ibanga ryahinduwe neza"
+      "success": "Ijambo ry'ibanga ryahinduwe neza",
+      "verifyButton": "Emeza Kode",
+      "resendCode": "Ongera Uhereze Kode",
+      "resendIn": "Ohereza nyuma ya",
+      "resetTitle": "Shyira Ijambo ry'Ibanga Rishya",
+      "resetSubtitle": "Hitamo ijambo ry'ibanga rikomeye",
+      "invalidOtp": "Kode ntabwo ari yo cyangwa yarangiye igihe. Subira inyuma ugerageze."
     },
     "changePassword": {
       "title": "Hindura Ijambo ry'Ibanga",
@@ -89,6 +95,7 @@
       "emailInvalid": "Shyiramo imeyili yemewe",
       "passwordRequired": "Ijambo ry'ibanga rirakenewe",
       "passwordMin8": "Ijambo ry'ibanga rigomba kugira nibura inyuguti 8",
+      "passwordMismatch": "Amagambo y'ibanga ntabwo asa",
       "fullNameMin": "Amazina yuzuye agomba kugira nibura inyuguti 2",
       "roleRequired": "Hitamo uruhare",
       "phoneDigits": "Numero ya telefoni igomba kuba imibare 10 kugeza kuri 15"

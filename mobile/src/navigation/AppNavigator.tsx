@@ -5,8 +5,10 @@ import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../utils/colors";
 import { RootStackParamList } from "../types";
 import LoginScreen from "../screens/auth/LoginScreen";
-import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
+import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
+import VerifyOtpScreen from "../screens/auth/VerifyOtpScreen";
+import ResetPasswordScreen from "../screens/auth/ResetPasswordScreen";
 import DoctorChat from "../screens/doctor/DoctorChat";
 import AssignPatientScreen from "../screens/doctor/AssignPatientScreen";
 import PatientDetailScreen from "../screens/doctor/PatientDetailScreen";
@@ -54,6 +56,16 @@ const AppNavigator = (): React.JSX.Element => {
           <Stack.Screen
             name="ForgotPassword"
             component={ForgotPasswordScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="VerifyOtp"
+            component={VerifyOtpScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
             options={{ headerShown: false }}
           />
         </>
