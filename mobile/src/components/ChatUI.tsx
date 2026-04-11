@@ -234,43 +234,40 @@ const ChatUI = ({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.root}>
-        <View style={styles.header}>
-          {onBack ? (
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          ) : null}
-
-          <View style={styles.headerInfo}>
-            <View style={styles.avatarSmallWrapper}>
-              <View style={styles.avatarSmall}>
-                <Text style={styles.avatarSmallText}>
-                  {otherUserName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              {isOtherOnline ? <View style={styles.onlineDot} /> : null}
-            </View>
-            <View>
-              <Text style={styles.headerName}>{otherUserName}</Text>
-              <Text
-                style={[
-                  styles.headerOnline,
-                  {
-                    color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)",
-                  },
-                ]}
-              >
-                {isOtherOnline
-                  ? (t("chat.online") ?? "Active now")
-                  : lastSeen
-                    ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
-                    : t("chat.offline")}
+      <View style={styles.header}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        <View style={styles.headerInfo}>
+          <View style={styles.avatarSmallWrapper}>
+            <View style={styles.avatarSmall}>
+              <Text style={styles.avatarSmallText}>
+                {otherUserName.charAt(0).toUpperCase()}
               </Text>
             </View>
+            {isOtherOnline && <View style={styles.onlineDot} />}
+          </View>
+          <View>
+            <Text style={styles.headerName}>{otherUserName}</Text>
+            <Text
+              style={[
+                styles.headerOnline,
+                { color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)" },
+              ]}
+            >
+              {isOtherOnline
+                ? (t("chat.online") ?? "Active now")
+                : lastSeen
+                  ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
+                  : t("chat.offline")}
+            </Text>
           </View>
         </View>
+      </View>
 
+      <View style={styles.body}>
         <View style={styles.messagesArea}>
           {loading ? (
             <ActivityIndicator
@@ -280,7 +277,7 @@ const ChatUI = ({
             />
           ) : messages.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>💬</Text>
+              <Text style={styles.emptyIcon}>??</Text>
               <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
             </View>
           ) : (
@@ -332,9 +329,7 @@ const ChatUI = ({
                         <Text
                           style={[
                             styles.bubbleText,
-                            isMine
-                              ? styles.bubbleTextMine
-                              : styles.bubbleTextOther,
+                            isMine ? styles.bubbleTextMine : styles.bubbleTextOther,
                           ]}
                         >
                           {item.content}
@@ -342,13 +337,10 @@ const ChatUI = ({
                         <Text
                           style={[
                             styles.bubbleTime,
-                            isMine
-                              ? styles.bubbleTimeMine
-                              : styles.bubbleTimeOther,
+                            isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther,
                           ]}
                         >
-                          {formatTime(item.sentAt)}
-                          {isMine && " ✓"}
+                          {formatTime(item.sentAt)}{isMine ? " ?" : ""}
                         </Text>
                       </View>
                     </View>
@@ -372,7 +364,6 @@ const ChatUI = ({
             onSubmitEditing={handleSend}
             blurOnSubmit={false}
           />
-
           <TouchableOpacity
             style={[
               styles.sendButton,
@@ -399,17 +390,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.primary,
   },
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   header: {
     backgroundColor: COLORS.primary,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    paddingBottom: 20,
+    paddingVertical: 12,
+    paddingBottom: 18,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     gap: 12,
@@ -430,6 +417,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarSmallText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
   onlineDot: {
     position: "absolute",
     bottom: 0,
@@ -441,11 +433,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.primary,
   },
-  avatarSmallText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
   headerName: {
     color: "#FFFFFF",
     fontSize: 16,
@@ -454,14 +441,14 @@ const styles = StyleSheet.create({
   headerOnline: {
     fontSize: 12,
   },
-  messagesArea: {
+  body: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loader: {
+  messagesArea: {
     flex: 1,
-    justifyContent: "center",
   },
+  loader: { flex: 1, justifyContent: "center" },
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -510,10 +497,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  messageAvatarAvatar: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
   messageAvatarText: {
     fontSize: 12,
     fontWeight: "700",
@@ -528,16 +511,10 @@ const styles = StyleSheet.create({
   bubbleMine: {
     backgroundColor: COLORS.primary,
     borderBottomRightRadius: 4,
-    borderTopRightRadius: 18,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
   },
   bubbleOther: {
     backgroundColor: COLORS.card,
     borderBottomLeftRadius: 4,
-    borderTopRightRadius: 18,
-    borderTopLeftRadius: 18,
-    borderBottomRightRadius: 18,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
