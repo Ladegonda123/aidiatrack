@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -275,11 +273,7 @@ const ChatUI = ({
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "padding"}
-        keyboardVerticalOffset={0}
-      >
+      <View style={styles.chatContainer}>
         <View style={styles.messagesContainer}>
           {loading ? (
             <ActivityIndicator
@@ -299,6 +293,7 @@ const ChatUI = ({
               keyExtractor={(item, index) => `${item.id}_${index}`}
               contentContainerStyle={styles.messagesList}
               showsVerticalScrollIndicator={false}
+              inverted={false}
               onContentSizeChange={() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }}
@@ -409,14 +404,14 @@ const ChatUI = ({
             )}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  flex: { flex: 1, backgroundColor: COLORS.background },
+  chatContainer: { flex: 1, backgroundColor: COLORS.background },
   header: {
     backgroundColor: COLORS.primary,
     flexDirection: "row",

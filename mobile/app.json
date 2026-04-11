@@ -21,7 +21,7 @@
         "WRITE_EXTERNAL_STORAGE",
         "CAMERA"
       ],
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
