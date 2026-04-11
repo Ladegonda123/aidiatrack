@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
@@ -64,7 +64,6 @@ const ChatUI = ({
   const [isOtherOnline, setIsOtherOnline] = useState<boolean>(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const flatListRef = useRef<FlatList<Message>>(null);
-  const insets = useSafeAreaInsets();
   const { socket } = useSocket();
   const { t, i18n } = useTranslation();
   const roomId = getChatRoomId(currentUserId, otherUserId);
@@ -234,174 +233,175 @@ const ChatUI = ({
   }, [currentUserId, inputText, otherUserId, sending]);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        {onBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        ) : null}
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <View style={styles.root}>
+        <View style={styles.header}>
+          {onBack ? (
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : null}
 
-        <View style={styles.headerInfo}>
-          <View style={styles.avatarSmallWrapper}>
-            <View style={styles.avatarSmall}>
-              <Text style={styles.avatarSmallText}>
-                {otherUserName.charAt(0).toUpperCase()}
+          <View style={styles.headerInfo}>
+            <View style={styles.avatarSmallWrapper}>
+              <View style={styles.avatarSmall}>
+                <Text style={styles.avatarSmallText}>
+                  {otherUserName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              {isOtherOnline ? <View style={styles.onlineDot} /> : null}
+            </View>
+            <View>
+              <Text style={styles.headerName}>{otherUserName}</Text>
+              <Text
+                style={[
+                  styles.headerOnline,
+                  {
+                    color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)",
+                  },
+                ]}
+              >
+                {isOtherOnline
+                  ? (t("chat.online") ?? "Active now")
+                  : lastSeen
+                    ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
+                    : t("chat.offline")}
               </Text>
             </View>
-            {isOtherOnline ? <View style={styles.onlineDot} /> : null}
-          </View>
-          <View>
-            <Text style={styles.headerName}>{otherUserName}</Text>
-            <Text
-              style={[
-                styles.headerOnline,
-                {
-                  color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)",
-                },
-              ]}
-            >
-              {isOtherOnline
-                ? (t("chat.online") ?? "Active now")
-                : lastSeen
-                  ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
-                  : t("chat.offline")}
-            </Text>
           </View>
         </View>
-      </View>
 
-      <View style={styles.messagesArea}>
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : messages.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
-          </View>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item, index) => `${item.id}_${index}`}
-            contentContainerStyle={styles.messagesList}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: true })
-            }
-            onLayout={() =>
-              flatListRef.current?.scrollToEnd({ animated: false })
-            }
-            renderItem={({ item, index }) => {
-              const isMine = item.senderId === currentUserId;
-              const showSeparator = shouldShowDateSeparator(messages, index);
-              return (
-                <>
-                  {showSeparator && (
-                    <View style={styles.dateSeparator}>
-                      <View style={styles.dateLine} />
-                      <Text style={styles.dateLabel}>
-                        {getDateLabel(item.sentAt, i18n.language)}
-                      </Text>
-                      <View style={styles.dateLine} />
-                    </View>
-                  )}
-                  <View
-                    style={[
-                      styles.messageRow,
-                      isMine ? styles.messageRowMine : styles.messageRowOther,
-                    ]}
-                  >
-                    {!isMine && (
-                      <View style={styles.messageAvatar}>
-                        <Text style={styles.messageAvatarText}>
-                          {otherUserName.charAt(0).toUpperCase()}
+        <View style={styles.messagesArea}>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          ) : messages.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>💬</Text>
+              <Text style={styles.emptyText}>{t("chat.noMessages")}</Text>
+            </View>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item, index) => `${item.id}_${index}`}
+              contentContainerStyle={styles.messagesList}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() =>
+                flatListRef.current?.scrollToEnd({ animated: true })
+              }
+              onLayout={() =>
+                flatListRef.current?.scrollToEnd({ animated: false })
+              }
+              renderItem={({ item, index }) => {
+                const isMine = item.senderId === currentUserId;
+                const showSeparator = shouldShowDateSeparator(messages, index);
+                return (
+                  <>
+                    {showSeparator && (
+                      <View style={styles.dateSeparator}>
+                        <View style={styles.dateLine} />
+                        <Text style={styles.dateLabel}>
+                          {getDateLabel(item.sentAt, i18n.language)}
                         </Text>
+                        <View style={styles.dateLine} />
                       </View>
                     )}
                     <View
                       style={[
-                        styles.bubble,
-                        isMine ? styles.bubbleMine : styles.bubbleOther,
+                        styles.messageRow,
+                        isMine ? styles.messageRowMine : styles.messageRowOther,
                       ]}
                     >
-                      <Text
+                      {!isMine && (
+                        <View style={styles.messageAvatar}>
+                          <Text style={styles.messageAvatarText}>
+                            {otherUserName.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View
                         style={[
-                          styles.bubbleText,
-                          isMine
-                            ? styles.bubbleTextMine
-                            : styles.bubbleTextOther,
+                          styles.bubble,
+                          isMine ? styles.bubbleMine : styles.bubbleOther,
                         ]}
                       >
-                        {item.content}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.bubbleTime,
-                          isMine
-                            ? styles.bubbleTimeMine
-                            : styles.bubbleTimeOther,
-                        ]}
-                      >
-                        {formatTime(item.sentAt)}
-                        {isMine && " ✓"}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.bubbleText,
+                            isMine
+                              ? styles.bubbleTextMine
+                              : styles.bubbleTextOther,
+                          ]}
+                        >
+                          {item.content}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.bubbleTime,
+                            isMine
+                              ? styles.bubbleTimeMine
+                              : styles.bubbleTimeOther,
+                          ]}
+                        >
+                          {formatTime(item.sentAt)}
+                          {isMine && " ✓"}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                </>
-              );
-            }}
-          />
-        )}
-      </View>
-
-      <View
-        style={[
-          styles.inputBar,
-          { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 },
-        ]}
-      >
-        <TextInput
-          style={styles.messageInput}
-          placeholder={t("chat.messagePlaceholder")}
-          placeholderTextColor={COLORS.textSecondary}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={500}
-          returnKeyType="send"
-          onSubmitEditing={handleSend}
-          blurOnSubmit={false}
-        />
-
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!inputText.trim() || sending) && styles.sendButtonDisabled,
-          ]}
-          onPress={handleSend}
-          disabled={!inputText.trim() || sending}
-          activeOpacity={0.8}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Ionicons name="send" size={18} color="#FFFFFF" />
+                  </>
+                );
+              }}
+            />
           )}
-        </TouchableOpacity>
+        </View>
+
+        <View style={styles.inputBar}>
+          <TextInput
+            style={styles.messageInput}
+            placeholder={t("chat.messagePlaceholder")}
+            placeholderTextColor={COLORS.textSecondary}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+            returnKeyType="send"
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
+          />
+
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!inputText.trim() || sending) && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || sending}
+            activeOpacity={0.8}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="send" size={18} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  root: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.primary,
+  },
+  root: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   header: {
     backgroundColor: COLORS.primary,
