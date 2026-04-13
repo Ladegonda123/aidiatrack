@@ -16,10 +16,20 @@ interface Props {
   style?: ViewStyle;
 }
 
+const getInitials = (name: string): string => {
+  if (!name?.trim()) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
 const Avatar: React.FC<Props> = ({ photoUrl, name, size = 40, style }) => {
-  const fontSize = size * 0.4;
+  const initials = getInitials(name);
+  const fontSize = size * 0.35;
   const borderRadius = size / 2;
-  const initial = (name.trim().charAt(0) || "?").toUpperCase();
 
   if (photoUrl) {
     return (
@@ -42,7 +52,7 @@ const Avatar: React.FC<Props> = ({ photoUrl, name, size = 40, style }) => {
         style,
       ]}
     >
-      <Text style={[styles.letter, { fontSize }]}>{initial}</Text>
+      <Text style={[styles.letter, { fontSize }]}>{initials}</Text>
     </View>
   );
 };

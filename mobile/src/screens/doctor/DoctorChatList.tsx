@@ -116,7 +116,6 @@ const DoctorChatList = (): React.JSX.Element => {
                   photoUrl={item.photoUrl ?? null}
                   name={item.fullName}
                   size={44}
-                  style={styles.patientAvatar}
                 />
                 <View style={styles.patientInfo}>
                   <Text style={styles.patientName}>{item.fullName}</Text>
@@ -175,10 +174,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     gap: 12,
-  },
-  patientAvatar: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   patientInfo: { flex: 1 },
   patientName: {

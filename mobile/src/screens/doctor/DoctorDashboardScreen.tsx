@@ -123,7 +123,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
               <Avatar
                 photoUrl={user?.photoUrl ?? null}
                 name={user?.fullName ?? "Doctor"}
-                size={52}
+                size={42}
                 style={styles.avatar}
               />
               <View>
@@ -265,21 +265,12 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.patientLeft}>
-                    <View
-                      style={[
-                        styles.patientAvatar,
-                        riskLevel === "HIGH"
-                          ? styles.patientAvatarHigh
-                          : undefined,
-                      ]}
-                    >
-                      <Avatar
-                        photoUrl={item.photoUrl ?? null}
-                        name={item.fullName}
-                        size={44}
-                        style={styles.patientAvatarImage}
-                      />
-                    </View>
+                    <Avatar
+                      photoUrl={item.photoUrl ?? null}
+                      name={item.fullName}
+                      size={46}
+                      style={styles.patientAvatarStyle}
+                    />
                     <View style={styles.patientInfo}>
                       <Text style={styles.patientName}>{item.fullName}</Text>
                       <Text style={styles.patientPhone}>
@@ -377,16 +368,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.25)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
   },
   greeting: {
     color: "#FFFFFF",
@@ -502,50 +486,17 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  patientAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    overflow: "hidden",
-  },
-  patientAvatarHigh: {
-    borderWidth: 1,
-    borderColor: COLORS.danger,
-  },
-  patientAvatarImage: {
-    borderWidth: 0,
-  },
-  patientAvatarText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
   patientInfo: { flex: 1 },
   patientName: {
     fontSize: 15,
     fontWeight: "600",
     color: COLORS.textPrimary,
   },
-  patientPhone: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 1,
-  },
-  lastSeen: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  patientRight: {
-    alignItems: "flex-end",
-    gap: 4,
+  patientAvatarStyle: {
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
   },
   bgValue: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  bgUnit: {
-    fontSize: 11,
     fontWeight: "400",
   },
   noData: {
