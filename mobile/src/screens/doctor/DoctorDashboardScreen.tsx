@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useState,
   useEffect,
   useCallback,
@@ -180,151 +180,156 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
           </View>
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{patients.length}</Text>
-            <Text style={styles.statLabel}>
-              {t("doctor.dashboard.totalPatients")}
-            </Text>
+        <View style={styles.content}>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{patients.length}</Text>
+              <Text style={styles.statLabel}>
+                {t("doctor.dashboard.totalPatients")}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: COLORS.danger }]}>
+                {highRiskCount}
+              </Text>
+              <Text style={styles.statLabel}>
+                {t("doctor.dashboard.highRisk")}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: COLORS.warning }]}>
+                {mediumRiskCount}
+              </Text>
+              <Text style={styles.statLabel}>
+                {t("doctor.dashboard.mediumRisk")}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: COLORS.success }]}>
+                {lowRiskCount}
+              </Text>
+              <Text style={styles.statLabel}>
+                {t("doctor.dashboard.lowRisk")}
+              </Text>
+            </View>
           </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: COLORS.danger }]}>
-              {highRiskCount}
-            </Text>
-            <Text style={styles.statLabel}>
-              {t("doctor.dashboard.highRisk")}
-            </Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: COLORS.warning }]}>
-              {mediumRiskCount}
-            </Text>
-            <Text style={styles.statLabel}>
-              {t("doctor.dashboard.mediumRisk")}
-            </Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: COLORS.success }]}>
-              {lowRiskCount}
-            </Text>
-            <Text style={styles.statLabel}>
-              {t("doctor.dashboard.lowRisk")}
-            </Text>
-          </View>
-        </View>
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : filteredPatients.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>👥</Text>
-            <Text style={styles.emptyText}>
-              {searchQuery
-                ? t("doctor.dashboard.noResults")
-                : t("doctor.dashboard.noPatients")}
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={filteredPatients}
-            keyExtractor={(item) => item.id.toString()}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  onRefresh().catch(() => undefined);
-                }}
-                colors={[COLORS.primary]}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => {
-              const lastBg = item.lastHealthRecord?.bloodGlucose;
-              const riskLevel = item.lastPrediction?.riskLevel;
-              const bgColor = lastBg
-                ? getBgColor(lastBg)
-                : COLORS.textSecondary;
-              const rColor = riskLevel
-                ? getRiskColor(riskLevel)
-                : COLORS.textSecondary;
-
-              return (
-                <TouchableOpacity
-                  style={styles.patientCard}
-                  onPress={() => {
-                    navigation.navigate("PatientDetail", {
-                      patientId: item.id,
-                      patientName: item.fullName,
-                    });
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          ) : filteredPatients.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>👥</Text>
+              <Text style={styles.emptyText}>
+                {searchQuery
+                  ? t("doctor.dashboard.noResults")
+                  : t("doctor.dashboard.noPatients")}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredPatients}
+              keyExtractor={(item) => item.id.toString()}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    onRefresh().catch(() => undefined);
                   }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.patientLeft}>
-                    <Avatar
-                      photoUrl={item.photoUrl ?? null}
-                      name={item.fullName}
-                      size={46}
-                      style={styles.patientAvatarStyle}
-                    />
-                    <View style={styles.patientInfo}>
-                      <Text style={styles.patientName}>{item.fullName}</Text>
-                      <Text style={styles.patientPhone}>
-                        {item.phone ?? item.email}
-                      </Text>
-                      {item.lastHealthRecord ? (
-                        <Text style={styles.lastSeen}>
-                          {t("doctor.dashboard.lastReading")}:{" "}
-                          {timeAgo(
-                            item.lastHealthRecord.recordedAt,
-                            i18n.language as "en" | "rw",
-                          )}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </View>
+                  colors={[COLORS.primary]}
+                />
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              renderItem={({ item }) => {
+                const lastBg = item.lastHealthRecord?.bloodGlucose;
+                const riskLevel = item.lastPrediction?.riskLevel;
+                const bgColor = lastBg
+                  ? getBgColor(lastBg)
+                  : COLORS.textSecondary;
+                const rColor = riskLevel
+                  ? getRiskColor(riskLevel)
+                  : COLORS.textSecondary;
 
-                  <View style={styles.patientRight}>
-                    {lastBg ? (
-                      <Text style={[styles.bgValue, { color: bgColor }]}>
-                        {lastBg.toFixed(0)}
-                        <Text style={styles.bgUnit}> mg/dL</Text>
-                      </Text>
-                    ) : (
-                      <Text style={styles.noData}>--</Text>
-                    )}
-
-                    {riskLevel ? (
-                      <View
-                        style={[
-                          styles.riskBadge,
-                          { backgroundColor: `${rColor}20` },
-                        ]}
-                      >
-                        <View
-                          style={[styles.riskDot, { backgroundColor: rColor }]}
-                        />
-                        <Text style={[styles.riskText, { color: rColor }]}>
-                          {riskLevel}
+                return (
+                  <TouchableOpacity
+                    style={styles.patientCard}
+                    onPress={() => {
+                      navigation.navigate("PatientDetail", {
+                        patientId: item.id,
+                        patientName: item.fullName,
+                      });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.patientLeft}>
+                      <Avatar
+                        photoUrl={item.photoUrl ?? null}
+                        name={item.fullName}
+                        size={46}
+                        style={styles.patientAvatarStyle}
+                      />
+                      <View style={styles.patientInfo}>
+                        <Text style={styles.patientName}>{item.fullName}</Text>
+                        <Text style={styles.patientPhone}>
+                          {item.phone ?? item.email}
                         </Text>
+                        {item.lastHealthRecord ? (
+                          <Text style={styles.lastSeen}>
+                            {t("doctor.dashboard.lastReading")}:{" "}
+                            {timeAgo(
+                              item.lastHealthRecord.recordedAt,
+                              i18n.language as "en" | "rw",
+                            )}
+                          </Text>
+                        ) : null}
                       </View>
-                    ) : null}
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={COLORS.textSecondary}
-                      style={{ marginTop: 4 }}
-                    />
-                  </View>
-                </TouchableOpacity>
-              );
-            }}
-          />
-        )}
+                    </View>
+
+                    <View style={styles.patientRight}>
+                      {lastBg ? (
+                        <Text style={[styles.bgValue, { color: bgColor }]}>
+                          {lastBg.toFixed(0)}
+                          <Text style={styles.bgUnit}> mg/dL</Text>
+                        </Text>
+                      ) : (
+                        <Text style={styles.noData}>--</Text>
+                      )}
+
+                      {riskLevel ? (
+                        <View
+                          style={[
+                            styles.riskBadge,
+                            { backgroundColor: `${rColor}20` },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.riskDot,
+                              { backgroundColor: rColor },
+                            ]}
+                          />
+                          <Text style={[styles.riskText, { color: rColor }]}>
+                            {riskLevel}
+                          </Text>
+                        </View>
+                      ) : null}
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={COLORS.textSecondary}
+                        style={{ marginTop: 4 }}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          )}
+        </View>
       </View>
 
       <NotificationPanel
@@ -344,8 +349,14 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { flex: 1, backgroundColor: COLORS.background },
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
   header: {
     backgroundColor: COLORS.primary,
     paddingTop: 12,
@@ -353,9 +364,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
     gap: 14,
+  },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   headerRow: {
     flexDirection: "row",
