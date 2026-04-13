@@ -57,9 +57,16 @@ const shouldShowDateSeparator = (
   index: number,
 ): boolean => {
   if (index === 0) return true;
-  const current = new Date(messages[index].sentAt);
-  const previous = new Date(messages[index - 1].sentAt);
-  return current.toDateString() !== previous.toDateString();
+  try {
+    const current = new Date(messages[index].sentAt);
+    const previous = new Date(messages[index - 1].sentAt);
+    if (isNaN(current.getTime()) || isNaN(previous.getTime())) {
+      return false;
+    }
+    return current.toDateString() !== previous.toDateString();
+  } catch {
+    return false;
+  }
 };
 
 const ChatUI = ({
@@ -85,21 +92,27 @@ const ChatUI = ({
   const roomId = getChatRoomId(currentUserId, otherUserId);
 
   const getDateLabel = useCallback(
-    (dateStr: string, _language: string): string => {
-      const date = new Date(dateStr);
-      const today = new Date();
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
+    (dateStr: string | undefined, _language: string): string => {
+      if (!dateStr) return "";
+      try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return "";
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
 
-      if (date.toDateString() === today.toDateString()) {
-        return t("chat.today");
+        if (date.toDateString() === today.toDateString()) {
+          return t("chat.today");
+        }
+
+        if (date.toDateString() === yesterday.toDateString()) {
+          return t("chat.yesterday");
+        }
+
+        return formatDate(dateStr, i18n.language as "en" | "rw");
+      } catch {
+        return "";
       }
-
-      if (date.toDateString() === yesterday.toDateString()) {
-        return t("chat.yesterday");
-      }
-
-      return formatDate(dateStr, i18n.language as "en" | "rw");
     },
     [i18n.language, t],
   );
@@ -152,9 +165,14 @@ const ChatUI = ({
     const handleReceive = (data: {
       message: string;
       senderId: number;
-      timestamp: string;
+      timestamp?: string;
+      sentAt?: string;
     }): void => {
       if (data.senderId === currentUserId) return;
+
+      // Handle both 'timestamp' and 'sentAt' field names
+      // and fallback to current time if neither exist
+      const sentAt = data.timestamp ?? data.sentAt ?? new Date().toISOString();
 
       const newMessage: Message = {
         id: Date.now(),
@@ -162,7 +180,7 @@ const ChatUI = ({
         receiverId: currentUserId,
         content: data.message,
         isRead: false,
-        sentAt: data.timestamp,
+        sentAt,
       };
 
       setMessages((prev) => [...prev, newMessage]);
@@ -344,7 +362,9 @@ const ChatUI = ({
                       <View style={styles.dateSeparator}>
                         <View style={styles.dateLine} />
                         <Text style={styles.dateLabel}>
-                          {getDateLabel(item.sentAt, i18n.language)}
+                          {item.sentAt
+                            ? getDateLabel(item.sentAt, i18n.language)
+                            : ""}
                         </Text>
                         <View style={styles.dateLine} />
                       </View>
@@ -387,7 +407,7 @@ const ChatUI = ({
                               : styles.bubbleTimeOther,
                           ]}
                         >
-                          {formatTime(item.sentAt)}
+                          {item.sentAt ? formatTime(item.sentAt) : ""}
                           {isMine ? " ?" : ""}
                         </Text>
                       </View>

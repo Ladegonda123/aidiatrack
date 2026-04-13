@@ -221,7 +221,15 @@ export const setupSocket = (io: Server): void => {
         });
 
         const roomId = getChatRoomId(payload.senderId, payload.receiverId);
-        io.to(roomId).emit("receive_message", message);
+        const timestamp = message.sentAt.toISOString();
+        
+        // Emit with both field names for compatibility
+        io.to(roomId).emit("receive_message", {
+          message: message.content,
+          senderId: message.senderId,
+          timestamp,
+          sentAt: timestamp,
+        });
       } catch (error: unknown) {
         logger.error("send_message failed", error);
         socket.emit("socket_error", { message: "Failed to send message" });
