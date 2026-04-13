@@ -15,7 +15,7 @@ import {
   TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -34,7 +34,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user } = useAuth();
+  const { user, refreshChatUnread } = useAuth();
   const [patients, setPatients] = useState<DashboardPatient[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -76,6 +76,22 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
     });
     loadNotifications().catch(() => undefined);
   }, [loadNotifications, loadPatients]);
+
+  useEffect(() => {
+    refreshChatUnread().catch(() => undefined);
+
+    const interval = setInterval(() => {
+      refreshChatUnread().catch(() => undefined);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshChatUnread]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshChatUnread().catch(() => undefined);
+    }, [refreshChatUnread]),
+  );
 
   const filteredPatients = patients.filter(
     (patient) =>

@@ -1,7 +1,8 @@
-import React, { useLayoutEffect } from "react";
+import React, { useCallback, useLayoutEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import {
   RouteProp,
+  useFocusEffect,
   useNavigation,
   useRoute,
   NavigationProp,
@@ -10,13 +11,14 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import ChatUI from "../../components/ChatUI";
 import { RootStackParamList } from "../../types";
+import { markMessagesRead } from "../../api/chatAPI";
 import { COLORS } from "../../utils/colors";
 
 type RouteType = RouteProp<RootStackParamList, "DoctorChat">;
 
 const DoctorChat = (): React.JSX.Element => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, refreshChatUnread } = useAuth();
   const route = useRoute<RouteType>();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
@@ -25,6 +27,25 @@ const DoctorChat = (): React.JSX.Element => {
   }, [navigation]);
 
   const params = route.params as RootStackParamList["DoctorChat"] | undefined;
+
+  useFocusEffect(
+    useCallback(() => {
+      const clearUnread = async (): Promise<void> => {
+        if (!params?.patientId) return;
+
+        try {
+          await markMessagesRead(params.patientId);
+          await refreshChatUnread();
+        } catch {
+          // Silent fail to avoid blocking chat view.
+        }
+      };
+
+      clearUnread().catch(() => {
+        // Silent fail to avoid blocking chat view.
+      });
+    }, [params?.patientId, refreshChatUnread]),
+  );
 
   if (!params) {
     return (

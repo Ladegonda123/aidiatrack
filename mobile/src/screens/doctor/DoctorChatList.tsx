@@ -103,24 +103,13 @@ const DoctorChatList = (): React.JSX.Element => {
     setRefreshing(false);
   }, [loadPatients]);
 
-  const totalUnread = patients.reduce(
-    (sum, patient) => sum + (patient.unreadCount ?? 0),
-    0,
-  );
   const language = i18n.language === "rw" ? "rw" : "en";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <Text style={styles.headerTitle}>{t("chat.titleDoctor")}</Text>
-            {totalUnread > 0 ? (
-              <View style={styles.totalUnreadBadge}>
-                <Text style={styles.totalUnreadText}>{totalUnread}</Text>
-              </View>
-            ) : null}
-          </View>
+          <Text style={styles.headerTitle}>{t("chat.titleDoctor")}</Text>
         </View>
 
         <View style={styles.content}>
@@ -255,12 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
   },
   content: {
     flex: 1,
@@ -275,20 +259,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "center",
-  },
-  totalUnreadBadge: {
-    backgroundColor: COLORS.danger,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  totalUnreadText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
   },
   loader: { marginTop: 40 },
   emptyState: {

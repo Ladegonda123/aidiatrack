@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { COLORS } from "../utils/colors";
 import { DoctorTabParamList } from "../types";
+import { useAuth } from "../hooks/useAuth";
 import DoctorDashboardScreen from "../screens/doctor/DoctorDashboardScreen";
 import DoctorChatList from "../screens/doctor/DoctorChatList";
 import ProfileScreen from "../screens/patient/ProfileScreen";
@@ -12,6 +13,7 @@ const Tab = createBottomTabNavigator<DoctorTabParamList>();
 
 const DoctorNavigator = (): React.JSX.Element => {
   const { t } = useTranslation();
+  const { chatUnreadCount } = useAuth();
 
   return (
     <Tab.Navigator
@@ -39,7 +41,24 @@ const DoctorNavigator = (): React.JSX.Element => {
       <Tab.Screen
         name="DoctorChatList"
         component={DoctorChatList}
-        options={{ title: t("chat.titleDoctor") }}
+        options={{
+          title: t("chat.titleDoctor"),
+          tabBarBadge:
+            chatUnreadCount > 0
+              ? chatUnreadCount > 99
+                ? "99+"
+                : chatUnreadCount
+              : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: COLORS.danger,
+            color: "#FFFFFF",
+            fontSize: 10,
+            fontWeight: "700",
+            minWidth: 18,
+            height: 18,
+            lineHeight: 18,
+          },
+        }}
       />
       <Tab.Screen
         name="DoctorProfile"
