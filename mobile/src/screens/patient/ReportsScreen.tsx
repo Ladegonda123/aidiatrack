@@ -22,15 +22,9 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BarChart, LineChart } from "react-native-chart-kit";
 import { Ionicons } from "@expo/vector-icons";
 import { getHealthHistory, getHealthSummary } from "../../api/healthAPI";
-import { getDietRecommendations } from "../../api/dietAPI";
+import { DietRecommendation, getDietRecommendations } from "../../api/dietAPI";
 import { COLORS } from "../../utils/colors";
-import { formatDate } from "../../utils/formatters";
-import {
-  DietRecommendation,
-  HealthRecord,
-  HealthSummary,
-  RootStackParamList,
-} from "../../types";
+import { HealthRecord, HealthSummary, RootStackParamList } from "../../types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_WIDTH = SCREEN_WIDTH - 64;
@@ -56,19 +50,21 @@ const ReportsScreen = (): React.JSX.Element => {
   const loadData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const [historyData, summaryData, dietData] = await Promise.all([
+      const [historyResponse, summaryData, dietData] = await Promise.all([
         getHealthHistory(1, 30),
         getHealthSummary(),
-        getDietRecommendations().catch(() => null),
+        getDietRecommendations(),
       ]);
 
-      setRecords(historyData);
+      const list = Array.isArray(historyResponse)
+        ? historyResponse
+        : (historyResponse?.records ?? historyResponse?.data?.records ?? []);
+
+      setRecords(list);
       setSummary(summaryData);
       setDiet(dietData);
     } catch {
       setRecords([]);
-      setSummary(null);
-      setDiet(null);
     } finally {
       setLoading(false);
     }
@@ -90,23 +86,40 @@ const ReportsScreen = (): React.JSX.Element => {
 
   const lineChartData = useMemo(() => {
     if (filteredRecords.length === 0) {
-      return { labels: ["--"], datasets: [{ data: [0] }] };
+      return {
+        labels: ["--"],
+        datasets: [{ data: [0] }],
+      };
     }
 
+    const step = Math.max(1, Math.floor(filteredRecords.length / 6));
+    const sampled = filteredRecords.filter((_, i) => i % step === 0);
+
+    const getShortLabel = (dateStr: string): string => {
+      const date = new Date(dateStr);
+      if (period === "7d") {
+        return date.toLocaleDateString(lang === "rw" ? "fr-FR" : "en-US", {
+          weekday: "short",
+        });
+      }
+
+      return date.toLocaleDateString(lang === "rw" ? "fr-FR" : "en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    };
+
     return {
-      labels: filteredRecords.map(
-        (record) => formatDate(record.recordedAt, lang).split(" ")[0],
-      ),
+      labels: sampled.map((record) => getShortLabel(record.recordedAt)),
       datasets: [
         {
-          data: filteredRecords.map((record) => record.bloodGlucose),
+          data: sampled.map((record) => record.bloodGlucose),
           color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
           strokeWidth: 2,
         },
       ],
-      legend: [t("dashboard.mgdlUnit")],
     };
-  }, [filteredRecords, lang, t]);
+  }, [filteredRecords, period, lang]);
 
   const stats = useMemo(() => {
     if (filteredRecords.length === 0) return null;
@@ -144,6 +157,13 @@ const ReportsScreen = (): React.JSX.Element => {
       ],
     };
   }, [stats, t]);
+
+  const tirColor =
+    (stats?.inRangePercent ?? 0) >= 70
+      ? COLORS.success
+      : (stats?.inRangePercent ?? 0) >= 50
+        ? COLORS.warning
+        : COLORS.danger;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -257,17 +277,26 @@ const ReportsScreen = (): React.JSX.Element => {
                         styles.inRangeBarFill,
                         {
                           width: `${stats.inRangePercent}%`,
-                          backgroundColor:
-                            stats.inRangePercent >= 70
-                              ? COLORS.success
-                              : stats.inRangePercent >= 50
-                                ? COLORS.warning
-                                : COLORS.danger,
+                          backgroundColor: tirColor,
                         },
                       ]}
                     />
                   </View>
                 </View>
+
+                <Text style={[styles.tirInterpretation, { color: tirColor }]}>
+                  {stats.inRangePercent >= 70
+                    ? lang === "rw"
+                      ? "✓ Igenzura ry'isukiraguciro ryiza"
+                      : "✓ Good glucose control"
+                    : stats.inRangePercent >= 50
+                      ? lang === "rw"
+                        ? "⚠ Igenzura rishobora gukorwa neza"
+                        : "⚠ Control can be improved"
+                      : lang === "rw"
+                        ? "✗ Igenzura ry'isukiraguciro ntiryiza"
+                        : "✗ Poor glucose control"}
+                </Text>
 
                 <Text style={styles.readingsCount}>
                   {stats.total} {t("reports.readings")}
@@ -308,16 +337,78 @@ const ReportsScreen = (): React.JSX.Element => {
                   withShadow={false}
                   segments={4}
                 />
-                <Text style={styles.chartNote}>{t("reports.normalRange")}</Text>
+                <View style={styles.referenceLines}>
+                  <View style={styles.referenceLine}>
+                    <View
+                      style={[
+                        styles.referenceLineDot,
+                        { backgroundColor: COLORS.success },
+                      ]}
+                    />
+                    <Text style={styles.referenceLineText}>
+                      {lang === "rw"
+                        ? "Rwego busanzwe: 70–140 mg/dL"
+                        : "Normal range: 70–140 mg/dL"}
+                    </Text>
+                  </View>
+                  <View style={styles.referenceLine}>
+                    <View
+                      style={[
+                        styles.referenceLineDot,
+                        { backgroundColor: COLORS.warning },
+                      ]}
+                    />
+                    <Text style={styles.referenceLineText}>
+                      {lang === "rw"
+                        ? "Hejuru gato: 140–200 mg/dL"
+                        : "Slightly high: 140–200 mg/dL"}
+                    </Text>
+                  </View>
+                  <View style={styles.referenceLine}>
+                    <View
+                      style={[
+                        styles.referenceLineDot,
+                        { backgroundColor: COLORS.danger },
+                      ]}
+                    />
+                    <Text style={styles.referenceLineText}>
+                      {lang === "rw"
+                        ? "Hejuru cyane: >200 mg/dL"
+                        : "Very high: >200 mg/dL"}
+                    </Text>
+                  </View>
+                </View>
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons
-                  name="bar-chart-outline"
-                  size={48}
-                  color={COLORS.textSecondary}
-                />
-                <Text style={styles.emptyText}>{t("reports.noData")}</Text>
+                <View style={styles.emptyIconCircle}>
+                  <Ionicons
+                    name="bar-chart-outline"
+                    size={40}
+                    color={COLORS.textSecondary}
+                  />
+                </View>
+                <Text style={styles.emptyTitle}>
+                  {lang === "rw" ? "Nta makuru arabonetse" : "No data yet"}
+                </Text>
+                <Text style={styles.emptyText}>
+                  {lang === "rw"
+                    ? "Andika amasuzuma yawe kugira ngo ubone raporo zawe hano."
+                    : "Log your blood glucose readings to see your reports here."}
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyButton}
+                  onPress={() => navigation.navigate("PatientTabs")}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={18}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.emptyButtonText}>
+                    {lang === "rw" ? "Andika Isuzuma" : "Log a Reading"}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -550,6 +641,11 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 5,
   },
+  tirInterpretation: {
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 6,
+  },
   readingsCount: {
     fontSize: 12,
     color: COLORS.textSecondary,
@@ -558,21 +654,63 @@ const styles = StyleSheet.create({
   chart: {
     borderRadius: 10,
   },
-  chartNote: {
-    fontSize: 11,
+  referenceLines: {
+    gap: 6,
+    marginTop: 4,
+  },
+  referenceLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  referenceLineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  referenceLineText: {
+    fontSize: 12,
     color: COLORS.textSecondary,
-    textAlign: "center",
-    fontStyle: "italic",
   },
   emptyState: {
     alignItems: "center",
     paddingVertical: 40,
     gap: 12,
   },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
   emptyText: {
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: "center",
+  },
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  emptyButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
   },
   dietAdvice: {
     fontSize: 14,

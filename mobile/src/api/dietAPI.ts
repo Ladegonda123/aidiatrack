@@ -1,13 +1,19 @@
 import axiosInstance from "./axiosInstance";
-import { DietRecommendation } from "../types";
 
-interface ApiResponse<T> {
-  data: T;
+export interface DietRecommendation {
+  advice: string;
+  adviceRw?: string;
+  foodsToEat: string[];
+  foodsToAvoid: string[];
+  level: "low" | "normal" | "high" | "very_high";
 }
 
-export const getDietRecommendations = async (): Promise<DietRecommendation> => {
-  const response = await axiosInstance.get<ApiResponse<DietRecommendation>>(
-    "/diet/recommendations",
-  );
-  return response.data.data;
-};
+export const getDietRecommendations =
+  async (): Promise<DietRecommendation | null> => {
+    try {
+      const response = await axiosInstance.get("/diet/recommendations");
+      return response.data?.data ?? null;
+    } catch {
+      return null;
+    }
+  };
