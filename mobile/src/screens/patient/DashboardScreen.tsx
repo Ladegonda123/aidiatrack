@@ -39,39 +39,7 @@ import {
   RootStackParamList,
 } from "../../types";
 import { COLORS, getBgColor } from "../../utils/colors";
-import { formatDate, formatTime, timeAgo } from "../../utils/formatters";
-
-const getNextReminder = (
-  meds: Medication[],
-): {
-  med: Medication;
-  time: string;
-} | null => {
-  if (meds.length === 0) return null;
-
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  let earliest: { med: Medication; time: string; minutes: number } | null =
-    null;
-
-  for (const med of meds) {
-    for (const time of med.reminderTimes) {
-      const [h, m] = time.split(":").map(Number);
-      const totalMins = h * 60 + m;
-      const diff =
-        totalMins > currentMinutes
-          ? totalMins - currentMinutes
-          : totalMins + 24 * 60 - currentMinutes;
-
-      if (!earliest || diff < earliest.minutes) {
-        earliest = { med, time, minutes: diff };
-      }
-    }
-  }
-
-  return earliest ? { med: earliest.med, time: earliest.time } : null;
-};
+import { formatDate, timeAgo } from "../../utils/formatters";
 
 const getGreetingKey = (
   hour: number,
@@ -97,13 +65,6 @@ const getBgStatusKey = (
   return "bgLabels.high";
 };
 
-const formatReminderClock = (time: string): string => {
-  const [hours, minutes] = time.split(":").map(Number);
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  return formatTime(date);
-};
-
 type DashboardNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<PatientTabParamList, "Dashboard">,
   NativeStackNavigationProp<RootStackParamList>
@@ -123,6 +84,47 @@ const DashboardScreen = (): React.JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const lang = i18n.language as "en" | "rw";
+
+  const getNextMedication = (
+    meds: Medication[],
+  ): { med: Medication; time: string; isToday: boolean } | null => {
+    if (!meds || meds.length === 0) return null;
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let closest: {
+      med: Medication;
+      time: string;
+      minutesFromNow: number;
+      isToday: boolean;
+    } | null = null;
+
+    for (const med of meds) {
+      if (!med.isActive) continue;
+      for (const timeStr of med.reminderTimes) {
+        const [h, m] = timeStr.split(":").map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) continue;
+
+        const medMinutes = h * 60 + m;
+        let minutesFromNow = medMinutes - currentMinutes;
+
+        const isToday = minutesFromNow > 0;
+        if (!isToday) minutesFromNow += 24 * 60;
+
+        if (!closest || minutesFromNow < closest.minutesFromNow) {
+          closest = { med, time: timeStr, minutesFromNow, isToday };
+        }
+      }
+    }
+
+    if (!closest) return null;
+    return {
+      med: closest.med,
+      time: closest.time,
+      isToday: closest.isToday,
+    };
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -196,8 +198,8 @@ const DashboardScreen = (): React.JSX.Element => {
     }).length;
   }, [summary?.trend]);
 
-  const nextReminder = useMemo(
-    () => getNextReminder(medications),
+  const nextMed = useMemo(
+    () => getNextMedication(medications.filter((m) => m.isActive)),
     [medications],
   );
 
@@ -451,32 +453,41 @@ const DashboardScreen = (): React.JSX.Element => {
               </TouchableOpacity>
             ) : null}
 
-            <TouchableOpacity
-              style={[styles.card, styles.medCard]}
-              onPress={() => navigation.navigate("Profile")}
-              activeOpacity={0.9}
-            >
-              <Text style={styles.medIcon}>💊</Text>
-              <View style={styles.alertText}>
+            {nextMed ? (
+              <View style={styles.card}>
                 <Text style={styles.cardLabel}>
                   {t("dashboard.nextMedication")}
                 </Text>
-                {nextReminder ? (
-                  <>
+                <View style={styles.medRow}>
+                  <View style={styles.medIconWrapper}>
+                    <Text style={styles.medEmoji}>💊</Text>
+                  </View>
+                  <View style={styles.medInfo}>
                     <Text style={styles.medName}>
-                      {nextReminder.med.drugName} {nextReminder.med.dosage}
+                      {nextMed.med.drugName} {nextMed.med.dosage}
                     </Text>
-                    <Text style={styles.medTime}>
-                      {formatReminderClock(nextReminder.time)}
+                    <Text style={styles.medFreq}>{nextMed.med.frequency}</Text>
+                  </View>
+                  <View style={styles.medTimeWrapper}>
+                    <Text style={styles.medTime}>{nextMed.time}</Text>
+                    <Text style={styles.medTimeLabel}>
+                      {nextMed.isToday
+                        ? t("dashboard.today")
+                        : t("dashboard.tomorrow")}
                     </Text>
-                  </>
-                ) : (
-                  <Text style={styles.medTime}>
-                    {t("dashboard.noMedications")}
-                  </Text>
-                )}
+                  </View>
+                </View>
               </View>
-            </TouchableOpacity>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.cardLabel}>
+                  {t("dashboard.nextMedication")}
+                </Text>
+                <Text style={styles.noMedText}>
+                  {t("medications.noMedications")}
+                </Text>
+              </View>
+            )}
 
             <TouchableOpacity
               style={styles.reportButton}
@@ -873,23 +884,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  medCard: {
+  medRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  medIcon: {
-    fontSize: 28,
+  medIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${COLORS.primary}10`,
+    alignItems: "center",
+    justifyContent: "center",
   },
+  medEmoji: { fontSize: 22 },
+  medInfo: { flex: 1 },
   medName: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
     color: COLORS.textPrimary,
   },
-  medTime: {
-    fontSize: 13,
+  medFreq: {
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
+    textTransform: "capitalize",
+  },
+  medTimeWrapper: {
+    alignItems: "flex-end",
+  },
+  medTime: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: COLORS.primary,
+  },
+  medTimeLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    textTransform: "uppercase",
+    fontWeight: "600",
+  },
+  noMedText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 8,
   },
   reportButton: {
     flexDirection: "row",

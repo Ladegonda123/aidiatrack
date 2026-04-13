@@ -11,6 +11,7 @@ import {
   FlatList,
   Modal,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -66,6 +67,22 @@ const FREQUENCY_OPTIONS: {
     labelKey: "medications.frequencyThrice",
     reminders: 3,
   },
+];
+
+const PRESET_TIMES = [
+  "06:00",
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "16:00",
+  "18:00",
+  "20:00",
+  "21:00",
+  "22:00",
 ];
 
 const MedicationScreen = (): React.JSX.Element => {
@@ -300,8 +317,9 @@ const MedicationScreen = (): React.JSX.Element => {
               </View>
 
               <KeyboardAwareScrollView
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
                 enableOnAndroid
+                extraScrollHeight={40}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.modalContent}
               >
@@ -376,32 +394,84 @@ const MedicationScreen = (): React.JSX.Element => {
                 <Text style={styles.fieldLabel}>
                   {t("medications.reminderTimes")}
                 </Text>
-                <View style={styles.timesEditor}>
-                  {reminderTimes.map((time, index) => (
-                    <View key={`${time}-${index}`} style={styles.timeRow}>
+                {reminderTimes.map((time, index) => (
+                  <View key={index} style={styles.timePickerRow}>
+                    <Text style={styles.timePickerLabel}>
+                      {t("medications.reminder")} {index + 1}
+                    </Text>
+
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.presetChips}
+                      keyboardShouldPersistTaps="always"
+                    >
+                      {PRESET_TIMES.map((preset) => (
+                        <TouchableOpacity
+                          key={preset}
+                          style={[
+                            styles.presetChip,
+                            time === preset
+                              ? styles.presetChipActive
+                              : undefined,
+                          ]}
+                          onPress={() => {
+                            const updated = [...reminderTimes];
+                            updated[index] = preset;
+                            setReminderTimes(updated);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.presetChipText,
+                              time === preset
+                                ? styles.presetChipTextActive
+                                : undefined,
+                            ]}
+                          >
+                            {preset}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+
+                    <View style={styles.customTimeRow}>
                       <Ionicons
                         name="alarm-outline"
-                        size={18}
+                        size={16}
                         color={COLORS.primary}
                       />
                       <TextInput
-                        style={styles.timeInput}
+                        style={styles.customTimeInput}
                         value={time}
-                        onChangeText={(value) => {
+                        onChangeText={(val) => {
                           const updated = [...reminderTimes];
-                          updated[index] = value;
+                          updated[index] = val;
                           setReminderTimes(updated);
                         }}
-                        placeholder={t("medications.timePlaceholder")}
+                        placeholder="HH:MM"
                         placeholderTextColor={COLORS.textSecondary}
-                        keyboardType="numbers-and-punctuation"
+                        keyboardType="numeric"
+                        maxLength={5}
+                        returnKeyType="done"
+                        blurOnSubmit={false}
+                        onBlur={() => {
+                          const raw = time.replace(":", "");
+                          if (!time.includes(":") && raw.length === 4) {
+                            const formatted = `${raw.slice(0, 2)}:${raw.slice(2)}`;
+                            const updated = [...reminderTimes];
+                            updated[index] = formatted;
+                            setReminderTimes(updated);
+                          }
+                        }}
                       />
-                      <Text style={styles.timeFormat}>
-                        {t("medications.timeFormat")}
+                      <Text style={styles.customTimeHint}>
+                        {t("medications.orType")}
                       </Text>
                     </View>
-                  ))}
-                </View>
+                  </View>
+                ))}
 
                 <TouchableOpacity
                   style={[styles.submitButton, submitting && { opacity: 0.7 }]}
@@ -627,28 +697,69 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "700",
   },
-  timesEditor: { gap: 10 },
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+  timePickerRow: {
+    marginBottom: 16,
     backgroundColor: COLORS.background,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  timeInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.primary,
-    padding: 0,
-  },
-  timeFormat: {
-    fontSize: 11,
+  timePickerLabel: {
+    fontSize: 12,
+    fontWeight: "700",
     color: COLORS.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  presetChips: {
+    flexDirection: "row",
+    gap: 8,
+    paddingBottom: 10,
+  },
+  presetChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  presetChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  presetChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+  },
+  presetChipTextActive: {
+    color: "#FFFFFF",
+  },
+  customTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  customTimeInput: {
+    width: 70,
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.primary,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.primary,
+    paddingVertical: 4,
+    textAlign: "center",
+  },
+  customTimeHint: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontStyle: "italic",
   },
   submitButton: {
     backgroundColor: COLORS.primary,
