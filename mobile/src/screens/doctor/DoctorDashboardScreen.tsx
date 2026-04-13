@@ -492,12 +492,30 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.textPrimary,
   },
+  patientPhone: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  lastSeen: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
   patientAvatarStyle: {
     borderWidth: 1.5,
     borderColor: COLORS.border,
   },
+  patientRight: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
   bgValue: {
     fontWeight: "400",
+  },
+  bgUnit: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
   },
   noData: {
     fontSize: 18,
