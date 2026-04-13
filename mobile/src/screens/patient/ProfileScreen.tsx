@@ -284,7 +284,7 @@ const ProfileScreen = (): React.JSX.Element => {
                 {t("profile.patientActionsTitle")}
               </Text>
               <TouchableOpacity
-                style={[styles.infoRow, styles.infoRowBorder]}
+                style={styles.infoRow}
                 onPress={() => navigation.navigate("Medications")}
               >
                 <View style={styles.infoLeft}>
@@ -298,32 +298,6 @@ const ProfileScreen = (): React.JSX.Element => {
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={COLORS.textSecondary}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => navigation.navigate("SelectDoctor")}
-                activeOpacity={0.85}
-              >
-                <View style={styles.actionButtonLeft}>
-                  <Ionicons
-                    name="medkit-outline"
-                    size={18}
-                    color={COLORS.primary}
-                  />
-                  <View>
-                    <Text style={styles.actionButtonText}>
-                      {t("profile.selectDoctor")}
-                    </Text>
-                    <Text style={styles.actionButtonSubtext}>
-                      {t("profile.selectDoctorHint")}
-                    </Text>
-                  </View>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
                   color={COLORS.textSecondary}
                 />
               </TouchableOpacity>

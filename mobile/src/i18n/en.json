@@ -267,7 +267,11 @@
       "button": "Assign Patient",
       "success": "Patient assigned successfully",
       "notFound": "No patient found with this email",
-      "alreadyAssigned": "This patient is already assigned to another doctor"
+      "notFoundDetail": "Make sure the patient has registered in AIDiaTrack first",
+      "notAPatient": "This email belongs to a doctor account, not a patient",
+      "alreadyYours": "This patient is already assigned to you",
+      "alreadyAssigned": "This patient is already assigned to another doctor",
+      "assignedTo": "Currently with"
     }
   },
   "notifications": {

@@ -45,32 +45,46 @@ export const assignPatient = async (
     const doctorId = req.user!.userId;
     const body = req.body as AssignPatientBody;
 
-    const patient = await prisma.user.findFirst({
+    const patient = await prisma.user.findUnique({
       where: {
-        email: body.patientEmail,
-        role: "PATIENT",
+        email: body.patientEmail.toLowerCase(),
       },
-      select: {
-        id: true,
-        doctorId: true,
+      include: {
+        doctor: {
+          select: { fullName: true, email: true },
+        },
       },
     });
 
+    // Patient not found
     if (!patient) {
-      sendError(res, 404, "No patient found with this email");
+      sendError(res, 404, "NO_PATIENT_FOUND");
       return;
     }
 
-    if (patient.doctorId !== null && patient.doctorId !== doctorId) {
-      sendError(res, 409, "This patient is already assigned to another doctor");
+    // Email belongs to a doctor not a patient
+    if (patient.role !== "PATIENT") {
+      sendError(res, 400, "NOT_A_PATIENT");
       return;
     }
 
+    // Already assigned to THIS doctor
     if (patient.doctorId === doctorId) {
-      sendError(res, 400, "This patient is already assigned to you");
+      sendError(res, 400, "ALREADY_YOUR_PATIENT");
       return;
     }
 
+    // Already assigned to a DIFFERENT doctor
+    if (patient.doctorId && patient.doctorId !== doctorId) {
+      sendError(
+        res,
+        409,
+        `ASSIGNED_TO_OTHER:${patient.doctor?.fullName ?? "another doctor"}`,
+      );
+      return;
+    }
+
+    // Assign patient to this doctor
     const updatedPatient = await prisma.user.update({
       where: {
         id: patient.id,

@@ -1,6 +1,5 @@
-import React, { useCallback, useLayoutEffect, useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -26,64 +25,78 @@ const AssignPatientScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
   const [email, setEmail] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [result, setResult] = useState<{
+    type: "success" | "error";
+    message: string;
+    detail?: string;
+    patientName?: string;
+    patientEmail?: string;
+  } | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const getErrorMessage = useCallback(
-    (error: unknown): string => {
-      if (isAxiosError(error)) {
-        const message =
-          typeof error.response?.data?.message === "string"
-            ? error.response?.data?.message
-            : "";
-
-        if (message === "No patient found with this email") {
-          return t("assignPatient.noPatient");
-        }
-
-        if (message === "This patient is already assigned to another doctor") {
-          return t("assignPatient.alreadyAssigned");
-        }
-
-        if (message === "This patient is already assigned to you") {
-          return t("assignPatient.alreadyAssignedToYou");
-        }
-      }
-
-      return t("common.error");
-    },
-    [t],
-  );
-
-  const handleAssign = useCallback(async (): Promise<void> => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (trimmedEmail.length === 0) {
-      Alert.alert(t("common.error"), t("common.required"));
-      return;
-    }
-
-    if (!trimmedEmail.includes("@")) {
-      Alert.alert(t("common.error"), t("common.invalidEmail"));
-      return;
-    }
+  const handleAssign = async (): Promise<void> => {
+    if (!email.trim()) return;
 
     try {
       setSubmitting(true);
-      await assignPatient(trimmedEmail);
-      Alert.alert(t("assignPatient.title"), t("assignPatient.success"), [
-        {
-          text: t("common.ok"),
-          onPress: () => navigation.goBack(),
-        },
-      ]);
-    } catch (error: unknown) {
-      Alert.alert(t("common.error"), getErrorMessage(error));
+      setResult(null);
+
+      const response = await assignPatient(email.trim().toLowerCase());
+      const patient = response.data?.data?.patient;
+
+      setResult({
+        type: "success",
+        message: t("doctor.assign.success"),
+        patientName: patient?.fullName,
+        patientEmail: patient?.email,
+      });
+      setEmail("");
+    } catch (err: unknown) {
+      const backendMessage =
+        isAxiosError(err) && typeof err?.response?.data?.message === "string"
+          ? err.response.data.message
+          : "";
+      const status = isAxiosError(err) ? err?.response?.status : 0;
+
+      let message = "";
+      let detail = "";
+
+      if (status === 404 || backendMessage === "NO_PATIENT_FOUND") {
+        message =
+          t("doctor.assign.notFound") ??
+          "No patient found with this email address.";
+        detail =
+          t("doctor.assign.notFoundDetail") ??
+          "Make sure the patient has registered in AIDiaTrack first.";
+      } else if (backendMessage === "NOT_A_PATIENT") {
+        message =
+          t("doctor.assign.notAPatient") ??
+          "This email belongs to a doctor account, not a patient.";
+        detail = "";
+      } else if (backendMessage === "ALREADY_YOUR_PATIENT") {
+        message =
+          t("doctor.assign.alreadyYours") ??
+          "This patient is already assigned to you.";
+        detail = "";
+      } else if (backendMessage?.startsWith("ASSIGNED_TO_OTHER:")) {
+        const otherDoctorName = backendMessage.split(":")[1];
+        message =
+          t("doctor.assign.alreadyAssigned") ??
+          "This patient is already assigned to another doctor.";
+        detail = `${t("doctor.assign.assignedTo") ?? "Currently with"}: Dr. ${otherDoctorName}`;
+      } else {
+        message = t("common.error");
+        detail = "";
+      }
+
+      setResult({ type: "error", message, detail });
     } finally {
       setSubmitting(false);
     }
-  }, [email, getErrorMessage, navigation, t]);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -127,6 +140,63 @@ const AssignPatientScreen = (): React.JSX.Element => {
             />
             <Text style={styles.helper}>{t("assignPatient.helper")}</Text>
           </View>
+
+          {result && (
+            <View
+              style={[
+                styles.resultBox,
+                {
+                  backgroundColor:
+                    result.type === "success"
+                      ? COLORS.success + "12"
+                      : COLORS.danger + "12",
+                  borderColor:
+                    result.type === "success" ? COLORS.success : COLORS.danger,
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  result.type === "success" ? "checkmark-circle" : "close-circle"
+                }
+                size={22}
+                color={
+                  result.type === "success" ? COLORS.success : COLORS.danger
+                }
+                style={{ marginTop: 2 }}
+              />
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text
+                  style={[
+                    styles.resultMessage,
+                    {
+                      color:
+                        result.type === "success"
+                          ? COLORS.success
+                          : COLORS.danger,
+                    },
+                  ]}
+                >
+                  {result.message}
+                </Text>
+                {result.type === "success" && result.patientName && (
+                  <View style={styles.patientConfirm}>
+                    <Ionicons
+                      name="person-outline"
+                      size={14}
+                      color={COLORS.success}
+                    />
+                    <Text style={styles.patientConfirmText}>
+                      {result.patientName}
+                    </Text>
+                  </View>
+                )}
+                {result.detail ? (
+                  <Text style={styles.resultDetail}>{result.detail}</Text>
+                ) : null}
+              </View>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.button, submitting && styles.buttonDisabled]}
@@ -248,6 +318,34 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+  resultBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+  },
+  resultMessage: {
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  resultDetail: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+  },
+  patientConfirm: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  patientConfirmText: {
+    fontSize: 13,
+    color: COLORS.success,
+    fontWeight: "500",
   },
 });
 

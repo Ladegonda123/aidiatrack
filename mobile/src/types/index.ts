@@ -116,7 +116,6 @@ export type RootStackParamList = {
     patientPhotoUrl?: string | null;
   };
   AssignPatient: undefined;
-  SelectDoctor: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
 };

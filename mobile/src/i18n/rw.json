@@ -267,7 +267,11 @@
       "button": "Shyira Umurwayi",
       "success": "Umurwayi yashyizwe neza",
       "notFound": "Nta murwayi ubonetse kuri iyi imeyili",
-      "alreadyAssigned": "Uyu murwayi asanzwe afite umuganga"
+      "notFoundDetail": "Menya neza ko umurwayi yiyandikishije muri AIDiaTrack",
+      "notAPatient": "Iyi imeyili ni iya konti y'umuganga, si umurwayi",
+      "alreadyYours": "Uyu murwayi asanzwe ari uwawe",
+      "alreadyAssigned": "Uyu murwayi afite umuganga",
+      "assignedTo": "Ufite"
     }
   },
   "notifications": {

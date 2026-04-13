@@ -14,7 +14,6 @@ import AssignPatientScreen from "../screens/doctor/AssignPatientScreen";
 import PatientDetailScreen from "../screens/doctor/PatientDetailScreen";
 import EditProfileScreen from "../screens/patient/EditProfileScreen";
 import ChangePasswordScreen from "../screens/patient/ChangePasswordScreen";
-import SelectDoctorScreen from "../screens/patient/SelectDoctorScreen";
 import ReportsScreen from "../screens/patient/ReportsScreen";
 import MedicationScreen from "../screens/patient/MedicationScreen";
 import PatientNavigator from "./PatientNavigator";
@@ -117,11 +116,6 @@ const AppNavigator = (): React.JSX.Element => {
           <Stack.Screen
             name="Medications"
             component={MedicationScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="SelectDoctor"
-            component={SelectDoctorScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
