@@ -509,14 +509,18 @@ const ReportsScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
     gap: 14,
   },
   headerTitle: {

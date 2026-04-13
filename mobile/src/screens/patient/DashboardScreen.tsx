@@ -678,8 +678,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingHorizontal: 20,
     paddingBottom: 28,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
   },
   headerRow: {
     flexDirection: "row",
@@ -715,6 +713,10 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     gap: 16,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: COLORS.background,
+    overflow: 'hidden',
   },
   bellButton: {
     position: "relative",

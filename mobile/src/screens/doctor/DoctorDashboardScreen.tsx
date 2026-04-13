@@ -362,13 +362,14 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
     gap: 14,
   },
   content: {
     flex: 1,
     backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection: "row",

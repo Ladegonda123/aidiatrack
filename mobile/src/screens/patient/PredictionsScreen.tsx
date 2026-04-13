@@ -272,14 +272,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
   },
   headerTitle: {
     fontSize: 20,
