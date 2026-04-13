@@ -197,3 +197,38 @@ export const getUserPresence = async (
     );
   }
 };
+
+export const markMessagesRead = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const reader = req.user!;
+    const otherUserId = Number.parseInt(String(req.params.otherUserId), 10);
+
+    if (!Number.isFinite(otherUserId) || otherUserId <= 0) {
+      sendError(res, 400, "Invalid user ID");
+      return;
+    }
+
+    const auth = await getAuthorizedConversationPeer(reader, otherUserId);
+    if (!auth.allowed) {
+      sendError(res, 403, auth.reason ?? "Access denied");
+      return;
+    }
+
+    await prisma.message.updateMany({
+      where: {
+        senderId: otherUserId,
+        receiverId: reader.userId,
+        isRead: false,
+      },
+      data: { isRead: true },
+    });
+
+    sendSuccess(res, null, 200, "Messages marked as read");
+  } catch (error: unknown) {
+    logger.error("markMessagesRead failed", error);
+    sendError(res, 500, "Failed to mark messages as read");
+  }
+};
