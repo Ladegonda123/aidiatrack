@@ -56,9 +56,7 @@ const ReportsScreen = (): React.JSX.Element => {
         getDietRecommendations(),
       ]);
 
-      const list = Array.isArray(historyResponse)
-        ? historyResponse
-        : (historyResponse?.records ?? historyResponse?.data?.records ?? []);
+      const list = Array.isArray(historyResponse) ? historyResponse : [];
 
       setRecords(list);
       setSummary(summaryData);
