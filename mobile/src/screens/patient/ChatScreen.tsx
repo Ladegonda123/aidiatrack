@@ -1,20 +1,26 @@
-import React, { useLayoutEffect, useEffect, useState } from "react";
+import React, {
+  useLayoutEffect,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import ChatUI from "../../components/ChatUI";
 import { useAuth } from "../../hooks/useAuth";
 import { DoctorListItem, listDoctors } from "../../api/doctorAPI";
+import { markMessagesRead } from "../../api/chatAPI";
 import { COLORS } from "../../utils/colors";
 
 const ChatScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, setChatUnreadCount } = useAuth();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -48,6 +54,24 @@ const ChatScreen = (): React.JSX.Element => {
       setLoadingDoctor(false);
     });
   }, [t, user?.doctorId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const clearUnread = async (): Promise<void> => {
+        if (!user?.doctorId) return;
+        try {
+          await markMessagesRead(user.doctorId);
+          setChatUnreadCount(0);
+        } catch {
+          // Silent fail to avoid blocking chat screen UX.
+        }
+      };
+
+      clearUnread().catch(() => {
+        // Silent fail to avoid blocking chat screen UX.
+      });
+    }, [setChatUnreadCount, user?.doctorId]),
+  );
 
   if (!user?.doctorId) {
     return (
@@ -123,7 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   noDoctor: {
     flex: 1,

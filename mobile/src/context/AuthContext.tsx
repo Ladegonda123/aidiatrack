@@ -14,6 +14,7 @@ import {
   RegisterData,
   updateProfile,
 } from "../api/authAPI";
+import { getUnreadCount } from "../api/chatAPI";
 import {
   getToken,
   removeToken,
@@ -34,6 +35,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateLanguage: (lang: Language) => Promise<void>;
   refreshUser: () => Promise<void>;
+  chatUnreadCount: number;
+  setChatUnreadCount: React.Dispatch<React.SetStateAction<number>>;
+  refreshChatUnread: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -48,6 +52,19 @@ export const AuthProvider = ({
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [chatUnreadCount, setChatUnreadCount] = useState<number>(0);
+
+  const refreshChatUnread = useCallback(async (): Promise<void> => {
+    try {
+      const activeToken = token ?? (await getToken());
+      if (!activeToken) return;
+
+      const unread = await getUnreadCount();
+      setChatUnreadCount(unread);
+    } catch {
+      // Silent fail for badge-only metadata.
+    }
+  }, [token]);
 
   useEffect(() => {
     const bootstrapAuth = async (): Promise<void> => {
@@ -65,11 +82,13 @@ export const AuthProvider = ({
         await saveUser(me);
         await saveLanguage(me.language);
         await i18n.changeLanguage(me.language);
+        await refreshChatUnread();
       } catch {
         await removeToken();
         await removeUser();
         setToken(null);
         setUser(null);
+        setChatUnreadCount(0);
       } finally {
         setLoading(false);
       }
@@ -78,7 +97,7 @@ export const AuthProvider = ({
     bootstrapAuth().catch(() => {
       setLoading(false);
     });
-  }, []);
+  }, [refreshChatUnread]);
 
   const login = useCallback(
     async (email: string, password: string): Promise<void> => {
@@ -89,25 +108,31 @@ export const AuthProvider = ({
       await saveUser(response.user);
       await saveLanguage(response.user.language);
       await i18n.changeLanguage(response.user.language);
+      await refreshChatUnread();
     },
-    [],
+    [refreshChatUnread],
   );
 
-  const register = useCallback(async (data: RegisterData): Promise<void> => {
-    const response = await registerRequest(data);
-    setUser(response.user);
-    setToken(response.token);
-    await saveToken(response.token);
-    await saveUser(response.user);
-    await saveLanguage(response.user.language);
-    await i18n.changeLanguage(response.user.language);
-  }, []);
+  const register = useCallback(
+    async (data: RegisterData): Promise<void> => {
+      const response = await registerRequest(data);
+      setUser(response.user);
+      setToken(response.token);
+      await saveToken(response.token);
+      await saveUser(response.user);
+      await saveLanguage(response.user.language);
+      await i18n.changeLanguage(response.user.language);
+      await refreshChatUnread();
+    },
+    [refreshChatUnread],
+  );
 
   const logout = useCallback(async (): Promise<void> => {
     await removeToken();
     await removeUser();
     setToken(null);
     setUser(null);
+    setChatUnreadCount(0);
     await i18n.changeLanguage("rw");
   }, []);
 
@@ -149,14 +174,20 @@ export const AuthProvider = ({
       register,
       logout,
       refreshUser,
+      chatUnreadCount,
+      setChatUnreadCount,
+      refreshChatUnread,
       updateLanguage,
     }),
     [
+      chatUnreadCount,
       loading,
       login,
       logout,
+      refreshChatUnread,
       refreshUser,
       register,
+      setChatUnreadCount,
       token,
       updateLanguage,
       user,

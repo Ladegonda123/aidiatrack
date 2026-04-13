@@ -1,5 +1,11 @@
 import axiosInstance from "./axiosInstance";
-import { Medication, Prediction, User, HealthRecord } from "../types";
+import {
+  Medication,
+  Prediction,
+  User,
+  HealthRecord,
+  PatientWithChat,
+} from "../types";
 
 interface ApiResponse<T> {
   data: T;
@@ -35,11 +41,11 @@ export interface AssignedPatient {
   updatedAt?: string;
 }
 
-export const getMyPatients = async (): Promise<User[]> => {
+export const getMyPatients = async (): Promise<PatientWithChat[]> => {
   const response =
-    await axiosInstance.get<ApiResponse<User[] | { patients: User[] }>>(
-      "/doctor/patients",
-    );
+    await axiosInstance.get<
+      ApiResponse<PatientWithChat[] | { patients: PatientWithChat[] }>
+    >("/doctor/patients");
   const data = response.data?.data;
   return Array.isArray(data) ? data : (data?.patients ?? []);
 };

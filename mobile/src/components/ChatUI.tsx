@@ -18,7 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
-import { getMessages, sendMessage } from "../api/chatAPI";
+import { getMessages, sendMessage, markMessagesRead } from "../api/chatAPI";
 import { useSocket } from "../context/SocketContext";
 import { COLORS } from "../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../utils/formatters";
@@ -82,6 +82,8 @@ const ChatUI = ({
   const [inputText, setInputText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [sending, setSending] = useState<boolean>(false);
+  const [firstUnreadIndex, setFirstUnreadIndex] = useState<number | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isOtherOnline, setIsOtherOnline] = useState<boolean>(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
@@ -121,13 +123,34 @@ const ChatUI = ({
     try {
       setLoading(true);
       const data = await getMessages(otherUserId);
-      setMessages(Array.isArray(data) ? data : []);
+      const msgs = Array.isArray(data) ? data : [];
+
+      const unreadMsgs = msgs.filter(
+        (message) => message.senderId !== currentUserId && !message.isRead,
+      );
+      const count = unreadMsgs.length;
+
+      if (count > 0) {
+        const firstUnread = msgs.findIndex(
+          (message) => message.senderId !== currentUserId && !message.isRead,
+        );
+        setFirstUnreadIndex(firstUnread);
+        setUnreadCount(count);
+      } else {
+        setFirstUnreadIndex(null);
+        setUnreadCount(0);
+      }
+
+      setMessages(msgs);
+      await markMessagesRead(otherUserId);
     } catch {
       setMessages([]);
+      setFirstUnreadIndex(null);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
-  }, [otherUserId]);
+  }, [currentUserId, otherUserId]);
 
   useEffect(() => {
     loadMessages().catch(() => {
@@ -189,6 +212,9 @@ const ChatUI = ({
       };
 
       setMessages((prev) => [...prev, newMessage]);
+      markMessagesRead(otherUserId).catch(() => {
+        // Silent fail; read status sync is best-effort.
+      });
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -231,12 +257,28 @@ const ChatUI = ({
   }, [socket, otherUserId]);
 
   useEffect(() => {
-    if (messages.length > 0 && !loading) {
+    if (
+      !loading &&
+      firstUnreadIndex !== null &&
+      firstUnreadIndex > 0 &&
+      messages.length > 0
+    ) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: firstUnreadIndex,
+          animated: true,
+          viewPosition: 0.3,
+        });
+      }, 300);
+      return;
+    }
+
+    if (!loading && messages.length > 0) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
       }, 100);
     }
-  }, [messages.length, loading]);
+  }, [firstUnreadIndex, loading, messages.length]);
 
   // Android + edge-to-edge: apply keyboard height directly as marginBottom on
   // the body so the input bar lifts above the keyboard. KAV is not used because
@@ -244,7 +286,9 @@ const ChatUI = ({
   useEffect(() => {
     if (Platform.OS !== "android") return;
     const show = Keyboard.addListener("keyboardDidShow", (e) => {
-      setAndroidKeyboardHeight(Math.max(0, e.endCoordinates.height - keyboardOffset));
+      setAndroidKeyboardHeight(
+        Math.max(0, e.endCoordinates.height - keyboardOffset),
+      );
     });
     const hide = Keyboard.addListener("keyboardDidHide", () => {
       setAndroidKeyboardHeight(0);
@@ -352,15 +396,27 @@ const ChatUI = ({
               contentContainerStyle={styles.messagesList}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: true })
-              }
-              onLayout={() =>
-                flatListRef.current?.scrollToEnd({ animated: false })
-              }
+              onScrollToIndexFailed={(info) => {
+                setTimeout(() => {
+                  flatListRef.current?.scrollToIndex({
+                    index: info.index,
+                    animated: true,
+                  });
+                }, 500);
+              }}
               renderItem={({ item, index }) => {
                 const isMine = item.senderId === currentUserId;
                 const showSeparator = shouldShowDateSeparator(messages, index);
+                const showUnreadDivider =
+                  firstUnreadIndex !== null &&
+                  index === firstUnreadIndex &&
+                  unreadCount > 0;
+
+                const unreadLabel =
+                  unreadCount === 1
+                    ? t("chat.unreadSingle")
+                    : t("chat.unreadMany", { count: unreadCount });
+
                 return (
                   <>
                     {showSeparator && (
@@ -374,6 +430,19 @@ const ChatUI = ({
                         <View style={styles.dateLine} />
                       </View>
                     )}
+
+                    {showUnreadDivider ? (
+                      <View style={styles.unreadDivider}>
+                        <View style={styles.unreadDividerLine} />
+                        <View style={styles.unreadDividerBadge}>
+                          <Text style={styles.unreadDividerText}>
+                            {unreadLabel}
+                          </Text>
+                        </View>
+                        <View style={styles.unreadDividerLine} />
+                      </View>
+                    ) : null}
+
                     <View
                       style={[
                         styles.messageRow,
@@ -550,7 +619,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   messagesArea: {
     flex: 1,
@@ -586,6 +655,31 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: 11,
     color: COLORS.textSecondary,
+    fontWeight: "600",
+  },
+  unreadDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 12,
+    paddingHorizontal: 8,
+    gap: 8,
+  },
+  unreadDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: `${COLORS.warning}60`,
+  },
+  unreadDividerBadge: {
+    backgroundColor: `${COLORS.warning}20`,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: `${COLORS.warning}60`,
+  },
+  unreadDividerText: {
+    fontSize: 12,
+    color: COLORS.warning,
     fontWeight: "600",
   },
   messageRow: {

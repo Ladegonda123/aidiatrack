@@ -21,6 +21,29 @@ export interface User {
   updatedAt?: string;
 }
 
+export interface PatientWithChat {
+  id: number;
+  fullName: string;
+  email: string;
+  phone?: string;
+  photoUrl?: string | null;
+  lastHealthRecord?: {
+    bloodGlucose: number;
+    recordedAt: string;
+  } | null;
+  lastPrediction?: {
+    riskLevel: "LOW" | "MEDIUM" | "HIGH";
+    createdAt: string;
+  } | null;
+  lastMessage?: {
+    content: string;
+    sentAt: string;
+    senderId: number;
+    isRead: boolean;
+  } | null;
+  unreadCount: number;
+}
+
 export interface HealthRecord {
   id: number;
   patientId: number;

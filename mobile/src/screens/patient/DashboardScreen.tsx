@@ -17,6 +17,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import {
   CompositeNavigationProp,
+  useFocusEffect,
   useNavigation,
 } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -73,7 +74,7 @@ type DashboardNavigationProp = CompositeNavigationProp<
 const DashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<DashboardNavigationProp>();
-  const { user } = useAuth();
+  const { user, refreshChatUnread } = useAuth();
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [lastPrediction, setLastPrediction] = useState<Prediction | null>(null);
@@ -205,6 +206,22 @@ const DashboardScreen = (): React.JSX.Element => {
   useEffect(() => {
     loadDashboard().catch(() => undefined);
   }, [loadDashboard]);
+
+  useEffect(() => {
+    refreshChatUnread().catch(() => undefined);
+
+    const interval = setInterval(() => {
+      refreshChatUnread().catch(() => undefined);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshChatUnread]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshChatUnread().catch(() => undefined);
+    }, [refreshChatUnread]),
+  );
 
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
@@ -715,7 +732,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   scrollContent: {
     padding: 16,

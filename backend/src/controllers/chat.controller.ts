@@ -232,3 +232,24 @@ export const markMessagesRead = async (
     sendError(res, 500, "Failed to mark messages as read");
   }
 };
+
+export const getUnreadCount = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user!.userId;
+
+    const count = await prisma.message.count({
+      where: {
+        receiverId: userId,
+        isRead: false,
+      },
+    });
+
+    sendSuccess(res, { unreadCount: count });
+  } catch (error: unknown) {
+    logger.error("getUnreadCount failed", error);
+    sendSuccess(res, { unreadCount: 0 });
+  }
+};

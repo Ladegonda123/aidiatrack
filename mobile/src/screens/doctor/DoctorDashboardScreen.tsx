@@ -26,19 +26,9 @@ import { timeAgo } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
 import NotificationPanel from "../../components/NotificationPanel";
 import { AppNotification, getNotifications } from "../../api/notificationAPI";
-import { RootStackParamList, User } from "../../types";
+import { RootStackParamList, PatientWithChat } from "../../types";
 
-interface DashboardPatient extends User {
-  lastHealthRecord?: { recordedAt: string; bloodGlucose: number } | null;
-  lastPrediction?: {
-    riskLevel: "LOW" | "MEDIUM" | "HIGH";
-    createdAt?: string;
-  } | null;
-}
-
-interface PatientsPayload {
-  patients?: DashboardPatient[];
-}
+type DashboardPatient = PatientWithChat;
 
 const DoctorDashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
@@ -60,10 +50,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
   const loadPatients = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const data = await getMyPatients();
-      const list = Array.isArray(data)
-        ? data
-        : ((data as PatientsPayload).patients ?? []);
+      const list = await getMyPatients();
       setPatients(list);
     } catch {
       setPatients([]);
@@ -369,7 +356,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   headerRow: {
     flexDirection: "row",
