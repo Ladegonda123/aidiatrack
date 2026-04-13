@@ -32,6 +32,7 @@ interface UpdateProfileBody {
   gender?: string;
   dateOfBirth?: Date | string;
   fcmToken?: string;
+  dailyReminderEnabled?: boolean;
 }
 
 interface ChangePasswordBody {
@@ -163,6 +164,22 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     const currentUserId = req.user!.userId;
     const user = await prisma.user.findUnique({
       where: { id: currentUserId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        language: true,
+        photoUrl: true,
+        doctorId: true,
+        fcmToken: true,
+        dailyReminderEnabled: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {
@@ -170,12 +187,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    sendSuccess(
-      res,
-      { user: sanitizeUser(user) },
-      200,
-      "Profile fetched successfully",
-    );
+    sendSuccess(res, { user }, 200, "Profile fetched successfully");
   } catch (error: unknown) {
     logger.error("getMe failed", error);
     sendError(res, 500, "Failed to fetch profile");
@@ -188,8 +200,15 @@ export const updateProfile = async (
 ): Promise<void> => {
   try {
     const currentUserId = req.user!.userId;
-    const { fullName, phone, gender, dateOfBirth, language, fcmToken } =
-      req.body as UpdateProfileBody;
+    const {
+      fullName,
+      phone,
+      gender,
+      dateOfBirth,
+      language,
+      fcmToken,
+      dailyReminderEnabled,
+    } = req.body as UpdateProfileBody;
 
     const updateData = stripUndefined({
       fullName,
@@ -198,6 +217,7 @@ export const updateProfile = async (
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       language,
       fcmToken,
+      dailyReminderEnabled,
     });
 
     const updatedUser = await prisma.user.update({
@@ -215,6 +235,7 @@ export const updateProfile = async (
         photoUrl: true,
         doctorId: true,
         fcmToken: true,
+        dailyReminderEnabled: true,
       },
     });
 

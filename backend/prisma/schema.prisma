@@ -37,6 +37,7 @@ model User {
   photoUrl     String?   @map("photo_url")
   fcmToken     String?   @map("fcm_token")
   language     String    @default("rw")  @map("language")
+  dailyReminderEnabled Boolean @default(true) @map("daily_reminder_enabled")
   doctorId     Int?      @map("doctor_id")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")

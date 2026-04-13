@@ -241,3 +241,75 @@ export const sendChatNotification = async (
     logger.error("Failed to send chat notification", { receiverId, error });
   }
 };
+
+export const sendDailyLoggingReminders = async (): Promise<void> => {
+  try {
+    logger.info("[Cron] Running daily logging reminders...");
+
+    const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+    const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
+
+    const patients = await prisma.user.findMany({
+      where: {
+        role: "PATIENT",
+        fcmToken: { not: null },
+        dailyReminderEnabled: true,
+      },
+      select: {
+        id: true,
+        fcmToken: true,
+        language: true,
+        healthRecords: {
+          where: {
+            recordedAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+
+    let reminded = 0;
+
+    for (const patient of patients) {
+      if (patient.healthRecords.length > 0 || !patient.fcmToken) {
+        continue;
+      }
+
+      const lang = patient.language ?? "rw";
+      const title =
+        lang === "rw"
+          ? "Kwibutsa Isuzuma ry'Ubuzima"
+          : "Daily Reading Reminder";
+      const body =
+        lang === "rw"
+          ? "Ntuwibagirwe gufata no kwandika isuzuma rya BG uyu munsi. Bifasha kugenzura ubuzima bwawe."
+          : "Don't forget to log your blood glucose reading today. It helps monitor your health.";
+
+      await sendPushNotification({
+        userId: patient.id,
+        title,
+        body,
+        channelId: "general",
+        data: { type: "daily_logging_reminder", action: "log_reading" },
+      });
+
+      await createNotification({
+        userId: patient.id,
+        type: "system",
+        title,
+        body,
+        data: { action: "log_reading" },
+      });
+
+      reminded += 1;
+    }
+
+    logger.info(`[Cron] Sent logging reminders to ${reminded} patients`);
+  } catch (error: unknown) {
+    logger.error("[Cron] sendDailyLoggingReminders failed", error);
+  }
+};

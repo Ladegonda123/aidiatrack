@@ -22,6 +22,7 @@ import chatRoutes from "./routes/chat.routes";
 import foodRoutes from "./routes/food.routes";
 import dietRoutes from "./routes/diet.routes";
 import uploadRoutes from "./routes/upload.routes";
+import { registerReminderCrons } from "./services/reminder.service";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -77,6 +78,7 @@ app.use(errorMiddleware);
 
 const startServer = async (): Promise<void> => {
   await verifyDatabaseConnection();
+  registerReminderCrons();
 
   httpServer.listen(ENV.PORT, () => {
     console.log(`AIDiaTrack API running → http://localhost:${ENV.PORT}`);

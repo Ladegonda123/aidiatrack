@@ -15,6 +15,7 @@ export interface User {
   photoUrl?: string | null;
   language: Language;
   fcmToken?: string;
+  dailyReminderEnabled?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

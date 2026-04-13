@@ -5,6 +5,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -16,6 +17,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import LanguageDropdown from "../../components/LanguageDropdown";
+import { updateProfile } from "../../api/authAPI";
 import { uploadProfilePhoto } from "../../api/uploadAPI";
 import { useAuth } from "../../hooks/useAuth";
 import { COLORS } from "../../utils/colors";
@@ -29,11 +31,18 @@ const ProfileScreen = (): React.JSX.Element => {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, logout, updateLanguage, setUser } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(
+    user?.dailyReminderEnabled ?? true,
+  );
   const lang = i18n.language as "en" | "rw";
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
+
+  React.useEffect(() => {
+    setReminderEnabled(user?.dailyReminderEnabled ?? true);
+  }, [user?.dailyReminderEnabled]);
 
   const handleLogout = (): void => {
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -84,6 +93,23 @@ const ProfileScreen = (): React.JSX.Element => {
       Alert.alert(t("common.error"));
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleToggleReminder = async (value: boolean): Promise<void> => {
+    try {
+      setReminderEnabled(value);
+      await updateProfile({ dailyReminderEnabled: value });
+      setUser((prev) =>
+        prev ? { ...prev, dailyReminderEnabled: value } : prev,
+      );
+      Alert.alert(
+        t("common.ok"),
+        value ? t("profile.reminderOn") : t("profile.reminderOff"),
+      );
+    } catch {
+      setReminderEnabled(!value);
+      Alert.alert(t("common.error"));
     }
   };
 
@@ -219,6 +245,42 @@ const ProfileScreen = (): React.JSX.Element => {
               <LanguageDropdown onLanguageChange={updateLanguage} />
             </View>
           </View>
+
+          {user?.role === "PATIENT" ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t("profile.reminders")}</Text>
+              <View style={styles.infoRow}>
+                <View style={styles.infoLeft}>
+                  <Ionicons
+                    name="notifications-outline"
+                    size={18}
+                    color={COLORS.primary}
+                  />
+                  <View>
+                    <Text style={styles.infoLabel}>
+                      {t("profile.dailyReminder")}
+                    </Text>
+                    <Text style={styles.reminderSubtext}>
+                      {t("profile.dailyReminderSub")}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={reminderEnabled}
+                  onValueChange={(value) => {
+                    handleToggleReminder(value).catch(() => undefined);
+                  }}
+                  trackColor={{
+                    false: COLORS.border,
+                    true: `${COLORS.primary}80`,
+                  }}
+                  thumbColor={
+                    reminderEnabled ? COLORS.primary : COLORS.textSecondary
+                  }
+                />
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("profile.security")}</Text>
@@ -491,6 +553,11 @@ const styles = StyleSheet.create({
   },
   actionButtonSubtext: {
     fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  reminderSubtext: {
+    fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
