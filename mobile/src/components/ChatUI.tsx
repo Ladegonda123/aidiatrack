@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.primary,
   },
   keyboardContainer: {
     flex: 1,
@@ -512,8 +512,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: 18,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
     gap: 12,
   },
   backButton: { padding: 4 },
@@ -550,6 +548,9 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   messagesArea: {
     flex: 1,

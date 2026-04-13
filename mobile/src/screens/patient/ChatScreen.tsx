@@ -52,13 +52,15 @@ const ChatScreen = (): React.JSX.Element => {
   if (!user?.doctorId) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
-        <View style={styles.noDoctorContainer}>
+        <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t("chat.title")}</Text>
           </View>
-          <View style={styles.noDoctor}>
-            <Text style={styles.noDoctorIcon}>👨‍⚕️</Text>
-            <Text style={styles.noDoctorText}>{t("chat.noDoctor")}</Text>
+          <View style={styles.content}>
+            <View style={styles.noDoctor}>
+              <Text style={styles.noDoctorIcon}>👨‍⚕️</Text>
+              <Text style={styles.noDoctorText}>{t("chat.noDoctor")}</Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -68,15 +70,17 @@ const ChatScreen = (): React.JSX.Element => {
   if (loadingDoctor) {
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
-        <View style={styles.noDoctorContainer}>
+        <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t("chat.title")}</Text>
           </View>
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
+          <View style={styles.content}>
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -98,12 +102,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.primary,
   },
-  noDoctorContainer: {
+  container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -117,9 +118,15 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     textAlign: "center",
   },
-  noDoctor: {
+  content: {
     flex: 1,
     backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  noDoctor: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
