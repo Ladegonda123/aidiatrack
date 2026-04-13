@@ -72,80 +72,92 @@ const DoctorChatList = (): React.JSX.Element => {
           <Text style={styles.headerTitle}>{t("chat.titleDoctor")}</Text>
         </View>
 
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : patients.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>👤</Text>
-            <Text style={styles.emptyText}>
-              {t("doctor.dashboard.noPatients")}
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={patients}
-            keyExtractor={(item) => item.id.toString()}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  onRefresh().catch(() => undefined);
-                }}
-                colors={[COLORS.primary]}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.patientRow}
-                onPress={() => {
-                  navigation.navigate("DoctorChat", {
-                    patientId: item.id,
-                    patientName: item.fullName,
-                    patientPhotoUrl: item.photoUrl ?? null,
-                  });
-                }}
-                activeOpacity={0.7}
-              >
-                <Avatar
-                  photoUrl={item.photoUrl ?? null}
-                  name={item.fullName}
-                  size={44}
+        <View style={styles.content}>
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          ) : patients.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>👤</Text>
+              <Text style={styles.emptyText}>
+                {t("doctor.dashboard.noPatients")}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={patients}
+              keyExtractor={(item) => item.id.toString()}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    onRefresh().catch(() => undefined);
+                  }}
+                  colors={[COLORS.primary]}
                 />
-                <View style={styles.patientInfo}>
-                  <Text style={styles.patientName}>{item.fullName}</Text>
-                  <Text style={styles.patientEmail}>{item.email}</Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={COLORS.textSecondary}
-                />
-              </TouchableOpacity>
-            )}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-          />
-        )}
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.list}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.patientRow}
+                  onPress={() => {
+                    navigation.navigate("DoctorChat", {
+                      patientId: item.id,
+                      patientName: item.fullName,
+                      patientPhotoUrl: item.photoUrl ?? null,
+                    });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Avatar
+                    photoUrl={item.photoUrl ?? null}
+                    name={item.fullName}
+                    size={44}
+                  />
+                  <View style={styles.patientInfo}>
+                    <Text style={styles.patientName}>{item.fullName}</Text>
+                    <Text style={styles.patientEmail}>{item.email}</Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+            />
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { flex: 1, backgroundColor: COLORS.background },
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
   headerTitle: {
     fontSize: 20,
