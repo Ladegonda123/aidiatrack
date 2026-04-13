@@ -215,7 +215,7 @@ const LogHealthScreen = (): React.JSX.Element => {
             ? Number(data.insulinDose)
             : undefined,
         notes: data.notes?.trim() || undefined,
-        activityLevel,
+        activityLevel: activityLevel,
       });
 
       setSavedBg(bloodGlucose);

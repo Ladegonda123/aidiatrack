@@ -5,14 +5,21 @@ interface ApiResponse<T> {
   data: T;
 }
 
+interface FoodsPayload {
+  foods: FoodItem[];
+}
+
 export const searchFoods = async (
   query: string,
   lang: Language,
 ): Promise<FoodItem[]> => {
-  const response = await axiosInstance.get<ApiResponse<FoodItem[]>>("/foods", {
-    params: { search: query, lang },
-  });
-  return response.data.data;
+  const response = await axiosInstance.get<ApiResponse<FoodsPayload>>(
+    "/foods",
+    {
+      params: { search: query, lang },
+    },
+  );
+  return response.data.data.foods;
 };
 
 export const getFoodsByCategory = async (
