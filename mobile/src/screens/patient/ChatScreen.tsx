@@ -1,8 +1,12 @@
 import React, { useLayoutEffect, useEffect, useState } from "react";
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import ChatUI from "../../components/ChatUI";
 import { useAuth } from "../../hooks/useAuth";
 import { DoctorListItem, listDoctors } from "../../api/doctorAPI";
@@ -12,6 +16,8 @@ const ChatScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [doctor, setDoctor] = useState<DoctorListItem | null>(null);
   const [loadingDoctor, setLoadingDoctor] = useState<boolean>(true);
 
@@ -82,6 +88,7 @@ const ChatScreen = (): React.JSX.Element => {
       otherUserId={user.doctorId}
       otherUserName={doctor?.fullName || t("chat.title")}
       otherUserPhotoUrl={doctor?.photoUrl ?? null}
+      keyboardOffset={tabBarHeight - insets.bottom}
     />
   );
 };

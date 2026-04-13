@@ -32,6 +32,9 @@ interface ChatUIProps {
   otherUserPhotoUrl?: string | null;
   onBack?: () => void;
   useBottomSafeArea?: boolean;
+  /** Pixels already offset below the content area (e.g. tab bar height).
+   *  Subtracted from the Android keyboard height so the body isn't over-pushed. */
+  keyboardOffset?: number;
 }
 
 interface PresenceResponse {
@@ -66,6 +69,7 @@ const ChatUI = ({
   otherUserPhotoUrl,
   onBack,
   useBottomSafeArea = false,
+  keyboardOffset = 0,
 }: ChatUIProps): React.JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState<string>("");
@@ -217,7 +221,7 @@ const ChatUI = ({
   useEffect(() => {
     if (Platform.OS !== "android") return;
     const show = Keyboard.addListener("keyboardDidShow", (e) => {
-      setAndroidKeyboardHeight(e.endCoordinates.height);
+      setAndroidKeyboardHeight(Math.max(0, e.endCoordinates.height - keyboardOffset));
     });
     const hide = Keyboard.addListener("keyboardDidHide", () => {
       setAndroidKeyboardHeight(0);
@@ -226,7 +230,7 @@ const ChatUI = ({
       show.remove();
       hide.remove();
     };
-  }, []);
+  }, [keyboardOffset]);
 
   const handleSend = useCallback(async (): Promise<void> => {
     const text = inputText.trim();
