@@ -163,12 +163,17 @@ const ChatUI = ({
     socket.emit("authenticate", currentUserId);
 
     const handleReceive = (data: {
-      message: string;
+      message?: string;
+      content?: string;
       senderId: number;
       timestamp?: string;
       sentAt?: string;
     }): void => {
       if (data.senderId === currentUserId) return;
+
+      // Handle both field names from socket
+      const content = data.message ?? data.content ?? "";
+      if (!content) return; // skip empty messages
 
       // Handle both 'timestamp' and 'sentAt' field names
       // and fallback to current time if neither exist
@@ -178,7 +183,7 @@ const ChatUI = ({
         id: Date.now(),
         senderId: data.senderId,
         receiverId: currentUserId,
-        content: data.message,
+        content, // ← correctly mapped
         isRead: false,
         sentAt,
       };
@@ -399,17 +404,25 @@ const ChatUI = ({
                         >
                           {item.content}
                         </Text>
-                        <Text
-                          style={[
-                            styles.bubbleTime,
-                            isMine
-                              ? styles.bubbleTimeMine
-                              : styles.bubbleTimeOther,
-                          ]}
-                        >
-                          {item.sentAt ? formatTime(item.sentAt) : ""}
-                          {isMine ? " ?" : ""}
-                        </Text>
+                        <View style={styles.bubbleTimeRow}>
+                          <Text
+                            style={[
+                              styles.bubbleTime,
+                              isMine
+                                ? styles.bubbleTimeMine
+                                : styles.bubbleTimeOther,
+                            ]}
+                          >
+                            {item.sentAt ? formatTime(item.sentAt) : ""}
+                          </Text>
+                          {isMine && (
+                            <Ionicons
+                              name="checkmark-outline"
+                              size={12}
+                              color="rgba(255,255,255,0.7)"
+                            />
+                          )}
+                        </View>
                       </View>
                     </View>
                   </>
@@ -608,9 +621,15 @@ const styles = StyleSheet.create({
   },
   bubbleTextMine: { color: "#FFFFFF" },
   bubbleTextOther: { color: COLORS.textPrimary },
+  bubbleTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 2,
+    marginTop: 4,
+  },
   bubbleTime: {
     fontSize: 10,
-    marginTop: 4,
     textAlign: "right",
   },
   bubbleTimeMine: { color: "rgba(255,255,255,0.7)" },

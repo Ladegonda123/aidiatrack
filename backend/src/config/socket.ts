@@ -225,7 +225,8 @@ export const setupSocket = (io: Server): void => {
         
         // Emit with both field names for compatibility
         io.to(roomId).emit("receive_message", {
-          message: message.content,
+          message: message.content, // original field
+          content: message.content, // also send as content
           senderId: message.senderId,
           timestamp,
           sentAt: timestamp,
