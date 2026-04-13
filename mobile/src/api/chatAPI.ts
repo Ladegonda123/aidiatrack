@@ -5,20 +5,35 @@ interface ApiResponse<T> {
   data: T;
 }
 
+interface MessagesPayload {
+  messages?: Message[];
+}
+
+interface MessagePayload {
+  message?: Message;
+}
+
 export const getMessages = async (doctorId: number): Promise<Message[]> => {
-  const response = await axiosInstance.get<ApiResponse<Message[]>>(
+  const response = await axiosInstance.get<ApiResponse<MessagesPayload>>(
     `/chat/messages/${doctorId}`,
   );
-  return response.data.data ?? [];
+  const payload = response.data.data;
+  return Array.isArray(payload?.messages) ? payload.messages : [];
 };
 
 export const sendMessage = async (
   receiverId: number,
   content: string,
 ): Promise<Message> => {
-  const response = await axiosInstance.post<ApiResponse<Message>>(
+  const response = await axiosInstance.post<ApiResponse<MessagePayload>>(
     "/chat/send",
     { receiverId, content },
   );
-  return response.data.data;
+  const message = response.data.data?.message;
+
+  if (!message) {
+    throw new Error("Invalid send message response");
+  }
+
+  return message;
 };

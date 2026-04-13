@@ -46,6 +46,7 @@ const DoctorChat = (): React.JSX.Element => {
       otherUserName={params.patientName}
       otherUserPhotoUrl={params.patientPhotoUrl ?? null}
       onBack={() => navigation.goBack()}
+      useBottomSafeArea={true}
     />
   );
 };

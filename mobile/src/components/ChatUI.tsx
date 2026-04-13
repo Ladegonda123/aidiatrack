@@ -7,8 +7,14 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
@@ -17,6 +23,7 @@ import { useSocket } from "../context/SocketContext";
 import { COLORS } from "../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../utils/formatters";
 import { Message } from "../types";
+import Avatar from "./Avatar";
 
 interface ChatUIProps {
   currentUserId: number;
@@ -24,6 +31,7 @@ interface ChatUIProps {
   otherUserName: string;
   otherUserPhotoUrl?: string | null;
   onBack?: () => void;
+  useBottomSafeArea?: boolean;
 }
 
 interface PresenceResponse {
@@ -55,7 +63,9 @@ const ChatUI = ({
   currentUserId,
   otherUserId,
   otherUserName,
+  otherUserPhotoUrl,
   onBack,
+  useBottomSafeArea = false,
 }: ChatUIProps): React.JSX.Element => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState<string>("");
@@ -63,9 +73,11 @@ const ChatUI = ({
   const [sending, setSending] = useState<boolean>(false);
   const [isOtherOnline, setIsOtherOnline] = useState<boolean>(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
   const flatListRef = useRef<FlatList<Message>>(null);
   const { socket } = useSocket();
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   const roomId = getChatRoomId(currentUserId, otherUserId);
 
   const getDateLabel = useCallback(
@@ -92,7 +104,7 @@ const ChatUI = ({
     try {
       setLoading(true);
       const data = await getMessages(otherUserId);
-      setMessages(data);
+      setMessages(Array.isArray(data) ? data : []);
     } catch {
       setMessages([]);
     } finally {
@@ -199,6 +211,23 @@ const ChatUI = ({
     }
   }, [messages.length, loading]);
 
+  // Android + edge-to-edge: apply keyboard height directly as marginBottom on
+  // the body so the input bar lifts above the keyboard. KAV is not used because
+  // edgeToEdgeEnabled=true leaves residual gaps on dismiss.
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const show = Keyboard.addListener("keyboardDidShow", (e) => {
+      setAndroidKeyboardHeight(e.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
   const handleSend = useCallback(async (): Promise<void> => {
     const text = inputText.trim();
     if (!text || sending) return;
@@ -232,8 +261,8 @@ const ChatUI = ({
     }
   }, [currentUserId, inputText, otherUserId, sending]);
 
-  return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+  const chatContent = (
+    <View style={styles.container}>
       <View style={styles.header}>
         {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -242,11 +271,12 @@ const ChatUI = ({
         )}
         <View style={styles.headerInfo}>
           <View style={styles.avatarSmallWrapper}>
-            <View style={styles.avatarSmall}>
-              <Text style={styles.avatarSmallText}>
-                {otherUserName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            <Avatar
+              photoUrl={otherUserPhotoUrl}
+              name={otherUserName}
+              size={36}
+              style={styles.avatarSmall}
+            />
             {isOtherOnline && <View style={styles.onlineDot} />}
           </View>
           <View>
@@ -254,11 +284,13 @@ const ChatUI = ({
             <Text
               style={[
                 styles.headerOnline,
-                { color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)" },
+                {
+                  color: isOtherOnline ? "#90EE90" : "rgba(255,255,255,0.7)",
+                },
               ]}
             >
               {isOtherOnline
-                ? (t("chat.online") ?? "Active now")
+                ? t("chat.online")
                 : lastSeen
                   ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
                   : t("chat.offline")}
@@ -267,7 +299,12 @@ const ChatUI = ({
         </View>
       </View>
 
-      <View style={styles.body}>
+      <View
+        style={[
+          styles.body,
+          androidKeyboardHeight > 0 && { marginBottom: androidKeyboardHeight },
+        ]}
+      >
         <View style={styles.messagesArea}>
           {loading ? (
             <ActivityIndicator
@@ -287,6 +324,7 @@ const ChatUI = ({
               keyExtractor={(item, index) => `${item.id}_${index}`}
               contentContainerStyle={styles.messagesList}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
               onContentSizeChange={() =>
                 flatListRef.current?.scrollToEnd({ animated: true })
               }
@@ -314,11 +352,12 @@ const ChatUI = ({
                       ]}
                     >
                       {!isMine && (
-                        <View style={styles.messageAvatar}>
-                          <Text style={styles.messageAvatarText}>
-                            {otherUserName.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
+                        <Avatar
+                          photoUrl={otherUserPhotoUrl}
+                          name={otherUserName}
+                          size={28}
+                          style={styles.messageAvatar}
+                        />
                       )}
                       <View
                         style={[
@@ -329,7 +368,9 @@ const ChatUI = ({
                         <Text
                           style={[
                             styles.bubbleText,
-                            isMine ? styles.bubbleTextMine : styles.bubbleTextOther,
+                            isMine
+                              ? styles.bubbleTextMine
+                              : styles.bubbleTextOther,
                           ]}
                         >
                           {item.content}
@@ -337,10 +378,13 @@ const ChatUI = ({
                         <Text
                           style={[
                             styles.bubbleTime,
-                            isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther,
+                            isMine
+                              ? styles.bubbleTimeMine
+                              : styles.bubbleTimeOther,
                           ]}
                         >
-                          {formatTime(item.sentAt)}{isMine ? " ?" : ""}
+                          {formatTime(item.sentAt)}
+                          {isMine ? " ?" : ""}
                         </Text>
                       </View>
                     </View>
@@ -351,7 +395,14 @@ const ChatUI = ({
           )}
         </View>
 
-        <View style={styles.inputBar}>
+        <View
+          style={[
+            styles.inputBar,
+            useBottomSafeArea && {
+              paddingBottom: 8 + insets.bottom,
+            },
+          ]}
+        >
           <TextInput
             style={styles.messageInput}
             placeholder={t("chat.messagePlaceholder")}
@@ -381,6 +432,26 @@ const ChatUI = ({
           </TouchableOpacity>
         </View>
       </View>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      {Platform.OS === "ios" ? (
+        // iOS: KAV with "padding" reliably lifts content above the keyboard.
+        <KeyboardAvoidingView
+          style={styles.keyboardContainer}
+          behavior="padding"
+          keyboardVerticalOffset={0}
+        >
+          {chatContent}
+        </KeyboardAvoidingView>
+      ) : (
+        // Android: keyboard height is tracked via Keyboard listeners and applied
+        // as marginBottom on the body view inside chatContent. KAV is not used
+        // because edgeToEdgeEnabled=true causes residual gaps on dismiss.
+        <View style={styles.keyboardContainer}>{chatContent}</View>
+      )}
     </SafeAreaView>
   );
 };
@@ -389,6 +460,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.primary,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -410,17 +488,8 @@ const styles = StyleSheet.create({
   },
   avatarSmallWrapper: { position: "relative" },
   avatarSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarSmallText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
   },
   onlineDot: {
     position: "absolute",
@@ -490,17 +559,8 @@ const styles = StyleSheet.create({
   messageRowMine: { justifyContent: "flex-end" },
   messageRowOther: { justifyContent: "flex-start" },
   messageAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.primary + "20",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  messageAvatarText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   bubble: {
     maxWidth: "78%",
