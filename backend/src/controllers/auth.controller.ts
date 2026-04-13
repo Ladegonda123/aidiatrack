@@ -32,7 +32,8 @@ interface UpdateProfileBody {
   gender?: string;
   dateOfBirth?: Date | string;
   fcmToken?: string;
-  dailyReminderEnabled?: boolean;
+  reminderEnabled?: boolean;
+  reminderTimes?: string[];
 }
 
 interface ChangePasswordBody {
@@ -176,7 +177,8 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         photoUrl: true,
         doctorId: true,
         fcmToken: true,
-        dailyReminderEnabled: true,
+        reminderEnabled: true,
+        reminderTimes: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -207,7 +209,8 @@ export const updateProfile = async (
       dateOfBirth,
       language,
       fcmToken,
-      dailyReminderEnabled,
+      reminderEnabled,
+      reminderTimes,
     } = req.body as UpdateProfileBody;
 
     const updateData = stripUndefined({
@@ -217,7 +220,8 @@ export const updateProfile = async (
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       language,
       fcmToken,
-      dailyReminderEnabled,
+      reminderEnabled,
+      reminderTimes: Array.isArray(reminderTimes) ? reminderTimes : undefined,
     });
 
     const updatedUser = await prisma.user.update({
@@ -235,7 +239,8 @@ export const updateProfile = async (
         photoUrl: true,
         doctorId: true,
         fcmToken: true,
-        dailyReminderEnabled: true,
+        reminderEnabled: true,
+        reminderTimes: true,
       },
     });
 

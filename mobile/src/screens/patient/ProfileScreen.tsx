@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -32,17 +33,25 @@ const ProfileScreen = (): React.JSX.Element => {
   const { user, logout, updateLanguage, setUser } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
   const [reminderEnabled, setReminderEnabled] = useState<boolean>(
-    user?.dailyReminderEnabled ?? true,
+    user?.reminderEnabled ?? true,
   );
+  const [reminderTimes, setReminderTimes] = useState<string[]>(
+    user?.reminderTimes ?? ["07:00", "13:00", "20:00"],
+  );
+  const [savingReminder, setSavingReminder] = useState<boolean>(false);
   const lang = i18n.language as "en" | "rw";
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  React.useEffect(() => {
-    setReminderEnabled(user?.dailyReminderEnabled ?? true);
-  }, [user?.dailyReminderEnabled]);
+  useEffect(() => {
+    setReminderEnabled(user?.reminderEnabled ?? true);
+    setReminderTimes(user?.reminderTimes ?? ["07:00", "13:00", "20:00"]);
+  }, [user?.reminderEnabled, user?.reminderTimes]);
+
+  const isValidTime = (time: string): boolean =>
+    /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 
   const handleLogout = (): void => {
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -96,20 +105,46 @@ const ProfileScreen = (): React.JSX.Element => {
     }
   };
 
-  const handleToggleReminder = async (value: boolean): Promise<void> => {
+  const handleTimeChange = (index: number, value: string): void => {
+    const updated = [...reminderTimes];
+    updated[index] = value;
+    setReminderTimes(updated);
+  };
+
+  const handleAddTime = (): void => {
+    if (reminderTimes.length >= 5) {
+      return;
+    }
+    setReminderTimes((prev) => [...prev, "08:00"]);
+  };
+
+  const handleRemoveTime = (index: number): void => {
+    if (reminderTimes.length <= 1) {
+      return;
+    }
+    setReminderTimes((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveReminders = async (): Promise<void> => {
+    const validTimes = reminderTimes.filter(isValidTime);
+    if (validTimes.length === 0) {
+      return;
+    }
+
     try {
-      setReminderEnabled(value);
-      await updateProfile({ dailyReminderEnabled: value });
+      setSavingReminder(true);
+      await updateProfile({
+        reminderEnabled,
+        reminderTimes: validTimes,
+      });
       setUser((prev) =>
-        prev ? { ...prev, dailyReminderEnabled: value } : prev,
+        prev ? { ...prev, reminderEnabled, reminderTimes: validTimes } : prev,
       );
-      Alert.alert(
-        t("common.ok"),
-        value ? t("profile.reminderOn") : t("profile.reminderOff"),
-      );
+      Alert.alert(t("profile.reminderSaved"), t("profile.reminderSavedMsg"));
     } catch {
-      setReminderEnabled(!value);
       Alert.alert(t("common.error"));
+    } finally {
+      setSavingReminder(false);
     }
   };
 
@@ -249,26 +284,31 @@ const ProfileScreen = (): React.JSX.Element => {
           {user?.role === "PATIENT" ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t("profile.reminders")}</Text>
-              <View style={styles.infoRow}>
+              <View style={[styles.infoRow, styles.infoRowBorder]}>
                 <View style={styles.infoLeft}>
                   <Ionicons
                     name="notifications-outline"
                     size={18}
                     color={COLORS.primary}
                   />
-                  <View>
-                    <Text style={styles.infoLabel}>
-                      {t("profile.dailyReminder")}
-                    </Text>
-                    <Text style={styles.reminderSubtext}>
-                      {t("profile.dailyReminderSub")}
-                    </Text>
-                  </View>
+                  <Text style={styles.infoLabel}>
+                    {t("profile.dailyReminder")}
+                  </Text>
                 </View>
                 <Switch
                   value={reminderEnabled}
-                  onValueChange={(value) => {
-                    handleToggleReminder(value).catch(() => undefined);
+                  onValueChange={(val) => {
+                    setReminderEnabled(val);
+                    updateProfile({ reminderEnabled: val })
+                      .then(() => {
+                        setUser((prev) =>
+                          prev ? { ...prev, reminderEnabled: val } : prev,
+                        );
+                      })
+                      .catch(() => {
+                        setReminderEnabled(!val);
+                        Alert.alert(t("common.error"));
+                      });
                   }}
                   trackColor={{
                     false: COLORS.border,
@@ -279,6 +319,88 @@ const ProfileScreen = (): React.JSX.Element => {
                   }
                 />
               </View>
+
+              {reminderEnabled ? (
+                <>
+                  <Text style={styles.reminderHelp}>
+                    {t("profile.reminderHelp")}
+                  </Text>
+
+                  {reminderTimes.map((time, index) => (
+                    <View key={`${index}-${time}`} style={styles.timeSlotRow}>
+                      <Ionicons
+                        name="alarm-outline"
+                        size={18}
+                        color={COLORS.primary}
+                      />
+                      <TextInput
+                        style={[
+                          styles.timeSlotInput,
+                          !isValidTime(time)
+                            ? styles.timeSlotInputError
+                            : undefined,
+                        ]}
+                        value={time}
+                        onChangeText={(val) => handleTimeChange(index, val)}
+                        placeholder="HH:MM"
+                        placeholderTextColor={COLORS.textSecondary}
+                        keyboardType="numbers-and-punctuation"
+                        maxLength={5}
+                      />
+                      <Text style={styles.timeSlotFormat}>
+                        {isValidTime(time) ? "✓" : "HH:MM"}
+                      </Text>
+                      {reminderTimes.length > 1 ? (
+                        <TouchableOpacity
+                          onPress={() => handleRemoveTime(index)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons
+                            name="close-circle"
+                            size={20}
+                            color={COLORS.danger}
+                          />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  ))}
+
+                  {reminderTimes.length < 5 ? (
+                    <TouchableOpacity
+                      style={styles.addTimeButton}
+                      onPress={handleAddTime}
+                    >
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={18}
+                        color={COLORS.primary}
+                      />
+                      <Text style={styles.addTimeText}>
+                        {t("profile.addReminderTime")}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  <TouchableOpacity
+                    style={[
+                      styles.saveReminderButton,
+                      savingReminder ? { opacity: 0.7 } : undefined,
+                    ]}
+                    onPress={() => {
+                      handleSaveReminders().catch(() => undefined);
+                    }}
+                    disabled={savingReminder}
+                  >
+                    {savingReminder ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.saveReminderText}>
+                        {t("profile.saveReminders")}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : null}
             </View>
           ) : null}
 
@@ -556,10 +678,63 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  reminderSubtext: {
-    fontSize: 11,
+  reminderHelp: {
+    fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    lineHeight: 18,
+    marginBottom: 12,
+    fontStyle: "italic",
+  },
+  timeSlotRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  timeSlotInput: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "700",
+    color: COLORS.primary,
+    paddingVertical: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.primary,
+    textAlign: "center",
+  },
+  timeSlotInputError: {
+    borderBottomColor: COLORS.danger,
+    color: COLORS.danger,
+  },
+  timeSlotFormat: {
+    fontSize: 12,
+    color: COLORS.success,
+    fontWeight: "600",
+    minWidth: 36,
+  },
+  addTimeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+  },
+  addTimeText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  saveReminderButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  saveReminderText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
   languageRow: {
     flexDirection: "row",

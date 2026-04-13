@@ -246,6 +246,13 @@ export const sendDailyLoggingReminders = async (): Promise<void> => {
   try {
     logger.info("[Cron] Running daily logging reminders...");
 
+    const now = new Date().toLocaleTimeString("en-GB", {
+      timeZone: "Africa/Kigali",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
     const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
     const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
 
@@ -253,7 +260,8 @@ export const sendDailyLoggingReminders = async (): Promise<void> => {
       where: {
         role: "PATIENT",
         fcmToken: { not: null },
-        dailyReminderEnabled: true,
+        reminderEnabled: true,
+        reminderTimes: { has: now },
       },
       select: {
         id: true,
@@ -283,11 +291,11 @@ export const sendDailyLoggingReminders = async (): Promise<void> => {
       const title =
         lang === "rw"
           ? "Kwibutsa Isuzuma ry'Ubuzima"
-          : "Daily Reading Reminder";
+          : "Time to Log Your Reading";
       const body =
         lang === "rw"
-          ? "Ntuwibagirwe gufata no kwandika isuzuma rya BG uyu munsi. Bifasha kugenzura ubuzima bwawe."
-          : "Don't forget to log your blood glucose reading today. It helps monitor your health.";
+          ? `Ni igihe cyo gufata isuzuma rya BG (${now}). Ntubyibagirwe!`
+          : `It's ${now} - time to log your blood glucose reading.`;
 
       await sendPushNotification({
         userId: patient.id,
@@ -302,7 +310,7 @@ export const sendDailyLoggingReminders = async (): Promise<void> => {
         type: "system",
         title,
         body,
-        data: { action: "log_reading" },
+        data: { action: "log_reading", time: now },
       });
 
       reminded += 1;

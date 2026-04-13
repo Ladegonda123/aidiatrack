@@ -88,7 +88,12 @@ export const updateProfileSchema: ObjectSchema = Joi.object({
   dateOfBirth: Joi.date().max("now").optional().allow(null),
   language: Joi.string().valid("en", "rw").optional(),
   fcmToken: Joi.string().optional().allow("", null),
-  dailyReminderEnabled: Joi.boolean().optional(),
+  reminderEnabled: Joi.boolean().optional(),
+  reminderTimes: Joi.array()
+    .items(Joi.string().pattern(/^([01]\d|2[0-3]):[0-5]\d$/))
+    .min(1)
+    .max(5)
+    .optional(),
 }).messages({
   "object.unknown": "Request contains an unsupported field.",
 });
