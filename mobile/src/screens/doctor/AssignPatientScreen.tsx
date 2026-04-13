@@ -226,14 +226,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   header: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 24,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 14,

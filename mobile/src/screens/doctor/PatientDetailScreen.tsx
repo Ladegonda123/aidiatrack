@@ -417,7 +417,13 @@ const PatientDetailScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
   header: {
     backgroundColor: COLORS.primary,
     flexDirection: "row",
@@ -425,8 +431,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     paddingBottom: 22,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
     gap: 12,
   },
   backButton: { padding: 4 },
