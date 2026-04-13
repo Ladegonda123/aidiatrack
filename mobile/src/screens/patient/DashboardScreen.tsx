@@ -273,75 +273,76 @@ const DashboardScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
-        <ScrollView
-          style={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[COLORS.primary]}
-            />
-          }
-        >
-          <View style={styles.headerBackground}>
-            <View style={styles.header}>
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                  <Avatar
-                    photoUrl={user?.photoUrl ?? null}
-                    name={user?.fullName ?? firstName}
-                    size={52}
-                    style={styles.avatar}
-                  />
-                  <View>
-                    <Text style={styles.greeting}>{greeting}</Text>
-                    <Text style={styles.dateText}>
-                      {formatDate(new Date(), lang)}
+        <View style={styles.headerBackground}>
+          <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
+                <Avatar
+                  photoUrl={user?.photoUrl ?? null}
+                  name={user?.fullName ?? firstName}
+                  size={52}
+                  style={styles.avatar}
+                />
+                <View>
+                  <Text style={styles.greeting}>{greeting}</Text>
+                  <Text style={styles.dateText}>
+                    {formatDate(new Date(), lang)}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.bellButton}
+                onPress={() => setShowNotifications(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={24}
+                  color="#FFFFFF"
+                />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadCount > 9 ? "9+" : unreadCount.toString()}
                     </Text>
                   </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.bellButton}
-                  onPress={() => setShowNotifications(true)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="notifications-outline"
-                    size={24}
-                    color="#FFFFFF"
-                  />
-                  {unreadCount > 0 && (
-                    <View style={styles.bellBadge}>
-                      <Text style={styles.bellBadgeText}>
-                        {unreadCount > 9 ? "9+" : unreadCount.toString()}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
+                )}
+              </TouchableOpacity>
+            </View>
 
-              <View style={styles.streakBar}>
-                <Ionicons name="flame-outline" size={16} color="#FFD700" />
-                <Text style={styles.streakText}>
-                  {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
-                </Text>
-                <View style={styles.streakDivider} />
-                <Ionicons
-                  name="trending-up-outline"
-                  size={16}
-                  color="rgba(255,255,255,0.8)"
-                />
-                <Text style={styles.streakText}>
-                  {sevenDayAverage > 0
-                    ? t("dashboard.mgdlAvg", { value: sevenDayAverage })
-                    : t("dashboard.noReadings")}
-                </Text>
-              </View>
+            <View style={styles.streakBar}>
+              <Ionicons name="flame-outline" size={16} color="#FFD700" />
+              <Text style={styles.streakText}>
+                {summary?.totalRecords ?? 0} {t("dashboard.totalRecords")}
+              </Text>
+              <View style={styles.streakDivider} />
+              <Ionicons
+                name="trending-up-outline"
+                size={16}
+                color="rgba(255,255,255,0.8)"
+              />
+              <Text style={styles.streakText}>
+                {sevenDayAverage > 0
+                  ? t("dashboard.mgdlAvg", { value: sevenDayAverage })
+                  : t("dashboard.noReadings")}
+              </Text>
             </View>
           </View>
+        </View>
 
-          <View style={styles.content}>
+        <View style={styles.content}>
+          <ScrollView
+            style={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[COLORS.primary]}
+              />
+            }
+            contentContainerStyle={styles.scrollContent}
+          >
             <View style={styles.card}>
               <View style={styles.readingCardHeader}>
                 <Text style={styles.cardLabel}>
@@ -637,8 +638,8 @@ const DashboardScreen = (): React.JSX.Element => {
                 color={COLORS.textSecondary}
               />
             </TouchableOpacity>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </View>
 
       <NotificationPanel
@@ -664,11 +665,10 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    overflow: "hidden",
+    backgroundColor: COLORS.primary,
   },
   scroll: {
-    backgroundColor: COLORS.background,
+    flex: 1,
   },
   headerBackground: {
     backgroundColor: COLORS.primary,
@@ -711,12 +711,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   content: {
-    padding: 16,
-    gap: 16,
+    flex: 1,
+    backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: COLORS.background,
     overflow: 'hidden',
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 16,
   },
   bellButton: {
     position: "relative",

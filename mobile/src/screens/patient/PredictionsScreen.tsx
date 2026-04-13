@@ -93,7 +93,8 @@ const PredictionsScreen = (): React.JSX.Element => {
           <Text style={styles.headerTitle}>{t("predictions.title")}</Text>
         </View>
 
-        <View style={styles.riskCard}>
+        <View style={styles.content}>
+          <View style={styles.riskCard}>
           <View style={styles.riskCardHeader}>
             <Ionicons
               name="shield-checkmark-outline"
@@ -261,7 +262,8 @@ const PredictionsScreen = (): React.JSX.Element => {
               </View>
             )}
           />
-        )}
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -271,10 +273,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -287,6 +286,20 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     textAlign: "center",
+  },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   riskCard: {
     backgroundColor: COLORS.card,

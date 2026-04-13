@@ -176,19 +176,20 @@ const PatientDetailScreen = (): React.JSX.Element => {
             style={styles.loader}
           />
         ) : (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  onRefresh().catch(() => undefined);
-                }}
-                colors={[COLORS.primary]}
-              />
-            }
-            contentContainerStyle={styles.content}
-          >
+          <View style={styles.content}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    onRefresh().catch(() => undefined);
+                  }}
+                  colors={[COLORS.primary]}
+                />
+              }
+              contentContainerStyle={styles.scrollContent}
+            >
             <View style={styles.card}>
               <View style={styles.patientHeader}>
                 <Avatar
@@ -408,7 +409,8 @@ const PatientDetailScreen = (): React.JSX.Element => {
                 {t("doctor.patientDetail.messageButton")}
               </Text>
             </TouchableOpacity>
-          </ScrollView>
+            </ScrollView>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -419,10 +421,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
   container: { 
     flex: 1, 
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -448,6 +447,13 @@ const styles = StyleSheet.create({
   chatButton: { padding: 4 },
   loader: { marginTop: 60 },
   content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  scrollContent: {
     padding: 16,
     gap: 14,
     paddingBottom: 32,

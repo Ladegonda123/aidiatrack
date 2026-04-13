@@ -222,7 +222,8 @@ const MedicationScreen = (): React.JSX.Element => {
             style={styles.loader}
           />
         ) : medications.length === 0 ? (
-          <View style={styles.emptyState}>
+          <View style={styles.content}>
+            <View style={styles.emptyState}>
             <Ionicons name="medkit-outline" size={56} color={COLORS.primary} />
             <Text style={styles.emptyText}>
               {t("medications.noMedications")}
@@ -234,9 +235,11 @@ const MedicationScreen = (): React.JSX.Element => {
               <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
               <Text style={styles.emptyAddText}>{t("medications.add")}</Text>
             </TouchableOpacity>
+            </View>
           </View>
         ) : (
-          <FlatList
+          <View style={styles.content}>
+            <FlatList
             data={medications}
             keyExtractor={(item) => item.id.toString()}
             refreshControl={
@@ -297,6 +300,7 @@ const MedicationScreen = (): React.JSX.Element => {
               </View>
             )}
           />
+          </View>
         )}
 
         <Modal
@@ -500,10 +504,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
   container: { 
     flex: 1, 
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -528,6 +529,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loader: { marginTop: 40 },
+  content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
   emptyState: {
     flex: 1,
     alignItems: "center",

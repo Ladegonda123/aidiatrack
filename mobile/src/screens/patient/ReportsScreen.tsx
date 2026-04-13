@@ -201,21 +201,22 @@ const ReportsScreen = (): React.JSX.Element => {
             style={styles.loader}
           />
         ) : (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={async () => {
-                  setRefreshing(true);
-                  await loadData();
-                  setRefreshing(false);
-                }}
-                colors={[COLORS.primary]}
-              />
-            }
-            contentContainerStyle={styles.content}
-          >
+          <View style={styles.content}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={async () => {
+                    setRefreshing(true);
+                    await loadData();
+                    setRefreshing(false);
+                  }}
+                  colors={[COLORS.primary]}
+                />
+              }
+              contentContainerStyle={styles.scrollContent}
+            >
             {stats ? (
               <View style={styles.statsGrid}>
                 <View style={[styles.statCard, styles.statCardWide]}>
@@ -500,7 +501,8 @@ const ReportsScreen = (): React.JSX.Element => {
                 </Text>
               </View>
             ) : null}
-          </ScrollView>
+            </ScrollView>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -511,10 +513,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
   container: { 
     flex: 1, 
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -554,6 +553,13 @@ const styles = StyleSheet.create({
   },
   loader: { marginTop: 60 },
   content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  scrollContent: {
     padding: 16,
     gap: 14,
     paddingBottom: 32,

@@ -119,12 +119,13 @@ const AssignPatientScreen = (): React.JSX.Element => {
           </View>
         </View>
 
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.content}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
           <View style={styles.card}>
             <Text style={styles.label}>{t("assignPatient.emailLabel")}</Text>
             <TextInput
@@ -212,7 +213,8 @@ const AssignPatientScreen = (): React.JSX.Element => {
               <Text style={styles.buttonText}>{t("assignPatient.button")}</Text>
             )}
           </TouchableOpacity>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -225,10 +227,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -263,6 +262,13 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  scroll: {
     flex: 1,
   },
   contentContainer: {

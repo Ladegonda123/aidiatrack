@@ -250,15 +250,16 @@ const LogHealthScreen = (): React.JSX.Element => {
           <View style={styles.headerSpacer} />
         </View>
 
-        <KeyboardAwareScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          enableOnAndroid
-          enableAutomaticScroll
-          extraScrollHeight={20}
-          extraHeight={120}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.content}>
+          <KeyboardAwareScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid
+            enableAutomaticScroll
+            extraScrollHeight={20}
+            extraHeight={120}
+            showsVerticalScrollIndicator={false}
+          >
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>{t("logHealth.bloodGlucose")}</Text>
             <Controller
@@ -489,7 +490,8 @@ const LogHealthScreen = (): React.JSX.Element => {
               </>
             )}
           </TouchableOpacity>
-        </KeyboardAwareScrollView>
+          </KeyboardAwareScrollView>
+        </View>
       </View>
 
       <Modal
@@ -579,10 +581,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   header: {
     backgroundColor: COLORS.primary,
@@ -602,6 +601,13 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   content: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  scrollContent: {
     padding: 16,
     paddingBottom: 40,
   },
