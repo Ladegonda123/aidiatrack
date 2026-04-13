@@ -65,7 +65,8 @@ const PredictionsScreen = (): React.JSX.Element => {
       if (message.includes("enough data") || message.includes("400")) {
         Alert.alert(
           t("predictions.notEnoughData"),
-          t("predictions.logMoreReadings"),
+          t("predictions.logMoreReadings") ??
+            "Log at least 5 health readings for risk assessment",
         );
       }
     } finally {

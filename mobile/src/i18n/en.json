@@ -180,7 +180,7 @@
     "runAssessment": "Run Risk Assessment",
     "noRiskFactors": "No specific risk factors identified",
     "notEnoughData": "Not enough data",
-    "logMoreReadings": "Log at least one health reading first",
+    "logMoreReadings": "Log at least 5 health readings first",
     "riskLevel": "Risk Level",
     "riskFactors": "Risk Factors"
   },
