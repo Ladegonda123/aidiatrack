@@ -87,7 +87,12 @@ const DashboardScreen = (): React.JSX.Element => {
 
   const getNextMedication = (
     meds: Medication[],
-  ): { med: Medication; time: string; isToday: boolean } | null => {
+  ): {
+    med: Medication;
+    time: string;
+    isToday: boolean;
+    minutesFromNow: number;
+  } | null => {
     if (!meds || meds.length === 0) return null;
 
     const now = new Date();
@@ -119,10 +124,50 @@ const DashboardScreen = (): React.JSX.Element => {
     }
 
     if (!closest) return null;
+    return closest;
+  };
+
+  const getTimeDescription = (
+    minutesFromNow: number,
+    time: string,
+    isToday: boolean,
+    language: string,
+  ): {
+    urgency: "now" | "soon" | "later" | "tomorrow";
+    label: string;
+    color: string;
+  } => {
+    if (minutesFromNow <= 10) {
+      return {
+        urgency: "now",
+        label: language === "rw" ? "Ubu nyine!" : "Right now!",
+        color: COLORS.danger,
+      };
+    }
+
+    if (minutesFromNow <= 60) {
+      return {
+        urgency: "soon",
+        label:
+          language === "rw"
+            ? `Mu minota ${minutesFromNow}`
+            : `In ${minutesFromNow} min`,
+        color: COLORS.warning,
+      };
+    }
+
+    if (isToday) {
+      return {
+        urgency: "later",
+        label: language === "rw" ? `Uyu munsi saa ${time}` : `Today at ${time}`,
+        color: COLORS.primary,
+      };
+    }
+
     return {
-      med: closest.med,
-      time: closest.time,
-      isToday: closest.isToday,
+      urgency: "tomorrow",
+      label: language === "rw" ? `Ejo saa ${time}` : `Tomorrow at ${time}`,
+      color: COLORS.textSecondary,
     };
   };
 
@@ -454,38 +499,122 @@ const DashboardScreen = (): React.JSX.Element => {
             ) : null}
 
             {nextMed ? (
-              <View style={styles.card}>
-                <Text style={styles.cardLabel}>
-                  {t("dashboard.nextMedication")}
-                </Text>
-                <View style={styles.medRow}>
-                  <View style={styles.medIconWrapper}>
-                    <Text style={styles.medEmoji}>💊</Text>
-                  </View>
-                  <View style={styles.medInfo}>
-                    <Text style={styles.medName}>
-                      {nextMed.med.drugName} {nextMed.med.dosage}
+              (() => {
+                const desc = getTimeDescription(
+                  nextMed.minutesFromNow,
+                  nextMed.time,
+                  nextMed.isToday,
+                  i18n.language,
+                );
+
+                return (
+                  <View style={styles.card}>
+                    <Text style={styles.cardLabel}>
+                      {t("dashboard.nextMedication")}
                     </Text>
-                    <Text style={styles.medFreq}>{nextMed.med.frequency}</Text>
+                    <View style={styles.medRow}>
+                      <View
+                        style={[
+                          styles.medIconWrapper,
+                          { backgroundColor: `${desc.color}15` },
+                        ]}
+                      >
+                        <Text style={styles.medEmoji}>💊</Text>
+                      </View>
+
+                      <View style={styles.medInfo}>
+                        <Text style={styles.medName}>
+                          {nextMed.med.drugName}
+                        </Text>
+                        <Text style={styles.medDosage}>
+                          {nextMed.med.dosage} · {nextMed.med.frequency}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.timeBadge,
+                          {
+                            backgroundColor: `${desc.color}15`,
+                            borderColor: `${desc.color}40`,
+                          },
+                        ]}
+                      >
+                        {desc.urgency === "now" ? (
+                          <Ionicons
+                            name="alert-circle"
+                            size={12}
+                            color={desc.color}
+                          />
+                        ) : null}
+                        {desc.urgency === "soon" ? (
+                          <Ionicons
+                            name="time-outline"
+                            size={12}
+                            color={desc.color}
+                          />
+                        ) : null}
+                        {desc.urgency === "later" ? (
+                          <Ionicons
+                            name="alarm-outline"
+                            size={12}
+                            color={desc.color}
+                          />
+                        ) : null}
+                        {desc.urgency === "tomorrow" ? (
+                          <Ionicons
+                            name="calendar-outline"
+                            size={12}
+                            color={desc.color}
+                          />
+                        ) : null}
+                        <Text
+                          style={[styles.timeBadgeText, { color: desc.color }]}
+                        >
+                          {desc.label}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {desc.urgency === "tomorrow" ? (
+                      <Text style={styles.tomorrowNote}>
+                        {t("dashboard.allMedsDoneToday")}
+                      </Text>
+                    ) : null}
+
+                    {desc.urgency === "now" ? (
+                      <TouchableOpacity
+                        style={styles.takeMedButton}
+                        onPress={() => navigation.navigate("Medications")}
+                      >
+                        <Text style={styles.takeMedText}>
+                          {t("dashboard.takeMedication")}
+                        </Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={14}
+                          color={COLORS.danger}
+                        />
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
-                  <View style={styles.medTimeWrapper}>
-                    <Text style={styles.medTime}>{nextMed.time}</Text>
-                    <Text style={styles.medTimeLabel}>
-                      {nextMed.isToday
-                        ? t("dashboard.today")
-                        : t("dashboard.tomorrow")}
-                    </Text>
-                  </View>
-                </View>
-              </View>
+                );
+              })()
             ) : (
               <View style={styles.card}>
                 <Text style={styles.cardLabel}>
                   {t("dashboard.nextMedication")}
                 </Text>
-                <Text style={styles.noMedText}>
-                  {t("medications.noMedications")}
-                </Text>
+                <View style={styles.noMedRow}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color={COLORS.success}
+                  />
+                  <Text style={styles.noMedText}>
+                    {t("medications.noMedications")}
+                  </Text>
+                </View>
               </View>
             )}
 
@@ -904,33 +1033,57 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.textPrimary,
   },
-  medFreq: {
+  medDosage: {
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
-    textTransform: "capitalize",
   },
-  medTimeWrapper: {
-    alignItems: "flex-end",
+  timeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
   },
-  medTime: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: COLORS.primary,
+  timeBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
-  medTimeLabel: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-    textTransform: "uppercase",
-    fontWeight: "600",
+  tomorrowNote: {
+    fontSize: 12,
+    color: COLORS.success,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    fontStyle: "italic",
+  },
+  takeMedButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  takeMedText: {
+    fontSize: 13,
+    color: COLORS.danger,
+    fontWeight: "700",
+  },
+  noMedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 4,
   },
   noMedText: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    fontStyle: "italic",
-    textAlign: "center",
-    paddingVertical: 8,
   },
   reportButton: {
     flexDirection: "row",

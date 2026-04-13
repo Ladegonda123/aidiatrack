@@ -120,6 +120,8 @@
     "noMedications": "Nta miti yashyizweho",
     "today": "Uyu munsi",
     "tomorrow": "Ejo",
+    "allMedsDoneToday": "✓ Imiti yose y'uyu munsi yarabitswe",
+    "takeMedication": "Reba Umuti",
     "aiAlert": "Imenyesha rya AI",
     "highRiskWarning": "Amasuzuma yawe mashya yerekana ingaruka nini. Baza umuganga wawe."
   },

@@ -120,6 +120,8 @@
     "noMedications": "No medications scheduled",
     "today": "Today",
     "tomorrow": "Tomorrow",
+    "allMedsDoneToday": "✓ All today's medications accounted for",
+    "takeMedication": "View Medication",
     "aiAlert": "AI Alert",
     "highRiskWarning": "Your recent readings suggest high risk. Please contact your doctor."
   },
