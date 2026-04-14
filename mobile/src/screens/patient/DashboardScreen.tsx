@@ -74,14 +74,14 @@ type DashboardNavigationProp = CompositeNavigationProp<
 const DashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<DashboardNavigationProp>();
-  const { user, refreshChatUnread } = useAuth();
+  const { user, refreshChatUnread, loading } = useAuth();
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [lastPrediction, setLastPrediction] = useState<Prediction | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [screenLoading, setScreenLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const lang = i18n.language as "en" | "rw";
@@ -109,6 +109,7 @@ const DashboardScreen = (): React.JSX.Element => {
     for (const med of meds) {
       if (!med.isActive) continue;
       for (const timeStr of med.reminderTimes) {
+        if (typeof timeStr !== "string") continue;
         const [h, m] = timeStr.split(":").map(Number);
         if (Number.isNaN(h) || Number.isNaN(m)) continue;
 
@@ -180,26 +181,54 @@ const DashboardScreen = (): React.JSX.Element => {
 
   const loadDashboard = useCallback(async (): Promise<void> => {
     try {
-      setLoading(true);
+      setScreenLoading(true);
       setError(null);
 
-      const [summaryData, medsData, predictionsData] = await Promise.all([
+      const [
+        summaryResult,
+        medsResult,
+        predictionsResult,
+        notificationsResult,
+      ] = await Promise.allSettled([
         getHealthSummary(),
         getMyMedications(),
         getPredictionHistory(1),
+        getNotifications(),
       ]);
 
-      setSummary(summaryData);
-      setMedications(medsData.filter((m) => m.isActive));
+      setSummary(
+        summaryResult.status === "fulfilled" ? summaryResult.value : null,
+      );
+
+      const medicationsData =
+        medsResult.status === "fulfilled" ? medsResult.value : [];
+      setMedications(medicationsData.filter((m) => m.isActive));
+
+      const predictionsData =
+        predictionsResult.status === "fulfilled" ? predictionsResult.value : [];
       setLastPrediction(predictionsData[0] ?? null);
 
-      const notifData = await getNotifications();
-      setNotifications(notifData.notifications);
-      setUnreadCount(notifData.unreadCount);
+      if (notificationsResult.status === "fulfilled") {
+        setNotifications(notificationsResult.value.notifications);
+        setUnreadCount(notificationsResult.value.unreadCount);
+      } else {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+
+      const allFailed =
+        summaryResult.status === "rejected" &&
+        medsResult.status === "rejected" &&
+        predictionsResult.status === "rejected" &&
+        notificationsResult.status === "rejected";
+
+      if (allFailed) {
+        setError(t("common.error"));
+      }
     } catch {
       setError(t("common.error"));
     } finally {
-      setLoading(false);
+      setScreenLoading(false);
     }
   }, [t]);
 
@@ -208,6 +237,8 @@ const DashboardScreen = (): React.JSX.Element => {
   }, [loadDashboard]);
 
   useEffect(() => {
+    if (loading || !user) return;
+
     refreshChatUnread().catch(() => undefined);
 
     const interval = setInterval(() => {
@@ -215,12 +246,14 @@ const DashboardScreen = (): React.JSX.Element => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [refreshChatUnread]);
+  }, [loading, user?.id]);
 
   useFocusEffect(
     useCallback(() => {
+      if (!user) return;
+
       refreshChatUnread().catch(() => undefined);
-    }, [refreshChatUnread]),
+    }, [user?.id]),
   );
 
   const onRefresh = useCallback(async (): Promise<void> => {
@@ -229,7 +262,7 @@ const DashboardScreen = (): React.JSX.Element => {
     setRefreshing(false);
   }, [loadDashboard]);
 
-  const firstName = user?.fullName.split(" ")[0] ?? "";
+  const firstName = user?.fullName?.split(" ")[0] ?? "";
   const greeting = t(getGreetingKey(new Date().getHours()), {
     name: firstName,
   });
@@ -268,7 +301,7 @@ const DashboardScreen = (): React.JSX.Element => {
   const shouldShowAlert =
     lastPrediction !== null && lastPrediction.riskLevel !== "LOW";
 
-  if (loading) {
+  if (screenLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />

@@ -57,10 +57,11 @@ const ChatScreen = (): React.JSX.Element => {
 
   useFocusEffect(
     useCallback(() => {
+      if (!user?.doctorId) return;
+
       const clearUnread = async (): Promise<void> => {
-        if (!user?.doctorId) return;
         try {
-          await markMessagesRead(user.doctorId);
+          await markMessagesRead(user.doctorId!);
           setChatUnreadCount(0);
         } catch {
           // Silent fail to avoid blocking chat screen UX.
@@ -70,7 +71,7 @@ const ChatScreen = (): React.JSX.Element => {
       clearUnread().catch(() => {
         // Silent fail to avoid blocking chat screen UX.
       });
-    }, [setChatUnreadCount, user?.doctorId]),
+    }, [user?.doctorId]),
   );
 
   if (!user?.doctorId) {

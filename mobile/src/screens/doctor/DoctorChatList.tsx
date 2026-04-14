@@ -94,7 +94,7 @@ const DoctorChatList = (): React.JSX.Element => {
       loadPatients().catch(() => {
         setLoading(false);
       });
-    }, [loadPatients]),
+    }, []),
   );
 
   const onRefresh = useCallback(async (): Promise<void> => {

@@ -34,13 +34,13 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, refreshChatUnread } = useAuth();
+  const { user, refreshChatUnread, loading } = useAuth();
   const [patients, setPatients] = useState<DashboardPatient[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [screenLoading, setScreenLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   useLayoutEffect(() => {
@@ -49,13 +49,13 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
 
   const loadPatients = useCallback(async (): Promise<void> => {
     try {
-      setLoading(true);
+      setScreenLoading(true);
       const list = await getMyPatients();
       setPatients(list);
     } catch {
       setPatients([]);
     } finally {
-      setLoading(false);
+      setScreenLoading(false);
     }
   }, []);
 
@@ -72,12 +72,14 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
 
   useEffect(() => {
     loadPatients().catch(() => {
-      setLoading(false);
+      setScreenLoading(false);
     });
     loadNotifications().catch(() => undefined);
   }, [loadNotifications, loadPatients]);
 
   useEffect(() => {
+    if (loading || !user) return;
+
     refreshChatUnread().catch(() => undefined);
 
     const interval = setInterval(() => {
@@ -85,12 +87,14 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [refreshChatUnread]);
+  }, [loading, user?.id]);
 
   useFocusEffect(
     useCallback(() => {
+      if (!user) return;
+
       refreshChatUnread().catch(() => undefined);
-    }, [refreshChatUnread]),
+    }, [user?.id]),
   );
 
   const filteredPatients = patients.filter(
@@ -217,7 +221,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
             </View>
           </View>
 
-          {loading ? (
+          {screenLoading ? (
             <ActivityIndicator
               size="large"
               color={COLORS.primary}

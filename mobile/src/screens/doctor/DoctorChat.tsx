@@ -27,14 +27,15 @@ const DoctorChat = (): React.JSX.Element => {
   }, [navigation]);
 
   const params = route.params as RootStackParamList["DoctorChat"] | undefined;
+  const patientId = params?.patientId;
 
   useFocusEffect(
     useCallback(() => {
-      const clearUnread = async (): Promise<void> => {
-        if (!params?.patientId) return;
+      if (!patientId) return;
 
+      const clearUnread = async (): Promise<void> => {
         try {
-          await markMessagesRead(params.patientId);
+          await markMessagesRead(patientId);
           await refreshChatUnread();
         } catch {
           // Silent fail to avoid blocking chat view.
@@ -44,7 +45,7 @@ const DoctorChat = (): React.JSX.Element => {
       clearUnread().catch(() => {
         // Silent fail to avoid blocking chat view.
       });
-    }, [params?.patientId, refreshChatUnread]),
+    }, [patientId]),
   );
 
   if (!params) {

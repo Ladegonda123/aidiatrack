@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import i18n from "../i18n";
@@ -14,7 +15,7 @@ import {
   RegisterData,
   updateProfile,
 } from "../api/authAPI";
-import { getUnreadCount } from "../api/chatAPI";
+import axiosInstance from "../api/axiosInstance";
 import {
   getToken,
   removeToken,
@@ -53,18 +54,25 @@ export const AuthProvider = ({
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [chatUnreadCount, setChatUnreadCount] = useState<number>(0);
+  const tokenRef = useRef<string | null>(null);
+
+  // Keep ref in sync with token state.
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
 
   const refreshChatUnread = useCallback(async (): Promise<void> => {
-    try {
-      const activeToken = token ?? (await getToken());
-      if (!activeToken) return;
+    const currentToken = tokenRef.current;
+    if (!currentToken) return;
 
-      const unread = await getUnreadCount();
-      setChatUnreadCount(unread);
+    try {
+      const response = await axiosInstance.get("/chat/unread-count");
+      const count = response.data?.data?.unreadCount ?? 0;
+      setChatUnreadCount(count);
     } catch {
-      // Silent fail for badge-only metadata.
+      // silent fail
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     const bootstrapAuth = async (): Promise<void> => {
