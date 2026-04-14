@@ -2,6 +2,8 @@ import { Server, Socket } from "socket.io";
 import prisma from "./database";
 import { logger } from "../utils/logger";
 import { getChatRoomId } from "../utils/helpers";
+import { createNotification } from "../controllers/notification.controller";
+import { sendPushNotification } from "../services/notification.service";
 
 interface JoinRoomPayload {
   patientId?: number;
@@ -13,6 +15,7 @@ interface SendMessagePayload {
   senderId?: number;
   receiverId?: number;
   content?: string;
+  roomId?: string;
 }
 
 interface RoomPair {
@@ -218,19 +221,76 @@ export const setupSocket = (io: Server): void => {
             receiverId: payload.receiverId,
             content,
           },
+          include: {
+            sender: {
+              select: {
+                fullName: true,
+                language: true,
+                fcmToken: true,
+              },
+            },
+            receiver: {
+              select: {
+                fullName: true,
+                language: true,
+                fcmToken: true,
+                id: true,
+              },
+            },
+          },
         });
 
-        const roomId = getChatRoomId(payload.senderId, payload.receiverId);
+        const roomId =
+          typeof payload.roomId === "string" && payload.roomId.length > 0
+            ? payload.roomId
+            : getChatRoomId(payload.senderId, payload.receiverId);
         const timestamp = message.sentAt.toISOString();
-        
-        // Emit with both field names for compatibility
+
         io.to(roomId).emit("receive_message", {
-          message: message.content, // original field
-          content: message.content, // also send as content
+          message: message.content,
+          content: message.content,
           senderId: message.senderId,
+          receiverId: message.receiverId,
           timestamp,
           sentAt: timestamp,
+          id: message.id,
         });
+
+        const receiverOnline = onlineUsers.has(payload.receiverId);
+        const senderName = message.sender.fullName;
+        const receiverLang = message.receiver.language ?? "rw";
+        const preview =
+          content.length > 80 ? `${content.substring(0, 80)}...` : content;
+
+        await createNotification({
+          userId: payload.receiverId,
+          type: "chat",
+          title:
+            receiverLang === "rw"
+              ? `Ubutumwa buva kwa ${senderName}`
+              : `Message from ${senderName}`,
+          body: preview,
+          data: {
+            senderId: payload.senderId.toString(),
+            senderName,
+          },
+        });
+
+        if (!receiverOnline && message.receiver.fcmToken) {
+          await sendPushNotification({
+            userId: payload.receiverId,
+            title:
+              receiverLang === "rw"
+                ? `Ubutumwa buva kwa ${senderName}`
+                : `Message from ${senderName}`,
+            body: preview,
+            channelId: "general",
+            data: {
+              type: "chat_message",
+              senderName,
+            },
+          });
+        }
       } catch (error: unknown) {
         logger.error("send_message failed", error);
         socket.emit("socket_error", { message: "Failed to send message" });

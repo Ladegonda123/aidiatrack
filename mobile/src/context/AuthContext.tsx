@@ -57,11 +57,21 @@ export const AuthProvider = ({
   const [chatUnreadCount, setChatUnreadCount] = useState<number>(0);
   const [activeChatUserId, setActiveChatUserId] = useState<number | null>(null);
   const tokenRef = useRef<string | null>(null);
+  const userIdRef = useRef<number | null>(null);
+  const activeChatUserIdRef = useRef<number | null>(null);
 
   // Keep ref in sync with token state.
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
+
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user?.id]);
+
+  useEffect(() => {
+    activeChatUserIdRef.current = activeChatUserId;
+  }, [activeChatUserId]);
 
   const refreshChatUnread = useCallback(async (): Promise<void> => {
     const currentToken = tokenRef.current;
@@ -79,10 +89,12 @@ export const AuthProvider = ({
   useEffect(() => {
     const handleChatOpened = (data: { withUserId: number }): void => {
       setActiveChatUserId(data.withUserId);
+      activeChatUserIdRef.current = data.withUserId;
     };
 
     const handleChatClosed = (): void => {
       setActiveChatUserId(null);
+      activeChatUserIdRef.current = null;
     };
 
     const handleNewMessage = (data: {
@@ -90,8 +102,20 @@ export const AuthProvider = ({
       content: string;
       timestamp: string;
     }): void => {
-      if (data.senderId === user?.id) return;
-      if (activeChatUserId === data.senderId) return;
+      console.log(
+        "[AuthContext] handleNewMessage:",
+        "senderId:",
+        data.senderId,
+        "myId:",
+        userIdRef.current,
+        "activeChatId:",
+        activeChatUserIdRef.current,
+      );
+
+      if (data.senderId === userIdRef.current) return;
+      if (activeChatUserIdRef.current === data.senderId) return;
+
+      console.log("[AuthContext] incrementing badge");
 
       setChatUnreadCount((prev) => prev + 1);
     };
@@ -105,7 +129,7 @@ export const AuthProvider = ({
       chatEvents.off(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
       chatEvents.off(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
     };
-  }, [activeChatUserId, user?.id]);
+  }, []);
 
   useEffect(() => {
     const bootstrapAuth = async (): Promise<void> => {

@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { io, Socket } from "socket.io-client";
@@ -36,6 +37,11 @@ export const SocketProvider = ({
   const { user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const userIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -55,13 +61,15 @@ export const SocketProvider = ({
 
     socketClient.on("connect", () => {
       setIsConnected(true);
-      socketClient.emit("authenticate", user.id);
+      if (userIdRef.current) {
+        socketClient.emit("authenticate", userIdRef.current);
+      }
 
-      if (user.doctorId) {
-        const roomId = getChatRoomId(user.id, user.doctorId);
+      if (user.doctorId && userIdRef.current) {
+        const roomId = getChatRoomId(userIdRef.current, user.doctorId);
         socketClient.emit("join_room", {
           roomId,
-          patientId: user.id,
+          patientId: userIdRef.current,
           doctorId: user.doctorId,
         });
       }
@@ -78,6 +86,12 @@ export const SocketProvider = ({
       timestamp?: string;
       sentAt?: string;
     }): void => {
+      console.log(
+        "[Socket] receive_message received:",
+        data.senderId,
+        data.message ?? data.content,
+      );
+      console.log("[chatEvents] emitting NEW_MESSAGE:", data.senderId);
       chatEvents.emit(CHAT_EVENTS.NEW_MESSAGE, {
         senderId: data.senderId,
         content: data.message ?? data.content ?? "",
@@ -96,6 +110,13 @@ export const SocketProvider = ({
       setIsConnected(false);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (socket && userIdRef.current && socket.connected) {
+      socket.emit("authenticate", userIdRef.current);
+      console.log("[Socket] Re-authenticated as user:", userIdRef.current);
+    }
+  }, [socket, user?.id]);
 
   const value = useMemo<SocketContextValue>(
     () => ({ socket, isConnected }),

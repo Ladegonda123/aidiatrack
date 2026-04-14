@@ -337,7 +337,16 @@ const ChatUI = ({
 
     try {
       setSending(true);
-      await sendMessage(otherUserId, text);
+      if (socket?.connected) {
+        socket.emit("send_message", {
+          roomId,
+          message: text,
+          senderId: currentUserId,
+          receiverId: otherUserId,
+        });
+      } else {
+        await sendMessage(otherUserId, text);
+      }
     } catch {
       setMessages((prev) =>
         prev.filter((message) => message.id !== optimistic.id),
@@ -346,7 +355,7 @@ const ChatUI = ({
     } finally {
       setSending(false);
     }
-  }, [currentUserId, inputText, otherUserId, sending]);
+  }, [currentUserId, inputText, otherUserId, roomId, sending, socket]);
 
   const chatContent = (
     <View style={styles.container}>

@@ -14,6 +14,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import ChatUI from "../../components/ChatUI";
 import { useAuth } from "../../hooks/useAuth";
+import { chatEvents, CHAT_EVENTS } from "../../utils/chatEvents";
 import { DoctorListItem, listDoctors } from "../../api/doctorAPI";
 import { markMessagesRead } from "../../api/chatAPI";
 import { COLORS } from "../../utils/colors";
@@ -63,6 +64,9 @@ const ChatScreen = (): React.JSX.Element => {
         try {
           await markMessagesRead(user.doctorId!);
           setChatUnreadCount(0);
+          chatEvents.emit(CHAT_EVENTS.MESSAGES_READ, {
+            patientId: user.doctorId,
+          });
         } catch {
           // Silent fail to avoid blocking chat screen UX.
         }

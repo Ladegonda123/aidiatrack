@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -27,6 +28,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
 import NotificationPanel from "../../components/NotificationPanel";
 import Avatar from "../../components/Avatar";
+import { chatEvents, CHAT_EVENTS } from "../../utils/chatEvents";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
 import { getPredictionHistory } from "../../api/predictionAPI";
@@ -84,6 +86,7 @@ const DashboardScreen = (): React.JSX.Element => {
   const [screenLoading, setScreenLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const activeChatUserIdRef = useRef<number | null>(null);
   const lang = i18n.language as "en" | "rw";
 
   const getNextMedication = (
@@ -255,6 +258,43 @@ const DashboardScreen = (): React.JSX.Element => {
       refreshChatUnread().catch(() => undefined);
     }, [user?.id]),
   );
+
+  useEffect(() => {
+    const handleChatOpened = (data: { withUserId: number }): void => {
+      activeChatUserIdRef.current = data.withUserId;
+    };
+
+    const handleChatClosed = (): void => {
+      activeChatUserIdRef.current = null;
+    };
+
+    const handleNewMessage = (data: {
+      senderId: number;
+      content: string;
+      timestamp: string;
+    }): void => {
+      if (data.senderId === user?.id) return;
+      if (activeChatUserIdRef.current === data.senderId) return;
+
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    const handleMessagesRead = (): void => {
+      setUnreadCount(0);
+    };
+
+    chatEvents.on(CHAT_EVENTS.CHAT_OPENED, handleChatOpened);
+    chatEvents.on(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
+    chatEvents.on(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
+    chatEvents.on(CHAT_EVENTS.MESSAGES_READ, handleMessagesRead);
+
+    return () => {
+      chatEvents.off(CHAT_EVENTS.CHAT_OPENED, handleChatOpened);
+      chatEvents.off(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
+      chatEvents.off(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
+      chatEvents.off(CHAT_EVENTS.MESSAGES_READ, handleMessagesRead);
+    };
+  }, [user?.id]);
 
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
