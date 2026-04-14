@@ -141,8 +141,17 @@ const DoctorChatList = (): React.JSX.Element => {
               }
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => {
-                const hasUnread = (item.unreadCount ?? 0) > 0;
+                const unreadCount = item.unreadCount ?? 0;
+                const hasUnread = unreadCount > 0;
                 const isMyMessage = item.lastMessage?.senderId === user?.id;
+
+                console.log(
+                  "[ChatList] patient:",
+                  item.fullName,
+                  "unreadCount:",
+                  item.unreadCount,
+                );
+
                 const preview = item.lastMessage
                   ? isMyMessage
                     ? `${t("chat.youPrefix")}: ${item.lastMessage.content}`
@@ -210,9 +219,9 @@ const DoctorChatList = (): React.JSX.Element => {
                         {hasUnread ? (
                           <View style={styles.unreadBadge}>
                             <Text style={styles.unreadText}>
-                              {item.unreadCount > 99
+                              {unreadCount > 99
                                 ? "99+"
-                                : item.unreadCount.toString()}
+                                : unreadCount.toString()}
                             </Text>
                           </View>
                         ) : null}
