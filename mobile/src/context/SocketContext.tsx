@@ -8,6 +8,7 @@ import React, {
 import { io, Socket } from "socket.io-client";
 import axiosInstance from "../api/axiosInstance";
 import { useAuth } from "./AuthContext";
+import { chatEvents, CHAT_EVENTS } from "../utils/chatEvents";
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -70,9 +71,26 @@ export const SocketProvider = ({
       setIsConnected(false);
     });
 
+    const handleReceiveMessage = (data: {
+      message?: string;
+      content?: string;
+      senderId: number;
+      timestamp?: string;
+      sentAt?: string;
+    }): void => {
+      chatEvents.emit(CHAT_EVENTS.NEW_MESSAGE, {
+        senderId: data.senderId,
+        content: data.message ?? data.content ?? "",
+        timestamp: data.timestamp ?? data.sentAt ?? new Date().toISOString(),
+      });
+    };
+
+    socketClient.on("receive_message", handleReceiveMessage);
+
     setSocket(socketClient);
 
     return () => {
+      socketClient.off("receive_message", handleReceiveMessage);
       socketClient.disconnect();
       setSocket(null);
       setIsConnected(false);

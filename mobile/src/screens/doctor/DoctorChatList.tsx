@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useCallback,
   useLayoutEffect,
+  useRef,
 } from "react";
 import {
   View,
@@ -22,6 +23,7 @@ import Avatar from "../../components/Avatar";
 import { COLORS } from "../../utils/colors";
 import { RootStackParamList, PatientWithChat } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
+import { chatEvents, CHAT_EVENTS } from "../../utils/chatEvents";
 
 const formatChatTime = (
   dateStr: string,
@@ -67,6 +69,7 @@ const DoctorChatList = (): React.JSX.Element => {
   const [patients, setPatients] = useState<PatientWithChat[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const activeChatUserIdRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -88,6 +91,85 @@ const DoctorChatList = (): React.JSX.Element => {
       setLoading(false);
     });
   }, [loadPatients]);
+
+  useEffect(() => {
+    const handleChatOpened = (data: { withUserId: number }): void => {
+      activeChatUserIdRef.current = data.withUserId;
+    };
+
+    const handleChatClosed = (): void => {
+      activeChatUserIdRef.current = null;
+    };
+
+    chatEvents.on(CHAT_EVENTS.CHAT_OPENED, handleChatOpened);
+    chatEvents.on(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
+
+    return () => {
+      chatEvents.off(CHAT_EVENTS.CHAT_OPENED, handleChatOpened);
+      chatEvents.off(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleNewMessage = (data: {
+      senderId: number;
+      content: string;
+      timestamp: string;
+    }): void => {
+      if (activeChatUserIdRef.current === data.senderId) return;
+
+      setPatients((prev) => {
+        const updated = prev.map((patient) => {
+          if (patient.id !== data.senderId) return patient;
+
+          return {
+            ...patient,
+            unreadCount: (patient.unreadCount ?? 0) + 1,
+            lastMessage: {
+              content: data.content,
+              sentAt: data.timestamp,
+              senderId: data.senderId,
+              isRead: false,
+            },
+          };
+        });
+
+        return [...updated].sort((a, b) => {
+          if (!a.lastMessage && !b.lastMessage) return 0;
+          if (!a.lastMessage) return 1;
+          if (!b.lastMessage) return -1;
+
+          return (
+            new Date(b.lastMessage.sentAt).getTime() -
+            new Date(a.lastMessage.sentAt).getTime()
+          );
+        });
+      });
+    };
+
+    chatEvents.on(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
+
+    return () => {
+      chatEvents.off(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleRead = (data: { patientId: number }): void => {
+      setPatients((prev) =>
+        prev.map((patient) => {
+          if (patient.id !== data.patientId) return patient;
+          return { ...patient, unreadCount: 0 };
+        }),
+      );
+    };
+
+    chatEvents.on(CHAT_EVENTS.MESSAGES_READ, handleRead);
+
+    return () => {
+      chatEvents.off(CHAT_EVENTS.MESSAGES_READ, handleRead);
+    };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -144,13 +226,6 @@ const DoctorChatList = (): React.JSX.Element => {
                 const unreadCount = item.unreadCount ?? 0;
                 const hasUnread = unreadCount > 0;
                 const isMyMessage = item.lastMessage?.senderId === user?.id;
-
-                console.log(
-                  "[ChatList] patient:",
-                  item.fullName,
-                  "unreadCount:",
-                  item.unreadCount,
-                );
 
                 const preview = item.lastMessage
                   ? isMyMessage

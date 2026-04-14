@@ -16,6 +16,7 @@ import {
   updateProfile,
 } from "../api/authAPI";
 import axiosInstance from "../api/axiosInstance";
+import { chatEvents, CHAT_EVENTS } from "../utils/chatEvents";
 import {
   getToken,
   removeToken,
@@ -54,6 +55,7 @@ export const AuthProvider = ({
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [chatUnreadCount, setChatUnreadCount] = useState<number>(0);
+  const [activeChatUserId, setActiveChatUserId] = useState<number | null>(null);
   const tokenRef = useRef<string | null>(null);
 
   // Keep ref in sync with token state.
@@ -73,6 +75,37 @@ export const AuthProvider = ({
       // silent fail
     }
   }, []);
+
+  useEffect(() => {
+    const handleChatOpened = (data: { withUserId: number }): void => {
+      setActiveChatUserId(data.withUserId);
+    };
+
+    const handleChatClosed = (): void => {
+      setActiveChatUserId(null);
+    };
+
+    const handleNewMessage = (data: {
+      senderId: number;
+      content: string;
+      timestamp: string;
+    }): void => {
+      if (data.senderId === user?.id) return;
+      if (activeChatUserId === data.senderId) return;
+
+      setChatUnreadCount((prev) => prev + 1);
+    };
+
+    chatEvents.on(CHAT_EVENTS.CHAT_OPENED, handleChatOpened);
+    chatEvents.on(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
+    chatEvents.on(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
+
+    return () => {
+      chatEvents.off(CHAT_EVENTS.CHAT_OPENED, handleChatOpened);
+      chatEvents.off(CHAT_EVENTS.CHAT_CLOSED, handleChatClosed);
+      chatEvents.off(CHAT_EVENTS.NEW_MESSAGE, handleNewMessage);
+    };
+  }, [activeChatUserId, user?.id]);
 
   useEffect(() => {
     const bootstrapAuth = async (): Promise<void> => {

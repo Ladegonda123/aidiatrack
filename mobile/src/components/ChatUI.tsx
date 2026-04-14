@@ -20,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../api/axiosInstance";
 import { getMessages, sendMessage, markMessagesRead } from "../api/chatAPI";
 import { useSocket } from "../context/SocketContext";
+import { chatEvents, CHAT_EVENTS } from "../utils/chatEvents";
 import { COLORS } from "../utils/colors";
 import { formatDate, formatTime, timeAgo } from "../utils/formatters";
 import { Message } from "../types";
@@ -88,10 +89,25 @@ const ChatUI = ({
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
   const flatListRef = useRef<FlatList<Message>>(null);
+  const isMountedRef = useRef<boolean>(true);
   const { socket } = useSocket();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const roomId = getChatRoomId(currentUserId, otherUserId);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    chatEvents.emit(CHAT_EVENTS.CHAT_OPENED, {
+      withUserId: otherUserId,
+    });
+
+    return () => {
+      isMountedRef.current = false;
+      chatEvents.emit(CHAT_EVENTS.CHAT_CLOSED, {
+        withUserId: otherUserId,
+      });
+    };
+  }, [otherUserId]);
 
   const getDateLabel = useCallback(
     (dateStr: string | undefined, _language: string): string => {

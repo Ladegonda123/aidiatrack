@@ -13,6 +13,7 @@ import ChatUI from "../../components/ChatUI";
 import { RootStackParamList } from "../../types";
 import { markMessagesRead } from "../../api/chatAPI";
 import { COLORS } from "../../utils/colors";
+import { chatEvents, CHAT_EVENTS } from "../../utils/chatEvents";
 
 type RouteType = RouteProp<RootStackParamList, "DoctorChat">;
 
@@ -36,6 +37,7 @@ const DoctorChat = (): React.JSX.Element => {
       const clearUnread = async (): Promise<void> => {
         try {
           await markMessagesRead(patientId);
+          chatEvents.emit(CHAT_EVENTS.MESSAGES_READ, { patientId });
           await refreshChatUnread();
         } catch {
           // Silent fail to avoid blocking chat view.

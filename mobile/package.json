@@ -17,6 +17,7 @@
     "@react-navigation/native-stack": "^7.14.10",
     "axios": "^1.14.0",
     "date-fns": "^4.1.0",
+    "eventemitter3": "^5.0.4",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
     "expo-device": "~8.0.10",
@@ -39,6 +40,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/eventemitter3": "^1.2.0",
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
   },
