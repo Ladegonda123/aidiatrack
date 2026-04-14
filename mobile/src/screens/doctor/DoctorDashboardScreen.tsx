@@ -94,6 +94,10 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
       if (!user) return;
 
       refreshChatUnread().catch(() => undefined);
+
+      // Refresh notification bell so unread count is accurate after
+      // navigating back from another screen (events missed while unmounted).
+      loadNotifications().catch(() => undefined);
     }, [user?.id]),
   );
 

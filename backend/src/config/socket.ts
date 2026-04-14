@@ -2,8 +2,6 @@ import { Server, Socket } from "socket.io";
 import prisma from "./database";
 import { logger } from "../utils/logger";
 import { getChatRoomId } from "../utils/helpers";
-import { createNotification } from "../controllers/notification.controller";
-import { sendPushNotification } from "../services/notification.service";
 
 interface JoinRoomPayload {
   patientId?: number;
@@ -14,7 +12,8 @@ interface JoinRoomPayload {
 interface SendMessagePayload {
   senderId?: number;
   receiverId?: number;
-  content?: string;
+  message?: string; // field name used by mobile
+  content?: string; // kept for backward compatibility
   roomId?: string;
 }
 
@@ -116,37 +115,6 @@ const isValidDoctorPatientPair = async (
   return patient.doctorId === doctorId;
 };
 
-const assertAllowedConversation = async (
-  senderId: number,
-  receiverId: number,
-): Promise<boolean> => {
-  const users = await prisma.user.findMany({
-    where: { id: { in: [senderId, receiverId] } },
-    select: { id: true, role: true, doctorId: true },
-  });
-
-  if (users.length !== 2) {
-    return false;
-  }
-
-  const sender = users.find((user) => user.id === senderId);
-  const receiver = users.find((user) => user.id === receiverId);
-
-  if (!sender || !receiver) {
-    return false;
-  }
-
-  if (sender.role === "PATIENT" && receiver.role === "DOCTOR") {
-    return sender.doctorId === receiver.id;
-  }
-
-  if (sender.role === "DOCTOR" && receiver.role === "PATIENT") {
-    return receiver.doctorId === sender.id;
-  }
-
-  return false;
-};
-
 export const setupSocket = (io: Server): void => {
   io.on("connection", (socket: Socket) => {
     logger.socket("Socket connected", { socketId: socket.id });
@@ -187,17 +155,22 @@ export const setupSocket = (io: Server): void => {
 
     socket.on("send_message", (payload: SendMessagePayload) => {
       try {
-        if (
-          !isPositiveInt(payload.senderId) ||
-          typeof payload.content !== "string"
-        ) {
+        // Accept both 'message' (mobile) and 'content' (legacy) field names
+        const rawContent =
+          typeof payload.message === "string"
+            ? payload.message
+            : typeof payload.content === "string"
+              ? payload.content
+              : null;
+
+        if (!isPositiveInt(payload.senderId) || rawContent === null) {
           socket.emit("socket_error", {
             message: "Invalid sender or message payload",
           });
           return;
         }
 
-        const content = payload.content.trim();
+        const content = rawContent.trim();
         if (content.length === 0) {
           socket.emit("socket_error", {
             message: "Message content is required",
@@ -221,6 +194,7 @@ export const setupSocket = (io: Server): void => {
               : null;
 
         if (roomId) {
+          // STEP 1: Emit to room — real-time delivery for ChatUI on both sides
           io.to(roomId).emit("receive_message", {
             message: content,
             content,
@@ -237,103 +211,26 @@ export const setupSocket = (io: Server): void => {
           });
         }
 
-        if (!isPositiveInt(payload.receiverId)) {
-          logger.error("[Socket] Missing receiverId", {
-            senderId: payload.senderId,
-            roomId: payload.roomId,
-          });
-          return;
+        // STEP 2: Emit directly to the receiver's individual socket for
+        // real-time badge/bell updates — works even when receiver has not
+        // joined the room (e.g. doctor is on dashboard, not in ChatUI).
+        if (isPositiveInt(payload.receiverId)) {
+          const receiverSocketId = onlineUsers.get(payload.receiverId);
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit("new_message_notification", {
+              senderId: payload.senderId,
+              content,
+              timestamp,
+            });
+            logger.socket("[Socket] sent new_message_notification to receiver:", {
+              receiverId: payload.receiverId,
+            });
+          }
         }
 
-        const senderId = payload.senderId;
-        const receiverId = payload.receiverId;
-
-        const canSendPromise = assertAllowedConversation(senderId, receiverId);
-
-        canSendPromise
-          .then((canSend) => {
-            if (!canSend) {
-              logger.warn("[Socket] Unauthorized conversation", {
-                senderId,
-                receiverId,
-              });
-              return null;
-            }
-
-            return prisma.message
-              .create({
-                data: {
-                  senderId,
-                  receiverId,
-                  content,
-                },
-                include: {
-                  sender: {
-                    select: {
-                      fullName: true,
-                      language: true,
-                      fcmToken: true,
-                    },
-                  },
-                  receiver: {
-                    select: {
-                      fullName: true,
-                      language: true,
-                      fcmToken: true,
-                      id: true,
-                    },
-                  },
-                },
-              })
-              .then(async (saved) => {
-                logger.socket("[Socket] message saved to DB:", saved.id);
-
-                try {
-                  const senderName = saved.sender.fullName;
-                  const receiverLang = saved.receiver.language ?? "rw";
-                  const preview =
-                    content.length > 60
-                      ? `${content.substring(0, 60)}...`
-                      : content;
-
-                  await createNotification({
-                    userId: receiverId,
-                    type: "chat",
-                    title:
-                      receiverLang === "rw"
-                        ? `Ubutumwa buva kwa ${senderName}`
-                        : `Message from ${senderName}`,
-                    body: preview,
-                    data: {
-                      senderId: senderId.toString(),
-                      senderName,
-                    },
-                  });
-
-                  const receiverOnline = onlineUsers.has(receiverId);
-                  if (!receiverOnline && saved.receiver.fcmToken) {
-                    await sendPushNotification({
-                      userId: receiverId,
-                      title:
-                        receiverLang === "rw"
-                          ? `Ubutumwa buva kwa ${senderName}`
-                          : `Message from ${senderName}`,
-                      body: preview,
-                      channelId: "general",
-                      data: {
-                        type: "chat_message",
-                        senderName,
-                      },
-                    });
-                  }
-                } catch (notifError: unknown) {
-                  logger.error("[Socket] notification failed", notifError);
-                }
-              });
-          })
-          .catch((dbError: unknown) => {
-            logger.error("[Socket] DB save failed", dbError);
-          });
+        // STEP 3: DB persistence and push notifications are handled by the
+        // HTTP POST /api/chat/send endpoint which the mobile always calls.
+        // Keeping DB save out of the socket handler prevents duplicate records.
       } catch (error: unknown) {
         logger.error("[Socket] send_message critical error", error);
       }

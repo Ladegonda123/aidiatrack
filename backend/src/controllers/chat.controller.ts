@@ -6,6 +6,7 @@ import { sendError, sendSuccess } from "../utils/response";
 import { getChatRoomId } from "../utils/helpers";
 import { AuthUser } from "../types";
 import { sendChatNotification } from "../services/notification.service";
+import { createNotification } from "./notification.controller";
 import xss from "xss";
 
 interface SendMessageBody {
@@ -134,27 +135,48 @@ export const sendMessage = async (
       },
     });
 
-    const roomId = getChatRoomId(user.userId, receiverId);
-    io.to(roomId).emit("receive_message", message);
+    // Real-time delivery is handled by the socket send_message handler.
+    // Do NOT emit receive_message here — that would duplicate the message
+    // on any client that is in the room (the socket already delivered it).
 
+    const roomId = getChatRoomId(user.userId, receiverId);
     const socketsInRoom = await io.in(roomId).fetchSockets();
     const receiverOnline = socketsInRoom.some(
-      (socket) => socket.data.userId === receiverId,
+      (s) => s.data.userId === receiverId,
     );
 
-    if (!receiverOnline) {
-      const sender = await prisma.user.findUnique({
-        where: { id: user.userId },
-        select: { fullName: true },
-      });
+    const sender = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { fullName: true },
+    });
 
-      if (sender) {
-        await sendChatNotification(
-          receiverId,
-          user.userId,
-          sender.fullName,
-          content,
-        );
+    if (sender) {
+      if (!receiverOnline) {
+        // Offline receiver: send push notification (which also creates the DB record)
+        await sendChatNotification(receiverId, user.userId, sender.fullName, content);
+      } else {
+        // Online receiver: no push needed, but always write a DB notification
+        // so the bell badge persists across navigation and app restarts.
+        const receiver = await prisma.user.findUnique({
+          where: { id: receiverId },
+          select: { language: true },
+        });
+        const lang = receiver?.language ?? "rw";
+        const preview =
+          content.length > 80 ? `${content.substring(0, 80)}...` : content;
+        await createNotification({
+          userId: receiverId,
+          type: "chat",
+          title:
+            lang === "rw"
+              ? `Ubutumwa buva kwa ${sender.fullName}`
+              : `Message from ${sender.fullName}`,
+          body: preview,
+          data: {
+            senderName: sender.fullName,
+            senderId: user.userId.toString(),
+          },
+        });
       }
     }
 

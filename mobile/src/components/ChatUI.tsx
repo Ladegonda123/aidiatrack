@@ -337,6 +337,8 @@ const ChatUI = ({
 
     try {
       setSending(true);
+
+      // Emit via socket for real-time delivery to the other party
       if (socket?.connected) {
         socket.emit("send_message", {
           roomId,
@@ -344,9 +346,10 @@ const ChatUI = ({
           senderId: currentUserId,
           receiverId: otherUserId,
         });
-      } else {
-        await sendMessage(otherUserId, text);
       }
+
+      // Always save via HTTP for guaranteed persistence in DB
+      await sendMessage(otherUserId, text);
     } catch {
       setMessages((prev) =>
         prev.filter((message) => message.id !== optimistic.id),

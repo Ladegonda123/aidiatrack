@@ -79,6 +79,9 @@ export const SocketProvider = ({
       setIsConnected(false);
     });
 
+    // receive_message is used ONLY by ChatUI to display messages.
+    // Badge/bell updates come through new_message_notification below
+    // so that badge updates work even when the user is not in ChatUI.
     const handleReceiveMessage = (data: {
       message?: string;
       content?: string;
@@ -86,25 +89,34 @@ export const SocketProvider = ({
       timestamp?: string;
       sentAt?: string;
     }): void => {
-      console.log(
-        "[Socket] receive_message received:",
-        data.senderId,
-        data.message ?? data.content,
-      );
-      console.log("[chatEvents] emitting NEW_MESSAGE:", data.senderId);
+      // Intentionally empty at SocketContext level — ChatUI has its own listener.
+      // Keeping the binding so the handler is cleanly removed on cleanup.
+      void data;
+    };
+
+    // new_message_notification is sent DIRECTLY to the receiver's socket by
+    // the server (not via room broadcast). This fires for all screens, not
+    // just when the user has ChatUI open, solving the doctor badge problem.
+    const handleNewMessageNotification = (data: {
+      senderId: number;
+      content: string;
+      timestamp: string;
+    }): void => {
       chatEvents.emit(CHAT_EVENTS.NEW_MESSAGE, {
         senderId: data.senderId,
-        content: data.message ?? data.content ?? "",
-        timestamp: data.timestamp ?? data.sentAt ?? new Date().toISOString(),
+        content: data.content ?? "",
+        timestamp: data.timestamp ?? new Date().toISOString(),
       });
     };
 
     socketClient.on("receive_message", handleReceiveMessage);
+    socketClient.on("new_message_notification", handleNewMessageNotification);
 
     setSocket(socketClient);
 
     return () => {
       socketClient.off("receive_message", handleReceiveMessage);
+      socketClient.off("new_message_notification", handleNewMessageNotification);
       socketClient.disconnect();
       setSocket(null);
       setIsConnected(false);
