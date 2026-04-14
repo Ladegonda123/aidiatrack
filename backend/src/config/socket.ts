@@ -185,19 +185,19 @@ export const setupSocket = (io: Server): void => {
       }
     });
 
-    socket.on("send_message", async (payload: SendMessagePayload) => {
+    socket.on("send_message", (payload: SendMessagePayload) => {
       try {
         if (
           !isPositiveInt(payload.senderId) ||
-          !isPositiveInt(payload.receiverId)
+          typeof payload.content !== "string"
         ) {
           socket.emit("socket_error", {
-            message: "Invalid sender or receiver",
+            message: "Invalid sender or message payload",
           });
           return;
         }
 
-        const content = payload.content?.trim() ?? "";
+        const content = payload.content.trim();
         if (content.length === 0) {
           socket.emit("socket_error", {
             message: "Message content is required",
@@ -205,95 +205,137 @@ export const setupSocket = (io: Server): void => {
           return;
         }
 
-        const canSend = await assertAllowedConversation(
-          payload.senderId,
-          payload.receiverId,
-        );
-
-        if (!canSend) {
-          socket.emit("socket_error", { message: "Unauthorized conversation" });
-          return;
-        }
-
-        const message = await prisma.message.create({
-          data: {
-            senderId: payload.senderId,
-            receiverId: payload.receiverId,
-            content,
-          },
-          include: {
-            sender: {
-              select: {
-                fullName: true,
-                language: true,
-                fcmToken: true,
-              },
-            },
-            receiver: {
-              select: {
-                fullName: true,
-                language: true,
-                fcmToken: true,
-                id: true,
-              },
-            },
-          },
+        logger.socket("[Socket] send_message received:", {
+          roomId: payload.roomId,
+          senderId: payload.senderId,
+          receiverId: payload.receiverId,
+          message: content.substring(0, 30),
         });
 
+        const timestamp = new Date().toISOString();
         const roomId =
           typeof payload.roomId === "string" && payload.roomId.length > 0
             ? payload.roomId
-            : getChatRoomId(payload.senderId, payload.receiverId);
-        const timestamp = message.sentAt.toISOString();
+            : isPositiveInt(payload.receiverId)
+              ? getChatRoomId(payload.senderId, payload.receiverId)
+              : null;
 
-        io.to(roomId).emit("receive_message", {
-          message: message.content,
-          content: message.content,
-          senderId: message.senderId,
-          receiverId: message.receiverId,
-          timestamp,
-          sentAt: timestamp,
-          id: message.id,
-        });
-
-        const receiverOnline = onlineUsers.has(payload.receiverId);
-        const senderName = message.sender.fullName;
-        const receiverLang = message.receiver.language ?? "rw";
-        const preview =
-          content.length > 80 ? `${content.substring(0, 80)}...` : content;
-
-        await createNotification({
-          userId: payload.receiverId,
-          type: "chat",
-          title:
-            receiverLang === "rw"
-              ? `Ubutumwa buva kwa ${senderName}`
-              : `Message from ${senderName}`,
-          body: preview,
-          data: {
-            senderId: payload.senderId.toString(),
-            senderName,
-          },
-        });
-
-        if (!receiverOnline && message.receiver.fcmToken) {
-          await sendPushNotification({
-            userId: payload.receiverId,
-            title:
-              receiverLang === "rw"
-                ? `Ubutumwa buva kwa ${senderName}`
-                : `Message from ${senderName}`,
-            body: preview,
-            channelId: "general",
-            data: {
-              type: "chat_message",
-              senderName,
-            },
+        if (roomId) {
+          io.to(roomId).emit("receive_message", {
+            message: content,
+            content,
+            senderId: payload.senderId,
+            receiverId: payload.receiverId,
+            timestamp,
+            sentAt: timestamp,
+          });
+          logger.socket("[Socket] emitted to room:", roomId);
+        } else {
+          logger.warn("[Socket] No roomId available for immediate emit", {
+            senderId: payload.senderId,
+            receiverId: payload.receiverId,
           });
         }
+
+        if (!isPositiveInt(payload.receiverId)) {
+          logger.error("[Socket] Missing receiverId", {
+            senderId: payload.senderId,
+            roomId: payload.roomId,
+          });
+          return;
+        }
+
+        const senderId = payload.senderId;
+        const receiverId = payload.receiverId;
+
+        const canSendPromise = assertAllowedConversation(senderId, receiverId);
+
+        canSendPromise
+          .then((canSend) => {
+            if (!canSend) {
+              logger.warn("[Socket] Unauthorized conversation", {
+                senderId,
+                receiverId,
+              });
+              return null;
+            }
+
+            return prisma.message
+              .create({
+                data: {
+                  senderId,
+                  receiverId,
+                  content,
+                },
+                include: {
+                  sender: {
+                    select: {
+                      fullName: true,
+                      language: true,
+                      fcmToken: true,
+                    },
+                  },
+                  receiver: {
+                    select: {
+                      fullName: true,
+                      language: true,
+                      fcmToken: true,
+                      id: true,
+                    },
+                  },
+                },
+              })
+              .then(async (saved) => {
+                logger.socket("[Socket] message saved to DB:", saved.id);
+
+                try {
+                  const senderName = saved.sender.fullName;
+                  const receiverLang = saved.receiver.language ?? "rw";
+                  const preview =
+                    content.length > 60
+                      ? `${content.substring(0, 60)}...`
+                      : content;
+
+                  await createNotification({
+                    userId: receiverId,
+                    type: "chat",
+                    title:
+                      receiverLang === "rw"
+                        ? `Ubutumwa buva kwa ${senderName}`
+                        : `Message from ${senderName}`,
+                    body: preview,
+                    data: {
+                      senderId: senderId.toString(),
+                      senderName,
+                    },
+                  });
+
+                  const receiverOnline = onlineUsers.has(receiverId);
+                  if (!receiverOnline && saved.receiver.fcmToken) {
+                    await sendPushNotification({
+                      userId: receiverId,
+                      title:
+                        receiverLang === "rw"
+                          ? `Ubutumwa buva kwa ${senderName}`
+                          : `Message from ${senderName}`,
+                      body: preview,
+                      channelId: "general",
+                      data: {
+                        type: "chat_message",
+                        senderName,
+                      },
+                    });
+                  }
+                } catch (notifError: unknown) {
+                  logger.error("[Socket] notification failed", notifError);
+                }
+              });
+          })
+          .catch((dbError: unknown) => {
+            logger.error("[Socket] DB save failed", dbError);
+          });
       } catch (error: unknown) {
-        logger.error("send_message failed", error);
-        socket.emit("socket_error", { message: "Failed to send message" });
+        logger.error("[Socket] send_message critical error", error);
       }
     });
 
