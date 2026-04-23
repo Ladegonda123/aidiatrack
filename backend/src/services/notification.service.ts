@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import prisma from "../config/database";
 import { ENV } from "../config/env";
 import logger from "../utils/logger";
+import { createNotification } from "../controllers/notification.controller";
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -143,6 +144,17 @@ export const sendMedicationReminder = async (
       channelId: "medication_reminders",
       data: { type: "medication_reminder", drugName },
     });
+
+    await createNotification({
+      userId,
+      type: "medication",
+      title: lang === "rw" ? "Kwibutsa Umuti" : "Medication Reminder",
+      body:
+        lang === "rw"
+          ? `Ni igihe cyo gufata ${drugName} ${dosage}`
+          : `Time to take ${drugName} ${dosage}`,
+      data: { drugName, dosage },
+    });
   } catch (error: unknown) {
     logger.error("Failed to send medication reminder", { userId, error });
   }
@@ -168,6 +180,20 @@ export const sendHighBgAlert = async (
       channelId: "bg_alerts",
       data: { type: "bg_alert", bgValue: bgValue.toString() },
     });
+
+    await createNotification({
+      userId,
+      type: "bg_alert",
+      title:
+        lang === "rw"
+          ? "Isukiraguciro Riri Hejuru"
+          : "High Blood Glucose Alert",
+      body:
+        lang === "rw"
+          ? `Isuzuma ryawe rya ${bgValue} mg/dL riri hejuru. Fata ingamba vuba.`
+          : `Your reading of ${bgValue} mg/dL is high. Please take action.`,
+      data: { bgValue: bgValue.toString() },
+    });
   } catch (error: unknown) {
     logger.error("Failed to send BG alert", { userId, error });
   }
@@ -175,6 +201,7 @@ export const sendHighBgAlert = async (
 
 export const sendChatNotification = async (
   receiverId: number,
+  senderId: number,
   senderName: string,
   messagePreview: string,
 ): Promise<void> => {
@@ -199,7 +226,98 @@ export const sendChatNotification = async (
       channelId: "general",
       data: { type: "chat_message", senderName },
     });
+
+    await createNotification({
+      userId: receiverId,
+      type: "chat",
+      title:
+        lang === "rw"
+          ? `Ubutumwa buva kwa ${senderName}`
+          : `Message from ${senderName}`,
+      body: preview,
+      data: { senderName, senderId: senderId.toString() },
+    });
   } catch (error: unknown) {
     logger.error("Failed to send chat notification", { receiverId, error });
+  }
+};
+
+export const sendDailyLoggingReminders = async (): Promise<void> => {
+  try {
+    logger.info("[Cron] Running daily logging reminders...");
+
+    const now = new Date().toLocaleTimeString("en-GB", {
+      timeZone: "Africa/Kigali",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+    const endOfDay = new Date(new Date().setHours(23, 59, 59, 999));
+
+    const patients = await prisma.user.findMany({
+      where: {
+        role: "PATIENT",
+        fcmToken: { not: null },
+        reminderEnabled: true,
+        reminderTimes: { has: now },
+      },
+      select: {
+        id: true,
+        fcmToken: true,
+        language: true,
+        healthRecords: {
+          where: {
+            recordedAt: {
+              gte: startOfDay,
+              lte: endOfDay,
+            },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+
+    let reminded = 0;
+
+    for (const patient of patients) {
+      if (patient.healthRecords.length > 0 || !patient.fcmToken) {
+        continue;
+      }
+
+      const lang = patient.language ?? "rw";
+      const title =
+        lang === "rw"
+          ? "Kwibutsa Isuzuma ry'Ubuzima"
+          : "Time to Log Your Reading";
+      const body =
+        lang === "rw"
+          ? `Ni igihe cyo gufata isuzuma rya BG (${now}). Ntubyibagirwe!`
+          : `It's ${now} - time to log your blood glucose reading.`;
+
+      await sendPushNotification({
+        userId: patient.id,
+        title,
+        body,
+        channelId: "general",
+        data: { type: "daily_logging_reminder", action: "log_reading" },
+      });
+
+      await createNotification({
+        userId: patient.id,
+        type: "system",
+        title,
+        body,
+        data: { action: "log_reading", time: now },
+      });
+
+      reminded += 1;
+    }
+
+    logger.info(`[Cron] Sent logging reminders to ${reminded} patients`);
+  } catch (error: unknown) {
+    logger.error("[Cron] sendDailyLoggingReminders failed", error);
   }
 };

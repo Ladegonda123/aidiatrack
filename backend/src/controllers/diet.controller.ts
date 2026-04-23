@@ -1,134 +1,148 @@
 import { Request, Response } from "express";
-import { prisma } from "../config/database";
-import { sendSuccess, sendError } from "../utils/response";
-import { logger } from "../utils/logger";
+import prisma from "../config/database";
+import { sendSuccess } from "../utils/response";
+import logger from "../utils/logger";
 
-/**
- * Consolidated dietary advice based on blood glucose level
- * Supports English and Kinyarwanda
- */
+type DietAdvice = {
+  level: "low" | "normal" | "high" | "very_high";
+  advice: string;
+  adviceRw: string;
+  foodsToEat: string[];
+  foodsToAvoid: string[];
+};
+
+const getDietAdvice = (avgBg: number, language: string): DietAdvice => {
+  if (avgBg < 70) {
+    return {
+      level: "low",
+      advice:
+        language === "rw"
+          ? "Isuzuma rya BG ryawe riri hasi cyane. Fata ibyo kurya biganisha isukiraguciro vuba."
+          : "Your blood glucose is too low. Eat fast-acting carbohydrates immediately.",
+      adviceRw: "Isuzuma rya BG ryawe riri hasi cyane.",
+      foodsToEat:
+        language === "rw"
+          ? ["Juice y'inzabibu", "Amashaza", "Ubukombo", "Umwero"]
+          : ["Fruit juice", "Glucose tablets", "Honey", "Sugar"],
+      foodsToAvoid:
+        language === "rw"
+          ? ["Indyo zirimo intete nyinshi", "Alkohol"]
+          : ["High fiber foods", "Alcohol"],
+    };
+  }
+
+  if (avgBg <= 140) {
+    return {
+      level: "normal",
+      advice:
+        language === "rw"
+          ? "Isuzuma rya BG ryawe riri mu rwego busanzwe. Komeza kugenzura neza indyo yawe."
+          : "Your blood glucose is in the normal range. Keep maintaining your diet.",
+      adviceRw: "BG ryawe riri mu rwego busanzwe.",
+      foodsToEat:
+        language === "rw"
+          ? ["Ibiharage", "Isombe", "Imboga", "Inyama nziza", "Amashaza"]
+          : ["Beans", "Cassava leaves", "Vegetables", "Lean meat", "Lentils"],
+      foodsToAvoid:
+        language === "rw"
+          ? ["Soda", "Ibikoresho bya sukari", "Ugali nyinshi"]
+          : ["Soda", "Sugary foods", "Excess ugali"],
+    };
+  }
+
+  if (avgBg <= 200) {
+    return {
+      level: "high",
+      advice:
+        language === "rw"
+          ? "Isuzuma rya BG ryawe riri hejuru. Gabanya ibyo kurya bya GI nkuru kandi ongera imyitozo ngororamubiri."
+          : "Your blood glucose is elevated. Reduce high GI foods and increase physical activity.",
+      adviceRw: "BG ryawe riri hejuru. Gabanya indyo ya GI nkuru.",
+      foodsToEat:
+        language === "rw"
+          ? ["Ibiharage", "Amashaza", "Imboga zitoshye", "Inzuzi", "Isombe"]
+          : [
+              "Beans",
+              "Lentils",
+              "Green vegetables",
+              "Avocado",
+              "Cassava leaves",
+            ],
+      foodsToAvoid:
+        language === "rw"
+          ? [
+              "Ugali",
+              "Ibikomangoma",
+              "Juice",
+              "Ibikoresho bya sukari",
+              "Rizine ryera",
+            ]
+          : ["Ugali", "White bread", "Juice", "Sugary snacks", "White rice"],
+    };
+  }
+
+  return {
+    level: "very_high",
+    advice:
+      language === "rw"
+        ? "Isuzuma rya BG ryawe riri hejuru cyane. Buka umuganga wawe vuba kandi reka ibyo kurya bya sukari."
+        : "Your blood glucose is very high. See your doctor urgently and avoid all sugary foods.",
+    adviceRw: "BG ryawe riri hejuru cyane. Buka umuganga vuba.",
+    foodsToEat:
+      language === "rw"
+        ? ["Imboga zitoshye gusa", "Amazi menshi", "Inzuzi"]
+        : ["Only green vegetables", "Water", "Avocado"],
+    foodsToAvoid:
+      language === "rw"
+        ? [
+            "Ibyo kurya byose bya sukari",
+            "Ugali",
+            "Rizine",
+            "Ibikomangoma",
+            "Juice",
+            "Soda",
+          ]
+        : ["All sugary foods", "Ugali", "Rice", "Bread", "Juice", "Soda"],
+  };
+};
 
 export const getDietRecommendations = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { userId } = req.user!;
+    const userId = req.user!.userId;
+    const language = req.user!.language ?? "rw";
 
-    // Get patient's last health record
-    const lastRecord = await prisma.healthRecord.findFirst({
-      where: { patientId: userId },
+    const records = await prisma.healthRecord.findMany({
+      where: {
+        patientId: userId,
+        recordedAt: {
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+      select: { bloodGlucose: true },
       orderBy: { recordedAt: "desc" },
-      take: 1,
+      take: 30,
     });
 
-    // If no records, return guidance to log readings first
-    if (!lastRecord) {
-      sendSuccess(res, {
-        advice:
-          req.user!.language === "rw"
-            ? "Andika isuzuma rya mbere kugira ngo ubone inama isuso ku diyabete yawe."
-            : "Log your first health reading to get personalized dietary advice.",
-        foodsToEat: [],
-        foodsToAvoid: [],
-      });
+    if (records.length === 0) {
+      sendSuccess(res, null, 200, "No records found");
       return;
     }
 
-    const language = (req.user!.language as "en" | "rw") || "rw";
-    const adviceText = getDietAdvice(lastRecord.bloodGlucose, language);
+    const avgBg =
+      records.reduce((sum, r) => sum + r.bloodGlucose, 0) / records.length;
 
-    // Determine foods to eat and avoid based on BG level
-    let foodsToEat: string[] = [];
-    let foodsToAvoid: string[] = [];
-
-    if (lastRecord.bloodGlucose < 70) {
-      foodsToEat =
-        language === "rw"
-          ? ["imineke", "imbuto", "ikinini"]
-          : ["banana", "fruits", "sugary drinks"];
-      foodsToAvoid =
-        language === "rw"
-          ? ["ubugali", "umuceli", "imboga n'udusomo"]
-          : ["ugali", "white rice", "green vegetables only"];
-    } else if (lastRecord.bloodGlucose <= 130) {
-      foodsToEat =
-        language === "rw"
-          ? ["ibiharage", "imboga", "amagi", "ibijumba", "ubugari bw'ubwali"]
-          : [
-              "beans",
-              "vegetables",
-              "eggs",
-              "sweet potato",
-              "whole grain bread",
-            ];
-      foodsToAvoid =
-        language === "rw"
-          ? ["ubugali mu kivanyo kinini", "umuceli mwekundu"]
-          : ["ugali in large portions", "white rice"];
-    } else if (lastRecord.bloodGlucose <= 180) {
-      foodsToEat =
-        language === "rw"
-          ? ["isombe", "ibiharage", "amagi", "inyama"]
-          : ["cassava leaves", "beans", "eggs", "meat"];
-      foodsToAvoid =
-        language === "rw"
-          ? ["ubugali", "umuceli mwekundu", "imineke", "imyumbati igatokowe"]
-          : ["ugali", "white rice", "fried plantains", "fried cassava"];
-    } else {
-      foodsToEat =
-        language === "rw"
-          ? ["inyama", "amagi", "imboga zikaze", "isombe"]
-          : ["meat", "eggs", "leafy vegetables", "cassava leaves"];
-      foodsToAvoid =
-        language === "rw"
-          ? ["ubugali", "umuceli", "imineke", "ibiryo bitorokoye", "umutobe"]
-          : ["ugali", "rice", "banana", "fried foods", "fruit juice"];
-    }
+    const advice = getDietAdvice(Math.round(avgBg), language);
 
     sendSuccess(res, {
-      bloodGlucose: lastRecord.bloodGlucose,
-      advice: adviceText,
-      foodsToEat,
-      foodsToAvoid,
-      recordDate: lastRecord.recordedAt,
+      ...advice,
+      avgBg: Math.round(avgBg),
+      recordCount: records.length,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error("getDietRecommendations failed", error);
-    sendError(res, 500, "Failed to fetch dietary recommendations");
-  }
-};
-
-export const getDietAdvice = (
-  bloodGlucose: number,
-  language: "en" | "rw",
-): string => {
-  if (language === "rw") {
-    return getDietAdviceKin(bloodGlucose);
-  }
-  return getDietAdviceEn(bloodGlucose);
-};
-
-const getDietAdviceEn = (bloodGlucose: number): string => {
-  if (bloodGlucose < 70) {
-    return "Your blood sugar is LOW. Eat fast-acting carbohydrates immediately: a ripe banana, fruit juice, or sugary drink. Then follow with a proper meal.";
-  } else if (bloodGlucose <= 130) {
-    return "Your blood sugar is in a good range. Continue with your balanced diet. Focus on beans (ibiharage), vegetables, eggs, and sweet potato. Avoid ugali and white rice in large portions.";
-  } else if (bloodGlucose <= 180) {
-    return "Your blood sugar is elevated. For your next meal: choose isombe, beans, or eggs. Avoid ugali, white rice, ripe bananas, and fried cassava. Drink water and take a short walk if possible.";
-  } else {
-    return "Your blood sugar is HIGH. Avoid all high-GI foods: ugali, white rice, ripe bananas, fried foods, and fruit juice. Eat protein (eggs, meat stew, beans) with green vegetables only. Contact your doctor if it stays this high.";
-  }
-};
-
-const getDietAdviceKin = (bloodGlucose: number): string => {
-  if (bloodGlucose < 70) {
-    return "Isukiraguciro ryawe riri nshuro (low). Nyira vuba ibinyobwa bifite sukari: imineke izeze, umutobe, cyangwa ikinini kigira sukari. Noneho nyira iyo yanyu nziza.";
-  } else if (bloodGlucose <= 130) {
-    return "Isukiraguciro ryawe riri neza. Komeza kugira ibiryo bikwiye. Gumira ibiharage, imboga, amagi, n'ibijumba. Witikira ubugali n'umuceli mwekundu mu kivanyo kinini.";
-  } else if (bloodGlucose <= 180) {
-    return "Isukiraguciro ryawe riri hejuru. Kuri iyo yanyu iregeye: hitamo isombe, ibiharage, cyangwa amagi. Witikira ubugali, umuceli mwekundu, imineke izeze, n'imyumbati igatokowe. Nywa amazi kandi genda inzira yoroshye niba ibishoboka.";
-  } else {
-    return "Isukiraguciro ryawe riri hejuru cyane. Witikira ibinyobwa bic yujuje sukari: ubugali, umuceli mwekundu, imineke izeze, ibiryo bitorokoye, n'umutobe. Nyira inyama (amagi, inyama y'intamu itogwa), n'imboga zikaze gusa. Baza umuganga waho niba isukiraguciro ihagarara aho.";
+    sendSuccess(res, null);
   }
 };

@@ -8,6 +8,12 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET as string,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
   AI_SERVICE_URL: process.env.AI_SERVICE_URL || "http://localhost:8000",
+  CLOUDINARY_CLOUD_NAME:
+    process.env.CLOUD_NAME ?? process.env.CLOUDINARY_CLOUD_NAME ?? "",
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ?? "",
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? "",
+  EMAIL_USER: process.env.EMAIL_USER ?? "",
+  EMAIL_PASS: process.env.EMAIL_PASS ?? "",
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ?? "",
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ?? "",
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ?? "",
@@ -22,6 +28,18 @@ REQUIRED_VARS.forEach((key) => {
     throw new Error(`[FATAL] Missing required environment variable: ${key}`);
   }
 });
+
+const CLOUDINARY_VARS = [
+  "CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+];
+const missingCloudinary = CLOUDINARY_VARS.filter((key) => !process.env[key]);
+if (missingCloudinary.length > 0) {
+  console.warn(
+    `[ENV] Cloudinary not configured — photo upload disabled. Missing: ${missingCloudinary.join(", ")}`,
+  );
+}
 
 if (ENV.NODE_ENV === "production") {
   [

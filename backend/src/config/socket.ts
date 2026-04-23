@@ -12,13 +12,26 @@ interface JoinRoomPayload {
 interface SendMessagePayload {
   senderId?: number;
   receiverId?: number;
-  content?: string;
+  message?: string; // field name used by mobile
+  content?: string; // kept for backward compatibility
+  roomId?: string;
 }
 
 interface RoomPair {
   patientId: number;
   doctorId: number;
 }
+
+const onlineUsers = new Map<number, string>();
+const lastSeenMap = new Map<number, string>();
+
+export const isUserOnline = (userId: number): boolean => {
+  return onlineUsers.has(userId);
+};
+
+export const getLastSeen = (userId: number): string | null => {
+  return lastSeenMap.get(userId) ?? null;
+};
 
 const isPositiveInt = (value: unknown): value is number => {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
@@ -102,43 +115,15 @@ const isValidDoctorPatientPair = async (
   return patient.doctorId === doctorId;
 };
 
-const assertAllowedConversation = async (
-  senderId: number,
-  receiverId: number,
-): Promise<boolean> => {
-  const users = await prisma.user.findMany({
-    where: { id: { in: [senderId, receiverId] } },
-    select: { id: true, role: true, doctorId: true },
-  });
-
-  if (users.length !== 2) {
-    return false;
-  }
-
-  const sender = users.find((user) => user.id === senderId);
-  const receiver = users.find((user) => user.id === receiverId);
-
-  if (!sender || !receiver) {
-    return false;
-  }
-
-  if (sender.role === "PATIENT" && receiver.role === "DOCTOR") {
-    return sender.doctorId === receiver.id;
-  }
-
-  if (sender.role === "DOCTOR" && receiver.role === "PATIENT") {
-    return receiver.doctorId === sender.id;
-  }
-
-  return false;
-};
-
 export const setupSocket = (io: Server): void => {
   io.on("connection", (socket: Socket) => {
     logger.socket("Socket connected", { socketId: socket.id });
 
     socket.on("authenticate", (userId: number) => {
       socket.data.userId = userId;
+      onlineUsers.set(userId, socket.id);
+      socket.broadcast.emit("user_online", { userId, online: true });
+      logger.socket("User is now online", { userId, socketId: socket.id });
     });
 
     socket.on("join_room", async (payload: JoinRoomPayload) => {
@@ -168,19 +153,24 @@ export const setupSocket = (io: Server): void => {
       }
     });
 
-    socket.on("send_message", async (payload: SendMessagePayload) => {
+    socket.on("send_message", (payload: SendMessagePayload) => {
       try {
-        if (
-          !isPositiveInt(payload.senderId) ||
-          !isPositiveInt(payload.receiverId)
-        ) {
+        // Accept both 'message' (mobile) and 'content' (legacy) field names
+        const rawContent =
+          typeof payload.message === "string"
+            ? payload.message
+            : typeof payload.content === "string"
+              ? payload.content
+              : null;
+
+        if (!isPositiveInt(payload.senderId) || rawContent === null) {
           socket.emit("socket_error", {
-            message: "Invalid sender or receiver",
+            message: "Invalid sender or message payload",
           });
           return;
         }
 
-        const content = payload.content?.trim() ?? "";
+        const content = rawContent.trim();
         if (content.length === 0) {
           socket.emit("socket_error", {
             message: "Message content is required",
@@ -188,33 +178,76 @@ export const setupSocket = (io: Server): void => {
           return;
         }
 
-        const canSend = await assertAllowedConversation(
-          payload.senderId,
-          payload.receiverId,
-        );
-
-        if (!canSend) {
-          socket.emit("socket_error", { message: "Unauthorized conversation" });
-          return;
-        }
-
-        const message = await prisma.message.create({
-          data: {
-            senderId: payload.senderId,
-            receiverId: payload.receiverId,
-            content,
-          },
+        logger.socket("[Socket] send_message received:", {
+          roomId: payload.roomId,
+          senderId: payload.senderId,
+          receiverId: payload.receiverId,
+          message: content.substring(0, 30),
         });
 
-        const roomId = getChatRoomId(payload.senderId, payload.receiverId);
-        io.to(roomId).emit("receive_message", message);
+        const timestamp = new Date().toISOString();
+        const roomId =
+          typeof payload.roomId === "string" && payload.roomId.length > 0
+            ? payload.roomId
+            : isPositiveInt(payload.receiverId)
+              ? getChatRoomId(payload.senderId, payload.receiverId)
+              : null;
+
+        if (roomId) {
+          // STEP 1: Emit to room — real-time delivery for ChatUI on both sides
+          io.to(roomId).emit("receive_message", {
+            message: content,
+            content,
+            senderId: payload.senderId,
+            receiverId: payload.receiverId,
+            timestamp,
+            sentAt: timestamp,
+          });
+          logger.socket("[Socket] emitted to room:", roomId);
+        } else {
+          logger.warn("[Socket] No roomId available for immediate emit", {
+            senderId: payload.senderId,
+            receiverId: payload.receiverId,
+          });
+        }
+
+        // STEP 2: Emit directly to the receiver's individual socket for
+        // real-time badge/bell updates — works even when receiver has not
+        // joined the room (e.g. doctor is on dashboard, not in ChatUI).
+        if (isPositiveInt(payload.receiverId)) {
+          const receiverSocketId = onlineUsers.get(payload.receiverId);
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit("new_message_notification", {
+              senderId: payload.senderId,
+              content,
+              timestamp,
+            });
+            logger.socket("[Socket] sent new_message_notification to receiver:", {
+              receiverId: payload.receiverId,
+            });
+          }
+        }
+
+        // STEP 3: DB persistence and push notifications are handled by the
+        // HTTP POST /api/chat/send endpoint which the mobile always calls.
+        // Keeping DB save out of the socket handler prevents duplicate records.
       } catch (error: unknown) {
-        logger.error("send_message failed", error);
-        socket.emit("socket_error", { message: "Failed to send message" });
+        logger.error("[Socket] send_message critical error", error);
       }
     });
 
     socket.on("disconnect", () => {
+      const userId = socket.data.userId as number | undefined;
+
+      if (userId && onlineUsers.get(userId) === socket.id) {
+        onlineUsers.delete(userId);
+        const lastSeen = new Date().toISOString();
+        lastSeenMap.set(userId, lastSeen);
+
+        socket.broadcast.emit("user_offline", { userId, lastSeen });
+        logger.socket("User disconnected", { userId, socketId: socket.id });
+      }
+
       logger.socket("Socket disconnected", { socketId: socket.id });
     });
   });

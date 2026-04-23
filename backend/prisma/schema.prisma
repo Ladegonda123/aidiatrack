@@ -34,8 +34,11 @@ model User {
   phone        String?
   dateOfBirth  DateTime? @map("date_of_birth")
   gender       String?
+  photoUrl     String?   @map("photo_url")
   fcmToken     String?   @map("fcm_token")
   language     String    @default("rw")  @map("language")
+  reminderEnabled Boolean  @default(true)  @map("reminder_enabled")
+  reminderTimes   String[] @default(["07:00", "13:00", "20:00"]) @map("reminder_times")
   doctorId     Int?      @map("doctor_id")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -48,8 +51,24 @@ model User {
   receivedMessages    Message[] @relation("ReceivedMessages")
   medications         Medication[]
   dietRecommendations DietRecommendation[]
+  notifications       Notification[]
  
   @@map("users")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
 
 model HealthRecord {

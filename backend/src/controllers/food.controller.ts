@@ -69,21 +69,40 @@ export const searchFoods = async (
         {
           name: {
             contains: trimmedSearch,
-            mode: "insensitive",
+            mode: "insensitive" as const,
           },
         },
         {
           nameKin: {
             contains: trimmedSearch,
-            mode: "insensitive",
+            mode: "insensitive" as const,
           },
         },
       ];
     }
 
+    const query = trimmedSearch.length >= 2 ? trimmedSearch : "";
     const foods = await prisma.foodItem.findMany({
-      where,
-      orderBy: [{ category: "asc" }, { name: "asc" }],
+      where: query
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: query,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                nameKin: {
+                  contains: query,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : undefined,
+      take: 20,
+      orderBy: { name: "asc" },
     });
 
     const foodsWithCategory: FoodWithGiCategory[] = foods.map((food) => ({
@@ -92,7 +111,7 @@ export const searchFoods = async (
       giCategory: getGiCategory(food.glycemicIndex),
     }));
 
-    sendSuccess(res, foodsWithCategory, 200, "Foods fetched successfully");
+    sendSuccess(res, { foods: foodsWithCategory });
   } catch (error: unknown) {
     logger.error("searchFoods failed", error);
     sendError(res, 500, "Failed to fetch foods");

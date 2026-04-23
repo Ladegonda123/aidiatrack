@@ -40,8 +40,8 @@ export const predictGlucoseLevel = async (
     const prediction = await aiService.predictGlucose({
       bgReadings,
       currentBg: body.bloodGlucose,
-      mealGi: 55,
-      mealCalories: body.calories ?? 450,
+      mealGi: body.mealGi ?? 55,
+      mealCalories: body.mealCalories ?? body.calories ?? 450,
       activityEncoded: activityMap[body.activityLevel ?? "NONE"] ?? 0,
       insulinDose: body.insulinDose ?? 0,
       hourOfDay: new Date().getHours(),

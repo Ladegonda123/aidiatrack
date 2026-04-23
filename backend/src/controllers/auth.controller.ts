@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "../config/database";
 import { signToken } from "../config/jwt";
 import { saveDeviceToken } from "../services/notification.service";
+import { sendOtpEmail } from "../services/email.service";
 import { logger } from "../utils/logger";
 import { sendError, sendSuccess } from "../utils/response";
 import { stripUndefined } from "../utils/helpers";
@@ -31,7 +32,32 @@ interface UpdateProfileBody {
   gender?: string;
   dateOfBirth?: Date | string;
   fcmToken?: string;
+  reminderEnabled?: boolean;
+  reminderTimes?: string[];
 }
+
+interface ChangePasswordBody {
+  currentPassword: string;
+  newPassword: string;
+}
+
+interface ForgotPasswordBody {
+  email: string;
+}
+
+interface ResetPasswordBody {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
+interface StoredOtp {
+  otp: string;
+  expiresAt: number;
+  userId: number;
+}
+
+const otpStore = new Map<string, StoredOtp>();
 
 const sanitizeUser = (user: {
   passwordHash: string;
@@ -139,6 +165,23 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     const currentUserId = req.user!.userId;
     const user = await prisma.user.findUnique({
       where: { id: currentUserId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        language: true,
+        photoUrl: true,
+        doctorId: true,
+        fcmToken: true,
+        reminderEnabled: true,
+        reminderTimes: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {
@@ -146,12 +189,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    sendSuccess(
-      res,
-      { user: sanitizeUser(user) },
-      200,
-      "Profile fetched successfully",
-    );
+    sendSuccess(res, { user }, 200, "Profile fetched successfully");
   } catch (error: unknown) {
     logger.error("getMe failed", error);
     sendError(res, 500, "Failed to fetch profile");
@@ -164,34 +202,162 @@ export const updateProfile = async (
 ): Promise<void> => {
   try {
     const currentUserId = req.user!.userId;
-    const body = req.body as UpdateProfileBody;
-    const updateData = stripUndefined({
-      fullName: body.fullName,
-      phone: body.phone,
-      gender: body.gender,
-      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
-      fcmToken: body.fcmToken?.trim() || undefined,
-      language: body.language,
-    });
+    const {
+      fullName,
+      phone,
+      gender,
+      dateOfBirth,
+      language,
+      fcmToken,
+      reminderEnabled,
+      reminderTimes,
+    } = req.body as UpdateProfileBody;
 
-    if (Object.keys(updateData).length === 0) {
-      sendError(res, 400, "No profile fields provided");
-      return;
-    }
+    const updateData = stripUndefined({
+      fullName,
+      phone: phone || null,
+      gender: gender || null,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      language,
+      fcmToken,
+      reminderEnabled,
+      reminderTimes: Array.isArray(reminderTimes) ? reminderTimes : undefined,
+    });
 
     const updatedUser = await prisma.user.update({
       where: { id: currentUserId },
       data: updateData,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        language: true,
+        photoUrl: true,
+        doctorId: true,
+        fcmToken: true,
+        reminderEnabled: true,
+        reminderTimes: true,
+      },
     });
 
-    sendSuccess(
-      res,
-      { user: sanitizeUser(updatedUser) },
-      200,
-      "Profile updated successfully",
-    );
+    sendSuccess(res, { user: updatedUser }, 200, "Profile updated");
   } catch (error: unknown) {
     logger.error("updateProfile failed", error);
     sendError(res, 500, "Failed to update profile");
+  }
+};
+
+export const changePassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const currentUserId = req.user!.userId;
+    const body = req.body as ChangePasswordBody;
+
+    const user = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: { id: true, passwordHash: true },
+    });
+
+    if (!user) {
+      sendError(res, 404, "User not found");
+      return;
+    }
+
+    const currentPasswordMatches = await bcrypt.compare(
+      body.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!currentPasswordMatches) {
+      sendError(res, 401, "Current password is incorrect");
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(body.newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: currentUserId },
+      data: { passwordHash },
+    });
+
+    sendSuccess(res, null, 200, "Password changed successfully");
+  } catch (error: unknown) {
+    logger.error("changePassword failed", error);
+    sendError(res, 500, "Failed to change password");
+  }
+};
+
+export const requestPasswordReset = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const body = req.body as ForgotPasswordBody;
+    const email = body.email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, language: true },
+    });
+
+    if (user) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      otpStore.set(email, {
+        otp,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+        userId: user.id,
+      });
+
+      try {
+        await sendOtpEmail(user.email, otp, user.language);
+      } catch (error: unknown) {
+        logger.error("sendOtpEmail failed", error);
+      }
+    }
+
+    sendSuccess(res, null, 200, "If this email exists you will receive a code");
+  } catch (error: unknown) {
+    logger.error("requestPasswordReset failed", error);
+    sendError(res, 500, "Failed to request password reset");
+  }
+};
+
+export const verifyOtpAndReset = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const body = req.body as ResetPasswordBody;
+    const email = body.email.trim().toLowerCase();
+    const storedOtp = otpStore.get(email);
+
+    if (!storedOtp || storedOtp.expiresAt < Date.now()) {
+      otpStore.delete(email);
+      sendError(res, 400, "Invalid or expired code");
+      return;
+    }
+
+    if (storedOtp.otp !== body.otp) {
+      sendError(res, 400, "Invalid code");
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(body.newPassword, 12);
+    await prisma.user.update({
+      where: { id: storedOtp.userId },
+      data: { passwordHash },
+    });
+
+    otpStore.delete(email);
+
+    sendSuccess(res, null, 200, "Password reset successfully");
+  } catch (error: unknown) {
+    logger.error("verifyOtpAndReset failed", error);
+    sendError(res, 500, "Failed to reset password");
   }
 };

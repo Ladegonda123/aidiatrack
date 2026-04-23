@@ -33,39 +33,79 @@ export const getMyPatients = async (
         id: true,
         fullName: true,
         email: true,
-        role: true,
         phone: true,
-        createdAt: true,
+        photoUrl: true,
+        gender: true,
         healthRecords: {
-          select: { recordedAt: true, bloodGlucose: true },
           orderBy: { recordedAt: "desc" },
           take: 1,
-        },
-        medications: {
-          where: { isActive: true },
-          select: { id: true },
+          select: {
+            bloodGlucose: true,
+            recordedAt: true,
+          },
         },
         predictions: {
-          select: { id: true, riskLevel: true, createdAt: true },
           orderBy: { createdAt: "desc" },
           take: 1,
+          select: {
+            riskLevel: true,
+            createdAt: true,
+          },
         },
       },
     });
 
-    const enrichedPatients = patients.map((p) => ({
-      ...p,
-      lastHealthRecord: p.healthRecords[0] ?? null,
-      activeMedicationCount: p.medications.length,
-      lastPrediction: p.predictions[0] ?? null,
-      healthRecords: undefined,
-      medications: undefined,
-      predictions: undefined,
-    }));
+    const patientsWithMessages = await Promise.all(
+      patients.map(async (patient) => {
+        const [lastMessage, unreadCount] = await Promise.all([
+          prisma.message.findFirst({
+            where: {
+              OR: [
+                { senderId: doctorId, receiverId: patient.id },
+                { senderId: patient.id, receiverId: doctorId },
+              ],
+            },
+            orderBy: { sentAt: "desc" },
+            select: {
+              content: true,
+              sentAt: true,
+              senderId: true,
+              isRead: true,
+            },
+          }),
+          prisma.message.count({
+            where: {
+              senderId: patient.id,
+              receiverId: doctorId,
+              isRead: false,
+            },
+          }),
+        ]);
+
+        return {
+          ...patient,
+          lastHealthRecord: patient.healthRecords[0] ?? null,
+          lastPrediction: patient.predictions[0] ?? null,
+          lastMessage: lastMessage ?? null,
+          unreadCount,
+        };
+      }),
+    );
+
+    patientsWithMessages.sort((a, b) => {
+      if (!a.lastMessage && !b.lastMessage) return 0;
+      if (!a.lastMessage) return 1;
+      if (!b.lastMessage) return -1;
+
+      return (
+        new Date(b.lastMessage.sentAt).getTime() -
+        new Date(a.lastMessage.sentAt).getTime()
+      );
+    });
 
     sendSuccess(
       res,
-      { patients: enrichedPatients },
+      { patients: patientsWithMessages },
       200,
       "Patients retrieved successfully",
     );
@@ -213,6 +253,7 @@ export const listDoctors = async (
         fullName: true,
         email: true,
         phone: true,
+        photoUrl: true,
         createdAt: true,
       },
     });
