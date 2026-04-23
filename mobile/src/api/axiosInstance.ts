@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import { getToken } from "../utils/storage";
 
-const BASE_URL = "http://172.31.213.68:5000/api";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5000/api";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
