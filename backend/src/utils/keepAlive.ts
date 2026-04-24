@@ -16,10 +16,13 @@ export const startKeepAlive = (): void => {
   };
 
   // Ping every 14 minutes to prevent Render free tier sleep
-  setInterval(() => {
-    ping(BACKEND_URL);
-    ping(AI_URL);
-  }, 14 * 60 * 1000);
+  setInterval(
+    () => {
+      ping(BACKEND_URL);
+      ping(AI_URL);
+    },
+    14 * 60 * 1000,
+  );
 
   console.log("[KeepAlive] Started - pinging every 14 minutes");
 };

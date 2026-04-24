@@ -4,6 +4,7 @@ import { ENV } from "./config/env";
 import { verifyDatabaseConnection } from "./config/database";
 import { setupSocket } from "./config/socket";
 import { registerReminderCrons } from "./services/reminder.service";
+import { startKeepAlive } from "./utils/keepAlive";
 import app from "./app";
 
 app.get("/ping", (_req, res) => {
@@ -43,6 +44,10 @@ const startServer = async (): Promise<void> => {
     console.log(`Environment  : ${ENV.NODE_ENV}`);
     console.log(`🔌 Socket.IO: enabled`);
     console.log(`Health check: http://localhost:${ENV.PORT}/api/health`);
+
+    if (process.env.NODE_ENV === "production") {
+      startKeepAlive();
+    }
   });
 };
 
