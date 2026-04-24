@@ -32,6 +32,7 @@ const ProfileScreen = (): React.JSX.Element => {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, logout, updateLanguage, setUser } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const [photoError, setPhotoError] = useState<boolean>(false);
   const [reminderEnabled, setReminderEnabled] = useState<boolean>(
     user?.reminderEnabled ?? true,
   );
@@ -91,6 +92,7 @@ const ProfileScreen = (): React.JSX.Element => {
     try {
       setUploadingPhoto(true);
       const updatedUser = await uploadProfilePhoto(result.assets[0].uri);
+      setPhotoError(false);
       setUser((prev) =>
         prev ? { ...prev, photoUrl: updatedUser.photoUrl } : prev,
       );
@@ -187,10 +189,11 @@ const ProfileScreen = (): React.JSX.Element => {
               }}
               activeOpacity={0.85}
             >
-              {user?.photoUrl ? (
+              {user?.photoUrl && !photoError ? (
                 <Image
                   source={{ uri: user.photoUrl }}
                   style={styles.avatarImage}
+                  onError={() => setPhotoError(true)}
                 />
               ) : (
                 <View style={styles.avatarCircle}>

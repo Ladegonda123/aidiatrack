@@ -28,7 +28,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
 import NotificationPanel from "../../components/NotificationPanel";
 import Avatar from "../../components/Avatar";
-import { chatEvents, CHAT_EVENTS } from "../../utils/chatEvents";
+import {
+  chatEvents,
+  CHAT_EVENTS,
+  DASHBOARD_EVENTS,
+} from "../../utils/chatEvents";
 import { getHealthSummary } from "../../api/healthAPI";
 import { getMyMedications } from "../../api/medicationAPI";
 import { getPredictionHistory } from "../../api/predictionAPI";
@@ -76,21 +80,24 @@ type DashboardNavigationProp = CompositeNavigationProp<
 const DashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<DashboardNavigationProp>();
-  const { user, refreshChatUnread, loading } = useAuth();
+  const { user, refreshChatUnread, loading: authLoading } = useAuth();
   const [summary, setSummary] = useState<HealthSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [lastPrediction, setLastPrediction] = useState<Prediction | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
-  const [screenLoading, setScreenLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [initialLoad, setInitialLoad] = useState<boolean>(true);
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const activeChatUserIdRef = useRef<number | null>(null);
   const lang = i18n.language as "en" | "rw";
 
   const getNextMedication = (
     meds: Medication[],
+    now: Date = new Date(),
   ): {
     med: Medication;
     time: string;
@@ -99,7 +106,6 @@ const DashboardScreen = (): React.JSX.Element => {
   } | null => {
     if (!meds || meds.length === 0) return null;
 
-    const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     let closest: {
@@ -182,65 +188,57 @@ const DashboardScreen = (): React.JSX.Element => {
     });
   }, [navigation]);
 
-  const loadDashboard = useCallback(async (): Promise<void> => {
+  const loadDashboard = useCallback(async (silent = false): Promise<void> => {
     try {
-      setScreenLoading(true);
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
       setError(null);
 
-      const [
-        summaryResult,
-        medsResult,
-        predictionsResult,
-        notificationsResult,
-      ] = await Promise.allSettled([
-        getHealthSummary(),
-        getMyMedications(),
-        getPredictionHistory(1),
-        getNotifications(),
-      ]);
+      const [summaryData, medsData, predictionsData, notifData] =
+        await Promise.all([
+          getHealthSummary(),
+          getMyMedications(),
+          getPredictionHistory(1),
+          getNotifications(),
+        ]);
 
-      setSummary(
-        summaryResult.status === "fulfilled" ? summaryResult.value : null,
-      );
+      const medList = Array.isArray(medsData)
+        ? medsData
+        : ((medsData as { medications?: Medication[] })?.medications ?? []);
+      const predList = Array.isArray(predictionsData)
+        ? predictionsData
+        : ((predictionsData as { predictions?: Prediction[] })?.predictions ??
+          []);
 
-      const medicationsData =
-        medsResult.status === "fulfilled" ? medsResult.value : [];
-      setMedications(medicationsData.filter((m) => m.isActive));
-
-      const predictionsData =
-        predictionsResult.status === "fulfilled" ? predictionsResult.value : [];
-      setLastPrediction(predictionsData[0] ?? null);
-
-      if (notificationsResult.status === "fulfilled") {
-        setNotifications(notificationsResult.value.notifications);
-        setUnreadCount(notificationsResult.value.unreadCount);
-      } else {
-        setNotifications([]);
-        setUnreadCount(0);
-      }
-
-      const allFailed =
-        summaryResult.status === "rejected" &&
-        medsResult.status === "rejected" &&
-        predictionsResult.status === "rejected" &&
-        notificationsResult.status === "rejected";
-
-      if (allFailed) {
-        setError(t("common.error"));
-      }
-    } catch {
-      setError(t("common.error"));
+      setSummary(summaryData);
+      setMedications(medList.filter((m: Medication) => m.isActive));
+      setLastPrediction(predList[0] ?? null);
+      setNotifications(notifData.notifications ?? []);
+      setUnreadCount(notifData.unreadCount ?? 0);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : JSON.stringify(err);
+      if (!silent) setError(message);
     } finally {
-      setScreenLoading(false);
+      setLoading(false);
+      setRefreshing(false);
+      setInitialLoad(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
-    loadDashboard().catch(() => undefined);
+    loadDashboard(false).catch(() => undefined);
   }, [loadDashboard]);
 
   useEffect(() => {
-    if (loading || !user) return;
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
 
     refreshChatUnread().catch(() => undefined);
 
@@ -249,7 +247,15 @@ const DashboardScreen = (): React.JSX.Element => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [loading, user?.id]);
+  }, [authLoading, user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!initialLoad) {
+        loadDashboard(true).catch(() => undefined);
+      }
+    }, [initialLoad, loadDashboard]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -267,6 +273,18 @@ const DashboardScreen = (): React.JSX.Element => {
         .catch(() => undefined);
     }, [user?.id]),
   );
+
+  useEffect(() => {
+    const handleRefresh = (): void => {
+      loadDashboard(true).catch(() => undefined);
+    };
+
+    chatEvents.on(DASHBOARD_EVENTS.REFRESH, handleRefresh);
+
+    return () => {
+      chatEvents.off(DASHBOARD_EVENTS.REFRESH, handleRefresh);
+    };
+  }, [loadDashboard]);
 
   useEffect(() => {
     const handleChatOpened = (data: { withUserId: number }): void => {
@@ -307,8 +325,7 @@ const DashboardScreen = (): React.JSX.Element => {
 
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
-    await loadDashboard();
-    setRefreshing(false);
+    await loadDashboard(true);
   }, [loadDashboard]);
 
   const firstName = user?.fullName?.split(" ")[0] ?? "";
@@ -343,14 +360,18 @@ const DashboardScreen = (): React.JSX.Element => {
   }, [summary?.trend]);
 
   const nextMed = useMemo(
-    () => getNextMedication(medications.filter((m) => m.isActive)),
-    [medications],
+    () =>
+      getNextMedication(
+        medications.filter((m) => m.isActive),
+        currentTime,
+      ),
+    [currentTime, medications],
   );
 
   const shouldShowAlert =
     lastPrediction !== null && lastPrediction.riskLevel !== "LOW";
 
-  if (screenLoading) {
+  if (loading && initialLoad) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -362,7 +383,12 @@ const DashboardScreen = (): React.JSX.Element => {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.emptyText}>{error}</Text>
-        <TouchableOpacity style={styles.logButton} onPress={loadDashboard}>
+        <TouchableOpacity
+          style={styles.logButton}
+          onPress={() => {
+            loadDashboard(false).catch(() => undefined);
+          }}
+        >
           <Text style={styles.logButtonText}>{t("common.retry")}</Text>
         </TouchableOpacity>
       </View>
@@ -438,6 +464,7 @@ const DashboardScreen = (): React.JSX.Element => {
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 colors={[COLORS.primary]}
+                tintColor={COLORS.primary}
               />
             }
             contentContainerStyle={styles.scrollContent}

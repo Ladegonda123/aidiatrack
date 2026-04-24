@@ -9,3 +9,7 @@ export const CHAT_EVENTS = {
   CHAT_OPENED: "chat_opened",
   CHAT_CLOSED: "chat_closed",
 } as const;
+
+export const DASHBOARD_EVENTS = {
+  REFRESH: "dashboard_refresh",
+} as const;

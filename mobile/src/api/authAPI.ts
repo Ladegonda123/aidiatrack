@@ -57,12 +57,12 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
 };
 
 export const getMe = async (): Promise<User> => {
-  const response = await axiosInstance.get<ApiResponse<User>>("/auth/me");
-  const user = response.data.data ?? null;
-  if (!user) {
+  const response = await axiosInstance.get<ApiResponse<{ user: User }>>("/auth/me");
+  const data = response.data.data ?? null;
+  if (!data?.user) {
     throw new Error("Missing current user response data");
   }
-  return user;
+  return data.user;
 };
 
 export const updateProfile = async (data: Partial<User>): Promise<User> => {

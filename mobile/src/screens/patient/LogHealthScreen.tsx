@@ -21,6 +21,7 @@ import { z } from "zod";
 import FoodPicker from "../../components/FoodPicker";
 import { logHealthRecord } from "../../api/healthAPI";
 import { PatientTabParamList, Prediction } from "../../types";
+import { chatEvents, DASHBOARD_EVENTS } from "../../utils/chatEvents";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 
 type Props = BottomTabNavigationProp<PatientTabParamList, "LogHealth">;
@@ -190,7 +191,8 @@ const LogHealthScreen = (): React.JSX.Element => {
 
   const closePredictionModal = (): void => {
     setShowPrediction(false);
-    navigation.navigate("Dashboard");
+    chatEvents.emit(DASHBOARD_EVENTS.REFRESH);
+    navigation.goBack();
   };
 
   const onSubmit = async (data: FormData): Promise<void> => {
@@ -218,6 +220,8 @@ const LogHealthScreen = (): React.JSX.Element => {
         activityLevel: activityLevel,
       });
 
+      // Notify dashboard to refresh.
+      chatEvents.emit(DASHBOARD_EVENTS.REFRESH);
       setSavedBg(bloodGlucose);
       setPrediction(result.prediction ?? null);
       setShowPrediction(true);
@@ -260,236 +264,240 @@ const LogHealthScreen = (): React.JSX.Element => {
             extraHeight={120}
             showsVerticalScrollIndicator={false}
           >
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.bloodGlucose")}</Text>
-            <Controller
-              control={control}
-              name="bloodGlucose"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  ref={bloodGlucoseRef}
-                  style={[
-                    styles.input,
-                    errors.bloodGlucose ? styles.inputError : undefined,
-                  ]}
-                  placeholder={t("logHealth.bloodGlucosePlaceholder")}
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="numeric"
-                  value={value}
-                  onChangeText={onChange}
-                  returnKeyType="next"
-                />
-              )}
-            />
-            <Text style={styles.hint}>{t("logHealth.bloodGlucoseHint")}</Text>
-            {errors.bloodGlucose?.message ? (
-              <Text style={styles.errorText}>
-                {t(errors.bloodGlucose.message)}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.meal")}</Text>
-            <FoodPicker
-              selectedMeals={selectedMeals}
-              onAdd={handleAddMeal}
-              onRemove={handleRemoveMeal}
-              language={lang}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.activity")}</Text>
-            <View style={styles.activityRow}>
-              {ACTIVITY_OPTIONS.map((option) => {
-                const isActive = activityLevel === option.value;
-
-                return (
-                  <TouchableOpacity
-                    key={option.value}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.bloodGlucose")}</Text>
+              <Controller
+                control={control}
+                name="bloodGlucose"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    ref={bloodGlucoseRef}
                     style={[
-                      styles.activityButton,
-                      isActive ? styles.activityButtonActive : undefined,
+                      styles.input,
+                      errors.bloodGlucose ? styles.inputError : undefined,
                     ]}
-                    onPress={() => setActivityLevel(option.value)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={option.icon}
-                      size={20}
-                      color={isActive ? "#FFFFFF" : COLORS.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.activityLabel,
-                        isActive ? styles.activityLabelActive : undefined,
-                      ]}
-                    >
-                      {t(option.labelKey)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                    placeholder={t("logHealth.bloodGlucosePlaceholder")}
+                    placeholderTextColor={COLORS.textSecondary}
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={onChange}
+                    returnKeyType="next"
+                  />
+                )}
+              />
+              <Text style={styles.hint}>{t("logHealth.bloodGlucoseHint")}</Text>
+              {errors.bloodGlucose?.message ? (
+                <Text style={styles.errorText}>
+                  {t(errors.bloodGlucose.message)}
+                </Text>
+              ) : null}
             </View>
-          </View>
 
-          <Text style={styles.sectionHeader}>
-            {t("logHealth.optionalSection")}
-          </Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.meal")}</Text>
+              <FoodPicker
+                selectedMeals={selectedMeals}
+                onAdd={handleAddMeal}
+                onRemove={handleRemoveMeal}
+                language={lang}
+              />
+            </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.weight")}</Text>
-            <Controller
-              control={control}
-              name="weightKg"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.weightKg ? styles.inputError : undefined,
-                  ]}
-                  placeholder={t("logHealth.weightHint")}
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="numeric"
-                  value={value ?? ""}
-                  onChangeText={onChange}
-                  returnKeyType="next"
-                />
-              )}
-            />
-            <Text style={styles.hint}>{t("logHealth.weightHint")}</Text>
-            {errors.weightKg?.message ? (
-              <Text style={styles.errorText}>{t(errors.weightKg.message)}</Text>
-            ) : null}
-          </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.activity")}</Text>
+              <View style={styles.activityRow}>
+                {ACTIVITY_OPTIONS.map((option) => {
+                  const isActive = activityLevel === option.value;
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.bloodPressure")}</Text>
-            <Controller
-              control={control}
-              name="bloodPressure"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.bloodPressure ? styles.inputError : undefined,
-                  ]}
-                  placeholder={t("logHealth.bloodPressurePlaceholder")}
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={value ?? ""}
-                  onChangeText={onChange}
-                  returnKeyType="next"
-                />
-              )}
-            />
-            <Text style={styles.hint}>{t("logHealth.bloodPressureHint")}</Text>
-            {errors.bloodPressure?.message ? (
-              <Text style={styles.errorText}>
-                {t(errors.bloodPressure.message)}
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.activityButton,
+                        isActive ? styles.activityButtonActive : undefined,
+                      ]}
+                      onPress={() => setActivityLevel(option.value)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={option.icon}
+                        size={20}
+                        color={isActive ? "#FFFFFF" : COLORS.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.activityLabel,
+                          isActive ? styles.activityLabelActive : undefined,
+                        ]}
+                      >
+                        {t(option.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <Text style={styles.sectionHeader}>
+              {t("logHealth.optionalSection")}
+            </Text>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.weight")}</Text>
+              <Controller
+                control={control}
+                name="weightKg"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.weightKg ? styles.inputError : undefined,
+                    ]}
+                    placeholder={t("logHealth.weightHint")}
+                    placeholderTextColor={COLORS.textSecondary}
+                    keyboardType="numeric"
+                    value={value ?? ""}
+                    onChangeText={onChange}
+                    returnKeyType="next"
+                  />
+                )}
+              />
+              <Text style={styles.hint}>{t("logHealth.weightHint")}</Text>
+              {errors.weightKg?.message ? (
+                <Text style={styles.errorText}>
+                  {t(errors.weightKg.message)}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.bloodPressure")}</Text>
+              <Controller
+                control={control}
+                name="bloodPressure"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.bloodPressure ? styles.inputError : undefined,
+                    ]}
+                    placeholder={t("logHealth.bloodPressurePlaceholder")}
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={value ?? ""}
+                    onChangeText={onChange}
+                    returnKeyType="next"
+                  />
+                )}
+              />
+              <Text style={styles.hint}>
+                {t("logHealth.bloodPressureHint")}
               </Text>
-            ) : null}
-          </View>
+              {errors.bloodPressure?.message ? (
+                <Text style={styles.errorText}>
+                  {t(errors.bloodPressure.message)}
+                </Text>
+              ) : null}
+            </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.hba1c")}</Text>
-            <Controller
-              control={control}
-              name="hba1c"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.hba1c ? styles.inputError : undefined,
-                  ]}
-                  placeholder={t("logHealth.hba1cPlaceholder")}
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="numeric"
-                  value={value ?? ""}
-                  onChangeText={onChange}
-                  returnKeyType="next"
-                />
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.hba1c")}</Text>
+              <Controller
+                control={control}
+                name="hba1c"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.hba1c ? styles.inputError : undefined,
+                    ]}
+                    placeholder={t("logHealth.hba1cPlaceholder")}
+                    placeholderTextColor={COLORS.textSecondary}
+                    keyboardType="numeric"
+                    value={value ?? ""}
+                    onChangeText={onChange}
+                    returnKeyType="next"
+                  />
+                )}
+              />
+              <Text style={styles.hint}>{t("logHealth.hba1cHint")}</Text>
+              {errors.hba1c?.message ? (
+                <Text style={styles.errorText}>{t(errors.hba1c.message)}</Text>
+              ) : null}
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.insulin")}</Text>
+              <Controller
+                control={control}
+                name="insulinDose"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[
+                      styles.input,
+                      errors.insulinDose ? styles.inputError : undefined,
+                    ]}
+                    placeholder="0"
+                    placeholderTextColor={COLORS.textSecondary}
+                    keyboardType="numeric"
+                    value={value ?? ""}
+                    onChangeText={onChange}
+                    returnKeyType="next"
+                  />
+                )}
+              />
+              <Text style={styles.hint}>{t("logHealth.insulinHint")}</Text>
+              {errors.insulinDose?.message ? (
+                <Text style={styles.errorText}>
+                  {t(errors.insulinDose.message)}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>{t("logHealth.notes")}</Text>
+              <Controller
+                control={control}
+                name="notes"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={[styles.input, styles.notesInput]}
+                    placeholder={t("logHealth.notesPlaceholder")}
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={value ?? ""}
+                    onChangeText={onChange}
+                    multiline
+                    numberOfLines={3}
+                    returnKeyType="done"
+                  />
+                )}
+              />
+              {errors.notes?.message ? (
+                <Text style={styles.errorText}>{t(errors.notes.message)}</Text>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                submitting ? styles.submitButtonDisabled : undefined,
+              ]}
+              onPress={handleSubmit(onSubmit)}
+              disabled={submitting}
+              activeOpacity={0.85}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons
+                    name={"save-outline" as keyof typeof Ionicons.glyphMap}
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.submitText}>{t("logHealth.save")}</Text>
+                </>
               )}
-            />
-            <Text style={styles.hint}>{t("logHealth.hba1cHint")}</Text>
-            {errors.hba1c?.message ? (
-              <Text style={styles.errorText}>{t(errors.hba1c.message)}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.insulin")}</Text>
-            <Controller
-              control={control}
-              name="insulinDose"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={[
-                    styles.input,
-                    errors.insulinDose ? styles.inputError : undefined,
-                  ]}
-                  placeholder="0"
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="numeric"
-                  value={value ?? ""}
-                  onChangeText={onChange}
-                  returnKeyType="next"
-                />
-              )}
-            />
-            <Text style={styles.hint}>{t("logHealth.insulinHint")}</Text>
-            {errors.insulinDose?.message ? (
-              <Text style={styles.errorText}>
-                {t(errors.insulinDose.message)}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>{t("logHealth.notes")}</Text>
-            <Controller
-              control={control}
-              name="notes"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  style={[styles.input, styles.notesInput]}
-                  placeholder={t("logHealth.notesPlaceholder")}
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={value ?? ""}
-                  onChangeText={onChange}
-                  multiline
-                  numberOfLines={3}
-                  returnKeyType="done"
-                />
-              )}
-            />
-            {errors.notes?.message ? (
-              <Text style={styles.errorText}>{t(errors.notes.message)}</Text>
-            ) : null}
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              submitting ? styles.submitButtonDisabled : undefined,
-            ]}
-            onPress={handleSubmit(onSubmit)}
-            disabled={submitting}
-            activeOpacity={0.85}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons
-                  name={"save-outline" as keyof typeof Ionicons.glyphMap}
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.submitText}>{t("logHealth.save")}</Text>
-              </>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
           </KeyboardAwareScrollView>
         </View>
       </View>
@@ -562,7 +570,11 @@ const LogHealthScreen = (): React.JSX.Element => {
 
             <TouchableOpacity
               style={styles.modalButton}
-              onPress={closePredictionModal}
+              onPress={() => {
+                setShowPrediction(false);
+                chatEvents.emit(DASHBOARD_EVENTS.REFRESH);
+                navigation.goBack();
+              }}
               activeOpacity={0.85}
             >
               <Text style={styles.modalButtonText}>{t("common.ok")}</Text>
@@ -605,7 +617,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   scrollContent: {
     padding: 16,

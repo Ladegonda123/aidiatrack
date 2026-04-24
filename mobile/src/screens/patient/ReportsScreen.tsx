@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BarChart, LineChart } from "react-native-chart-kit";
 import { Ionicons } from "@expo/vector-icons";
@@ -71,6 +71,12 @@ const ReportsScreen = (): React.JSX.Element => {
   useEffect(() => {
     loadData().catch(() => undefined);
   }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData().catch(() => undefined);
+    }, [loadData]),
+  );
 
   const filteredRecords = useMemo((): HealthRecord[] => {
     const cutoff = new Date();
@@ -217,290 +223,300 @@ const ReportsScreen = (): React.JSX.Element => {
               }
               contentContainerStyle={styles.scrollContent}
             >
-            {stats ? (
-              <View style={styles.statsGrid}>
-                <View style={[styles.statCard, styles.statCardWide]}>
-                  <Ionicons
-                    name="stats-chart-outline"
-                    size={22}
-                    color={COLORS.primary}
-                  />
-                  <Text style={styles.statValue}>{stats.avg}</Text>
-                  <Text style={styles.statUnit}>{t("dashboard.mgdlUnit")}</Text>
-                  <Text style={styles.statLabel}>{t("reports.avgBg")}</Text>
-                </View>
-
-                <View style={styles.statsRight}>
-                  <View style={styles.statCard}>
-                    <Text
-                      style={[
-                        styles.statValue,
-                        { color: COLORS.danger, fontSize: 18 },
-                      ]}
-                    >
-                      {stats.max}
-                    </Text>
-                    <Text style={styles.statLabel}>{t("reports.highest")}</Text>
-                  </View>
-
-                  <View style={styles.statCard}>
-                    <Text
-                      style={[
-                        styles.statValue,
-                        { color: COLORS.success, fontSize: 18 },
-                      ]}
-                    >
-                      {stats.min}
-                    </Text>
-                    <Text style={styles.statLabel}>{t("reports.lowest")}</Text>
-                  </View>
-                </View>
-              </View>
-            ) : null}
-
-            {stats ? (
-              <View style={styles.card}>
-                <View style={styles.inRangeRow}>
-                  <View>
-                    <Text style={styles.inRangePercent}>
-                      {stats.inRangePercent}%
-                    </Text>
-                    <Text style={styles.inRangeLabel}>
-                      {t("reports.inRange")}
-                    </Text>
-                  </View>
-
-                  <View style={styles.inRangeBar}>
-                    <View
-                      style={[
-                        styles.inRangeBarFill,
-                        {
-                          width: `${stats.inRangePercent}%`,
-                          backgroundColor: tirColor,
-                        },
-                      ]}
+              {stats ? (
+                <View style={styles.statsGrid}>
+                  <View style={[styles.statCard, styles.statCardWide]}>
+                    <Ionicons
+                      name="stats-chart-outline"
+                      size={22}
+                      color={COLORS.primary}
                     />
+                    <Text style={styles.statValue}>{stats.avg}</Text>
+                    <Text style={styles.statUnit}>
+                      {t("dashboard.mgdlUnit")}
+                    </Text>
+                    <Text style={styles.statLabel}>{t("reports.avgBg")}</Text>
+                  </View>
+
+                  <View style={styles.statsRight}>
+                    <View style={styles.statCard}>
+                      <Text
+                        style={[
+                          styles.statValue,
+                          { color: COLORS.danger, fontSize: 18 },
+                        ]}
+                      >
+                        {stats.max}
+                      </Text>
+                      <Text style={styles.statLabel}>
+                        {t("reports.highest")}
+                      </Text>
+                    </View>
+
+                    <View style={styles.statCard}>
+                      <Text
+                        style={[
+                          styles.statValue,
+                          { color: COLORS.success, fontSize: 18 },
+                        ]}
+                      >
+                        {stats.min}
+                      </Text>
+                      <Text style={styles.statLabel}>
+                        {t("reports.lowest")}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+              ) : null}
 
-                <Text style={[styles.tirInterpretation, { color: tirColor }]}>
-                  {stats.inRangePercent >= 70
-                    ? lang === "rw"
-                      ? "✓ Igenzura ry'isukiraguciro ryiza"
-                      : "✓ Good glucose control"
-                    : stats.inRangePercent >= 50
+              {stats ? (
+                <View style={styles.card}>
+                  <View style={styles.inRangeRow}>
+                    <View>
+                      <Text style={styles.inRangePercent}>
+                        {stats.inRangePercent}%
+                      </Text>
+                      <Text style={styles.inRangeLabel}>
+                        {t("reports.inRange")}
+                      </Text>
+                    </View>
+
+                    <View style={styles.inRangeBar}>
+                      <View
+                        style={[
+                          styles.inRangeBarFill,
+                          {
+                            width: `${stats.inRangePercent}%`,
+                            backgroundColor: tirColor,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+
+                  <Text style={[styles.tirInterpretation, { color: tirColor }]}>
+                    {stats.inRangePercent >= 70
                       ? lang === "rw"
-                        ? "⚠ Igenzura rishobora gukorwa neza"
-                        : "⚠ Control can be improved"
-                      : lang === "rw"
-                        ? "✗ Igenzura ry'isukiraguciro ntiryiza"
-                        : "✗ Poor glucose control"}
-                </Text>
-
-                <Text style={styles.readingsCount}>
-                  {stats.total} {t("reports.readings")}
-                </Text>
-              </View>
-            ) : null}
-
-            {filteredRecords.length > 0 ? (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>{t("reports.bgTrend")}</Text>
-                <LineChart
-                  data={lineChartData}
-                  width={CHART_WIDTH}
-                  height={200}
-                  chartConfig={{
-                    backgroundColor: COLORS.card,
-                    backgroundGradientFrom: COLORS.card,
-                    backgroundGradientTo: COLORS.card,
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
-                    labelColor: () => COLORS.textSecondary,
-                    propsForDots: {
-                      r: "4",
-                      strokeWidth: "2",
-                      stroke: COLORS.primary,
-                    },
-                    propsForBackgroundLines: {
-                      stroke: COLORS.border,
-                      strokeDasharray: "4",
-                    },
-                  }}
-                  bezier
-                  style={styles.chart}
-                  withInnerLines
-                  withOuterLines={false}
-                  withVerticalLabels
-                  withHorizontalLabels
-                  withShadow={false}
-                  segments={4}
-                />
-                <View style={styles.referenceLines}>
-                  <View style={styles.referenceLine}>
-                    <View
-                      style={[
-                        styles.referenceLineDot,
-                        { backgroundColor: COLORS.success },
-                      ]}
-                    />
-                    <Text style={styles.referenceLineText}>
-                      {lang === "rw"
-                        ? "Rwego busanzwe: 70–140 mg/dL"
-                        : "Normal range: 70–140 mg/dL"}
-                    </Text>
-                  </View>
-                  <View style={styles.referenceLine}>
-                    <View
-                      style={[
-                        styles.referenceLineDot,
-                        { backgroundColor: COLORS.warning },
-                      ]}
-                    />
-                    <Text style={styles.referenceLineText}>
-                      {lang === "rw"
-                        ? "Hejuru gato: 140–200 mg/dL"
-                        : "Slightly high: 140–200 mg/dL"}
-                    </Text>
-                  </View>
-                  <View style={styles.referenceLine}>
-                    <View
-                      style={[
-                        styles.referenceLineDot,
-                        { backgroundColor: COLORS.danger },
-                      ]}
-                    />
-                    <Text style={styles.referenceLineText}>
-                      {lang === "rw"
-                        ? "Hejuru cyane: >200 mg/dL"
-                        : "Very high: >200 mg/dL"}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconCircle}>
-                  <Ionicons
-                    name="bar-chart-outline"
-                    size={40}
-                    color={COLORS.textSecondary}
-                  />
-                </View>
-                <Text style={styles.emptyTitle}>
-                  {lang === "rw" ? "Nta makuru arabonetse" : "No data yet"}
-                </Text>
-                <Text style={styles.emptyText}>
-                  {lang === "rw"
-                    ? "Andika amasuzuma yawe kugira ngo ubone raporo zawe hano."
-                    : "Log your blood glucose readings to see your reports here."}
-                </Text>
-                <TouchableOpacity
-                  style={styles.emptyButton}
-                  onPress={() => navigation.navigate("PatientTabs")}
-                >
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.emptyButtonText}>
-                    {lang === "rw" ? "Andika Isuzuma" : "Log a Reading"}
+                        ? "✓ Igenzura ry'isukiraguciro ryiza"
+                        : "✓ Good glucose control"
+                      : stats.inRangePercent >= 50
+                        ? lang === "rw"
+                          ? "⚠ Igenzura rishobora gukorwa neza"
+                          : "⚠ Control can be improved"
+                        : lang === "rw"
+                          ? "✗ Igenzura ry'isukiraguciro ntiryiza"
+                          : "✗ Poor glucose control"}
                   </Text>
-                </TouchableOpacity>
-              </View>
-            )}
 
-            {stats ? (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>{t("reports.summaryBars")}</Text>
-                <BarChart
-                  data={barChartData}
-                  width={CHART_WIDTH}
-                  height={210}
-                  yAxisLabel=""
-                  yAxisSuffix=""
-                  fromZero
-                  chartConfig={{
-                    backgroundColor: COLORS.card,
-                    backgroundGradientFrom: COLORS.card,
-                    backgroundGradientTo: COLORS.card,
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
-                    labelColor: () => COLORS.textSecondary,
-                  }}
-                  style={styles.chart}
-                  showValuesOnTopOfBars
-                />
-              </View>
-            ) : null}
+                  <Text style={styles.readingsCount}>
+                    {stats.total} {t("reports.readings")}
+                  </Text>
+                </View>
+              ) : null}
 
-            {diet ? (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>{t("reports.dietAdvice")}</Text>
-                <Text style={styles.dietAdvice}>{diet.advice}</Text>
-
-                {diet.foodsToEat.length > 0 ? (
-                  <View style={styles.foodSection}>
-                    <View style={styles.foodHeader}>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={16}
-                        color={COLORS.success}
-                      />
-                      <Text
+              {filteredRecords.length > 0 ? (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>{t("reports.bgTrend")}</Text>
+                  <LineChart
+                    data={lineChartData}
+                    width={CHART_WIDTH}
+                    height={200}
+                    chartConfig={{
+                      backgroundColor: COLORS.card,
+                      backgroundGradientFrom: COLORS.card,
+                      backgroundGradientTo: COLORS.card,
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
+                      labelColor: () => COLORS.textSecondary,
+                      propsForDots: {
+                        r: "4",
+                        strokeWidth: "2",
+                        stroke: COLORS.primary,
+                      },
+                      propsForBackgroundLines: {
+                        stroke: COLORS.border,
+                        strokeDasharray: "4",
+                      },
+                    }}
+                    bezier
+                    style={styles.chart}
+                    withInnerLines
+                    withOuterLines={false}
+                    withVerticalLabels
+                    withHorizontalLabels
+                    withShadow={false}
+                    segments={4}
+                  />
+                  <View style={styles.referenceLines}>
+                    <View style={styles.referenceLine}>
+                      <View
                         style={[
-                          styles.foodSectionTitle,
-                          { color: COLORS.success },
+                          styles.referenceLineDot,
+                          { backgroundColor: COLORS.success },
                         ]}
-                      >
-                        {t("reports.recommended")}
+                      />
+                      <Text style={styles.referenceLineText}>
+                        {lang === "rw"
+                          ? "Rwego busanzwe: 70–140 mg/dL"
+                          : "Normal range: 70–140 mg/dL"}
                       </Text>
                     </View>
-
-                    {diet.foodsToEat.map((food) => (
-                      <Text key={food} style={styles.foodItem}>
-                        {food}
-                      </Text>
-                    ))}
-                  </View>
-                ) : null}
-
-                {diet.foodsToAvoid.length > 0 ? (
-                  <View style={styles.foodSection}>
-                    <View style={styles.foodHeader}>
-                      <Ionicons
-                        name="close-circle"
-                        size={16}
-                        color={COLORS.danger}
-                      />
-                      <Text
+                    <View style={styles.referenceLine}>
+                      <View
                         style={[
-                          styles.foodSectionTitle,
-                          { color: COLORS.danger },
+                          styles.referenceLineDot,
+                          { backgroundColor: COLORS.warning },
                         ]}
-                      >
-                        {t("reports.avoid")}
+                      />
+                      <Text style={styles.referenceLineText}>
+                        {lang === "rw"
+                          ? "Hejuru gato: 140–200 mg/dL"
+                          : "Slightly high: 140–200 mg/dL"}
                       </Text>
                     </View>
-
-                    {diet.foodsToAvoid.map((food) => (
-                      <Text key={food} style={styles.foodItem}>
-                        {food}
+                    <View style={styles.referenceLine}>
+                      <View
+                        style={[
+                          styles.referenceLineDot,
+                          { backgroundColor: COLORS.danger },
+                        ]}
+                      />
+                      <Text style={styles.referenceLineText}>
+                        {lang === "rw"
+                          ? "Hejuru cyane: >200 mg/dL"
+                          : "Very high: >200 mg/dL"}
                       </Text>
-                    ))}
+                    </View>
                   </View>
-                ) : null}
-              </View>
-            ) : null}
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyIconCircle}>
+                    <Ionicons
+                      name="bar-chart-outline"
+                      size={40}
+                      color={COLORS.textSecondary}
+                    />
+                  </View>
+                  <Text style={styles.emptyTitle}>
+                    {lang === "rw" ? "Nta makuru arabonetse" : "No data yet"}
+                  </Text>
+                  <Text style={styles.emptyText}>
+                    {lang === "rw"
+                      ? "Andika amasuzuma yawe kugira ngo ubone raporo zawe hano."
+                      : "Log your blood glucose readings to see your reports here."}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyButton}
+                    onPress={() => navigation.navigate("PatientTabs")}
+                  >
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.emptyButtonText}>
+                      {lang === "rw" ? "Andika Isuzuma" : "Log a Reading"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
-            {summary ? (
-              <View style={styles.summaryMetaRow}>
-                <Text style={styles.summaryMetaText}>
-                  {t("dashboard.totalRecords")}: {summary.totalRecords}
-                </Text>
-              </View>
-            ) : null}
+              {stats ? (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>
+                    {t("reports.summaryBars")}
+                  </Text>
+                  <BarChart
+                    data={barChartData}
+                    width={CHART_WIDTH}
+                    height={210}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    fromZero
+                    chartConfig={{
+                      backgroundColor: COLORS.card,
+                      backgroundGradientFrom: COLORS.card,
+                      backgroundGradientTo: COLORS.card,
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
+                      labelColor: () => COLORS.textSecondary,
+                    }}
+                    style={styles.chart}
+                    showValuesOnTopOfBars
+                  />
+                </View>
+              ) : null}
+
+              {diet ? (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>
+                    {t("reports.dietAdvice")}
+                  </Text>
+                  <Text style={styles.dietAdvice}>{diet.advice}</Text>
+
+                  {diet.foodsToEat.length > 0 ? (
+                    <View style={styles.foodSection}>
+                      <View style={styles.foodHeader}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color={COLORS.success}
+                        />
+                        <Text
+                          style={[
+                            styles.foodSectionTitle,
+                            { color: COLORS.success },
+                          ]}
+                        >
+                          {t("reports.recommended")}
+                        </Text>
+                      </View>
+
+                      {diet.foodsToEat.map((food) => (
+                        <Text key={food} style={styles.foodItem}>
+                          {food}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+
+                  {diet.foodsToAvoid.length > 0 ? (
+                    <View style={styles.foodSection}>
+                      <View style={styles.foodHeader}>
+                        <Ionicons
+                          name="close-circle"
+                          size={16}
+                          color={COLORS.danger}
+                        />
+                        <Text
+                          style={[
+                            styles.foodSectionTitle,
+                            { color: COLORS.danger },
+                          ]}
+                        >
+                          {t("reports.avoid")}
+                        </Text>
+                      </View>
+
+                      {diet.foodsToAvoid.map((food) => (
+                        <Text key={food} style={styles.foodItem}>
+                          {food}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {summary ? (
+                <View style={styles.summaryMetaRow}>
+                  <Text style={styles.summaryMetaText}>
+                    {t("dashboard.totalRecords")}: {summary.totalRecords}
+                  </Text>
+                </View>
+              ) : null}
             </ScrollView>
           </View>
         )}
@@ -511,8 +527,8 @@ const ReportsScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: COLORS.primary,
   },
   header: {
@@ -557,7 +573,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   scrollContent: {
     padding: 16,

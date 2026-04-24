@@ -37,4 +37,6 @@ ai-service/models/*.h5
 !ai-service/data/.gitkeep
 !ai-service/models/.gitkeep
 
+.vscode/
+
 .kiro/
