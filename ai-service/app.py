@@ -219,11 +219,9 @@ def predict_risk():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8000))
-    debug = os.getenv('FLASK_ENV') == 'development'
-    print(f'AIDiaTrack AI Service starting on port {port}')
     app.run(
         host='0.0.0.0',
         port=port,
-        debug=debug,
-        use_reloader=False  # prevents double startup and double model loading
+        debug=False,
+        use_reloader=False
     )
