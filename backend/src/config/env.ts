@@ -17,6 +17,12 @@ export const ENV = {
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ?? "",
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ?? "",
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ?? "",
+  KEEP_ALIVE_BACKEND_URL:
+    process.env.KEEP_ALIVE_BACKEND_URL ??
+    "https://aidiatrack-backend.onrender.com/ping",
+  KEEP_ALIVE_AI_URL:
+    process.env.KEEP_ALIVE_AI_URL ??
+    "https://aidiatrack-ai.onrender.com/health",
   ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "").split(","),
   IS_DEV: process.env.NODE_ENV === "development",
 };
