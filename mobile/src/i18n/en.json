@@ -329,6 +329,7 @@
     "fullName": "Full name",
     "email": "Email",
     "phone": "Phone",
+    "gender": "Gender",
     "memberSince": "Member since",
     "language": "Language",
     "languageEn": "English",

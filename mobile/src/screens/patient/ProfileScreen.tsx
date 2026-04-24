@@ -167,6 +167,11 @@ const ProfileScreen = (): React.JSX.Element => {
       value: user?.phone ?? "--",
     },
     {
+      icon: "male-female-outline",
+      label: t("profile.gender"),
+      value: user?.gender ?? "--",
+    },
+    {
       icon: "calendar-outline",
       label: t("profile.memberSince"),
       value: user?.createdAt ? formatDate(user.createdAt, lang) : "--",

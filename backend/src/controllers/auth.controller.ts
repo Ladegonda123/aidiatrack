@@ -241,6 +241,8 @@ export const updateProfile = async (
         fcmToken: true,
         reminderEnabled: true,
         reminderTimes: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 

@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -64,6 +64,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<EditProfileValues>({
     resolver: zodResolver(editProfileSchema),
@@ -75,6 +76,17 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
         : "",
     },
   });
+
+  useEffect(() => {
+    reset({
+      fullName: user?.fullName ?? "",
+      phone: user?.phone ?? "",
+      dateOfBirth: user?.dateOfBirth
+        ? new Date(user.dateOfBirth).toISOString().split("T")[0]
+        : "",
+    });
+    setGender(user?.gender ?? "");
+  }, [user?.fullName, user?.phone, user?.gender, user?.dateOfBirth, reset]);
 
   const onSubmit = async (data: FormData): Promise<void> => {
     try {
