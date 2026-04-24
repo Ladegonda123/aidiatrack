@@ -23,16 +23,29 @@ import uploadRoutes from "./routes/upload.routes";
 
 export const createApp = (): Express => {
   const app = express();
+  const corsOptions = {
+    origin: (origin: string | undefined, callback: Function) => {
+      // In production allow all origins (mobile app has no fixed origin)
+      if (process.env.NODE_ENV === "production") {
+        callback(null, true);
+      } else {
+        const allowed = (process.env.ALLOWED_ORIGINS ?? "")
+          .split(",")
+          .map((s) => s.trim());
+        if (!origin || allowed.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      }
+    },
+    credentials: true,
+  };
 
   // Middleware
   app.use(globalRateLimit);
   app.use(helmet());
-  app.use(
-    cors({
-      origin: ENV.ALLOWED_ORIGINS,
-      credentials: true,
-    }),
-  );
+  app.use(cors(corsOptions));
   app.use(morgan(ENV.IS_DEV ? "dev" : "combined"));
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true }));

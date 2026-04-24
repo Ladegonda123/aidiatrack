@@ -1330,44 +1330,43 @@ async function main() {
   const passwordHash = await bcrypt.hash("Test@1234", 12);
 
   // ── Create 1 Doctor ───────────────────────────────────────────────
-  const doctor1 = await prisma.user.create({
-    data: {
-      fullName: "Dr. Amina Uwase",
+  const doctor1 = await prisma.user.upsert({
+    where: { email: "doctor@aidiatrack.rw" },
+    update: {},
+    create: {
+      fullName: "Dr. Mutoni Alice",
       email: "doctor@aidiatrack.rw",
       passwordHash,
       role: Role.DOCTOR,
-      phone: "+250788000001",
-      gender: "Female",
+      phone: "+250788100000",
       language: "rw",
     },
   });
 
   // ── Create 2 Patients ──────────────────────────────────────────────
-  const patient1 = await prisma.user.create({
-    data: {
+  const patient1 = await prisma.user.upsert({
+    where: { email: "patient1@aidiatrack.rw" },
+    update: {},
+    create: {
       fullName: "Marie Mukamana",
       email: "patient1@aidiatrack.rw",
       passwordHash,
       role: Role.PATIENT,
       phone: "+250788100001",
-      gender: "Female",
-      dateOfBirth: new Date("1978-03-15"),
-      doctorId: doctor1.id,
       language: "rw",
     },
   });
 
-  const patient2 = await prisma.user.create({
-    data: {
+  const patient2 = await prisma.user.upsert({
+    where: { email: "patient2@aidiatrack.rw" },
+    update: {},
+    create: {
       fullName: "Emmanuel Habimana",
       email: "patient2@aidiatrack.rw",
       passwordHash,
       role: Role.PATIENT,
       phone: "+250788100002",
-      gender: "Male",
-      dateOfBirth: new Date("1965-07-22"),
-      doctorId: doctor1.id,
-      language: "en",
+      language: "rw",
     },
   });
 

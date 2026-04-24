@@ -6,11 +6,28 @@ import { setupSocket } from "./config/socket";
 import { registerReminderCrons } from "./services/reminder.service";
 import app from "./app";
 
+app.get("/ping", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 const httpServer = http.createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: ENV.ALLOWED_ORIGINS,
+    origin: (origin: string | undefined, callback: Function) => {
+      if (process.env.NODE_ENV === "production") {
+        callback(null, true);
+      } else {
+        const allowed = (process.env.ALLOWED_ORIGINS ?? "")
+          .split(",")
+          .map((s) => s.trim());
+        if (!origin || allowed.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
