@@ -92,6 +92,7 @@ const ChatUI = ({
   const isMountedRef = useRef<boolean>(true);
   const { socket } = useSocket();
   const { t, i18n } = useTranslation();
+  const lang = i18n.language as "en" | "rw";
   const insets = useSafeAreaInsets();
   const roomId = getChatRoomId(currentUserId, otherUserId);
 
@@ -391,7 +392,7 @@ const ChatUI = ({
               {isOtherOnline
                 ? t("chat.online")
                 : lastSeen
-                  ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, i18n.language as "en" | "rw")}`
+                  ? `${t("chat.lastSeen")} ${timeAgo(lastSeen, lang)}`
                   : t("chat.offline")}
             </Text>
           </View>

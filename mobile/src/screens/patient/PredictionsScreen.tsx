@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import {
   getPredictionHistory,
   getRiskAssessment,
@@ -28,6 +29,7 @@ import { Prediction } from "../../types";
 
 const PredictionsScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
+  const lang = i18n.language as "en" | "rw";
   const navigation = useNavigation();
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [currentRisk, setCurrentRisk] = useState<{
@@ -43,15 +45,17 @@ const PredictionsScreen = (): React.JSX.Element => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const loadPredictions = useCallback(async (): Promise<void> => {
+  const loadPredictions = useCallback(async (silent = false): Promise<void> => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
       const data = await getPredictionHistory();
       setPredictions(data);
     } catch {
       setPredictions([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -76,15 +80,18 @@ const PredictionsScreen = (): React.JSX.Element => {
 
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
-    await loadPredictions();
-    setRefreshing(false);
+    await loadPredictions(true);
   }, [loadPredictions]);
 
   useEffect(() => {
-    loadPredictions().catch(() => {
+    loadPredictions(false).catch(() => {
       setLoading(false);
     });
   }, [loadPredictions]);
+
+  useRefreshOnFocus(
+    useCallback(() => loadPredictions(true), [loadPredictions]),
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -95,173 +102,177 @@ const PredictionsScreen = (): React.JSX.Element => {
 
         <View style={styles.content}>
           <View style={styles.riskCard}>
-          <View style={styles.riskCardHeader}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={20}
-              color={COLORS.primary}
-            />
-            <Text style={styles.riskCardTitle}>
-              {t("predictions.riskAssessmentTitle")}
-            </Text>
-          </View>
-
-          {currentRisk ? (
-            <View style={styles.riskResult}>
-              <View
-                style={[
-                  styles.riskLevelBadge,
-                  { backgroundColor: getRiskColor(currentRisk.riskLevel) },
-                ]}
-              >
-                <Text style={styles.riskLevelText}>
-                  {currentRisk.riskLevel}
-                </Text>
-              </View>
-
-              <View style={styles.riskFactorsList}>
-                {(currentRisk.riskFactors ?? []).map((factor, index) => (
-                  <View key={index} style={styles.riskFactorItem}>
-                    <Ionicons
-                      name="alert-circle-outline"
-                      size={14}
-                      color={getRiskColor(currentRisk.riskLevel)}
-                    />
-                    <Text style={styles.riskFactorText}>{factor}</Text>
-                  </View>
-                ))}
-
-                {(currentRisk.riskFactors ?? []).length === 0 ? (
-                  <Text style={styles.noRiskFactors}>
-                    {t("predictions.noRiskFactors")}
-                  </Text>
-                ) : null}
-              </View>
-
-              <Text style={styles.riskConfidence}>
-                {t("predictions.confidence", {
-                  value: Math.round((currentRisk.confidence ?? 0) * 100),
-                })}
+            <View style={styles.riskCardHeader}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+              <Text style={styles.riskCardTitle}>
+                {t("predictions.riskAssessmentTitle")}
               </Text>
             </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.assessButton}
-              onPress={() => {
-                handleRiskAssessment().catch(() => undefined);
-              }}
-              disabled={assessingRisk}
-              activeOpacity={0.8}
-            >
-              {assessingRisk ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Ionicons
-                    name="analytics-outline"
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.assessButtonText}>
-                    {t("predictions.runAssessment")}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
 
-        <Text style={styles.historyTitle}>{t("predictions.historyTitle")}</Text>
-
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={COLORS.primary}
-            style={styles.loader}
-          />
-        ) : predictions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🤖</Text>
-            <Text style={styles.emptyText}>{t("predictions.noData")}</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={predictions}
-            keyExtractor={(item) => item.id.toString()}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => {
-                  onRefresh().catch(() => undefined);
-                }}
-                colors={[COLORS.primary]}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <View style={styles.predictionCard}>
-                <View style={styles.predictionCardHeader}>
-                  <View
-                    style={[
-                      styles.riskPill,
-                      { backgroundColor: `${getRiskColor(item.riskLevel)}20` },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.riskDot,
-                        { backgroundColor: getRiskColor(item.riskLevel) },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.riskPillText,
-                        { color: getRiskColor(item.riskLevel) },
-                      ]}
-                    >
-                      {item.riskLevel}
-                    </Text>
-                  </View>
-                  <Text style={styles.predictionTime}>
-                    {timeAgo(item.createdAt, i18n.language as "en" | "rw")}
+            {currentRisk ? (
+              <View style={styles.riskResult}>
+                <View
+                  style={[
+                    styles.riskLevelBadge,
+                    { backgroundColor: getRiskColor(currentRisk.riskLevel) },
+                  ]}
+                >
+                  <Text style={styles.riskLevelText}>
+                    {currentRisk.riskLevel}
                   </Text>
                 </View>
 
-                {item.predictedGlucose ? (
-                  <View style={styles.glucoseRow}>
-                    <Ionicons
-                      name="trending-up-outline"
-                      size={16}
-                      color={COLORS.textSecondary}
-                    />
-                    <Text style={styles.glucoseLabel}>
-                      {t("predictions.predictedValue", {
-                        value: item.predictedGlucose.toFixed(1),
-                      })}
-                    </Text>
-                    <Text style={styles.hoursLabel}>
-                      {t("predictions.inHours", {
-                        hours: item.predictionHours,
-                      })}
-                    </Text>
-                  </View>
-                ) : null}
+                <View style={styles.riskFactorsList}>
+                  {(currentRisk.riskFactors ?? []).map((factor, index) => (
+                    <View key={index} style={styles.riskFactorItem}>
+                      <Ionicons
+                        name="alert-circle-outline"
+                        size={14}
+                        color={getRiskColor(currentRisk.riskLevel)}
+                      />
+                      <Text style={styles.riskFactorText}>{factor}</Text>
+                    </View>
+                  ))}
 
-                {item.confidence ? (
-                  <Text style={styles.confidenceText}>
-                    {t("predictions.confidence", {
-                      value: Math.round(item.confidence * 100),
-                    })}
-                  </Text>
-                ) : null}
+                  {(currentRisk.riskFactors ?? []).length === 0 ? (
+                    <Text style={styles.noRiskFactors}>
+                      {t("predictions.noRiskFactors")}
+                    </Text>
+                  ) : null}
+                </View>
 
-                <Text style={styles.predictionDate}>
-                  {formatDateTime(item.createdAt, i18n.language as "en" | "rw")}
+                <Text style={styles.riskConfidence}>
+                  {t("predictions.confidence", {
+                    value: Math.round((currentRisk.confidence ?? 0) * 100),
+                  })}
                 </Text>
               </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.assessButton}
+                onPress={() => {
+                  handleRiskAssessment().catch(() => undefined);
+                }}
+                disabled={assessingRisk}
+                activeOpacity={0.8}
+              >
+                {assessingRisk ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="analytics-outline"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.assessButtonText}>
+                      {t("predictions.runAssessment")}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             )}
-          />
+          </View>
+
+          <Text style={styles.historyTitle}>
+            {t("predictions.historyTitle")}
+          </Text>
+
+          {loading ? (
+            <ActivityIndicator
+              size="large"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          ) : predictions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>🤖</Text>
+              <Text style={styles.emptyText}>{t("predictions.noData")}</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={predictions}
+              keyExtractor={(item) => item.id.toString()}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => {
+                    onRefresh().catch(() => undefined);
+                  }}
+                  colors={[COLORS.primary]}
+                />
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              renderItem={({ item }) => (
+                <View style={styles.predictionCard}>
+                  <View style={styles.predictionCardHeader}>
+                    <View
+                      style={[
+                        styles.riskPill,
+                        {
+                          backgroundColor: `${getRiskColor(item.riskLevel)}20`,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.riskDot,
+                          { backgroundColor: getRiskColor(item.riskLevel) },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.riskPillText,
+                          { color: getRiskColor(item.riskLevel) },
+                        ]}
+                      >
+                        {item.riskLevel}
+                      </Text>
+                    </View>
+                    <Text style={styles.predictionTime}>
+                      {timeAgo(item.createdAt, lang)}
+                    </Text>
+                  </View>
+
+                  {item.predictedGlucose ? (
+                    <View style={styles.glucoseRow}>
+                      <Ionicons
+                        name="trending-up-outline"
+                        size={16}
+                        color={COLORS.textSecondary}
+                      />
+                      <Text style={styles.glucoseLabel}>
+                        {t("predictions.predictedValue", {
+                          value: item.predictedGlucose.toFixed(1),
+                        })}
+                      </Text>
+                      <Text style={styles.hoursLabel}>
+                        {t("predictions.inHours", {
+                          hours: item.predictionHours,
+                        })}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {item.confidence ? (
+                    <Text style={styles.confidenceText}>
+                      {t("predictions.confidence", {
+                        value: Math.round(item.confidence * 100),
+                      })}
+                    </Text>
+                  ) : null}
+
+                  <Text style={styles.predictionDate}>
+                    {formatDateTime(item.createdAt, lang)}
+                  </Text>
+                </View>
+              )}
+            />
           )}
         </View>
       </View>
@@ -292,14 +303,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
-  },
-  content: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   riskCard: {
     backgroundColor: COLORS.card,

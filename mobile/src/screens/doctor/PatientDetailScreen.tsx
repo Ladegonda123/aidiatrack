@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LineChart } from "react-native-chart-kit";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getPatientDetail } from "../../api/doctorAPI";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import Avatar from "../../components/Avatar";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 import { formatDate, timeAgo } from "../../utils/formatters";
@@ -78,48 +79,57 @@ const PatientDetailScreen = (): React.JSX.Element => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const loadPatientDetail = useCallback(async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const data = (await getPatientDetail(patientId)) as PatientDetailResponse;
-      const resolvedPatient =
-        data.patient ?? (data as PatientDetailResponse).patient ?? null;
-      setPatient(resolvedPatient);
-      const records =
-        data.healthRecords ??
-        data.records ??
-        resolvedPatient?.healthRecords ??
-        [];
-      setHealthRecords(Array.isArray(records) ? records : []);
-      const meds = data.medications ?? resolvedPatient?.medications ?? [];
-      setMedications(
-        Array.isArray(meds)
-          ? meds.filter((medication) => medication.isActive)
-          : [],
-      );
-      const preds = data.predictions ?? resolvedPatient?.predictions ?? [];
-      setLatestPrediction(
-        Array.isArray(preds) && preds.length > 0 ? preds[0] : null,
-      );
-    } catch {
-      setPatient(null);
-      setHealthRecords([]);
-      setMedications([]);
-      setLatestPrediction(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [patientId]);
+  const loadPatientDetail = useCallback(
+    async (silent = false): Promise<void> => {
+      try {
+        if (!silent) setLoading(true);
+        const data = (await getPatientDetail(
+          patientId,
+        )) as PatientDetailResponse;
+        const resolvedPatient =
+          data.patient ?? (data as PatientDetailResponse).patient ?? null;
+        setPatient(resolvedPatient);
+        const records =
+          data.healthRecords ??
+          data.records ??
+          resolvedPatient?.healthRecords ??
+          [];
+        setHealthRecords(Array.isArray(records) ? records : []);
+        const meds = data.medications ?? resolvedPatient?.medications ?? [];
+        setMedications(
+          Array.isArray(meds)
+            ? meds.filter((medication) => medication.isActive)
+            : [],
+        );
+        const preds = data.predictions ?? resolvedPatient?.predictions ?? [];
+        setLatestPrediction(
+          Array.isArray(preds) && preds.length > 0 ? preds[0] : null,
+        );
+      } catch {
+        setPatient(null);
+        setHealthRecords([]);
+        setMedications([]);
+        setLatestPrediction(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [patientId],
+  );
 
   useEffect(() => {
-    loadPatientDetail().catch(() => {
+    loadPatientDetail(false).catch(() => {
       setLoading(false);
     });
   }, [loadPatientDetail]);
 
+  useRefreshOnFocus(
+    useCallback(() => loadPatientDetail(true), [loadPatientDetail]),
+  );
+
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
-    await loadPatientDetail();
+    await loadPatientDetail(true);
     setRefreshing(false);
   }, [loadPatientDetail]);
 
@@ -190,225 +200,229 @@ const PatientDetailScreen = (): React.JSX.Element => {
               }
               contentContainerStyle={styles.scrollContent}
             >
-            <View style={styles.card}>
-              <View style={styles.patientHeader}>
-                <Avatar
-                  photoUrl={
-                    patient?.photoUrl ?? route.params.patientPhotoUrl ?? null
-                  }
-                  name={patient?.fullName ?? patientName}
-                  size={88}
-                  style={styles.bigAvatar}
-                />
-                <View style={styles.patientMeta}>
-                  <Text style={styles.patientFullName}>{patientName}</Text>
-                  {patient?.gender ? (
-                    <Text style={styles.metaText}>{patient.gender}</Text>
-                  ) : null}
-                  {patient?.dateOfBirth ? (
-                    <Text style={styles.metaText}>
-                      {calculateAge(patient.dateOfBirth)}{" "}
-                      {t("doctor.patientDetail.yearsOld")}
-                    </Text>
-                  ) : null}
-                  {patient?.phone ? (
-                    <Text style={styles.metaText}>📞 {patient.phone}</Text>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-
-            {latestPrediction ? (
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>
-                  {t("doctor.patientDetail.lastPrediction")}
-                </Text>
-                <View style={styles.predictionRow}>
-                  <View
-                    style={[
-                      styles.riskCircle,
-                      {
-                        backgroundColor: getRiskColor(
-                          latestPrediction.riskLevel,
-                        ),
-                      },
-                    ]}
-                  >
-                    <Text style={styles.riskCircleText}>
-                      {latestPrediction.riskLevel}
-                    </Text>
-                  </View>
-                  <View style={styles.predictionInfo}>
-                    {latestPrediction.predictedGlucose ? (
-                      <Text style={styles.predictedBg}>
-                        {t("predictions.predictedValue", {
-                          value: latestPrediction.predictedGlucose.toFixed(1),
-                        })}
+                <View style={styles.patientHeader}>
+                  <Avatar
+                    photoUrl={
+                      patient?.photoUrl ?? route.params.patientPhotoUrl ?? null
+                    }
+                    name={patient?.fullName ?? patientName}
+                    size={88}
+                    style={styles.bigAvatar}
+                  />
+                  <View style={styles.patientMeta}>
+                    <Text style={styles.patientFullName}>{patientName}</Text>
+                    {patient?.gender ? (
+                      <Text style={styles.metaText}>{patient.gender}</Text>
+                    ) : null}
+                    {patient?.dateOfBirth ? (
+                      <Text style={styles.metaText}>
+                        {calculateAge(patient.dateOfBirth)}{" "}
+                        {t("doctor.patientDetail.yearsOld")}
                       </Text>
                     ) : null}
-                    {latestPrediction.confidence ? (
-                      <Text style={styles.confidence}>
-                        {t("predictions.confidence", {
-                          value: Math.round(latestPrediction.confidence * 100),
-                        })}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.predictionTime}>
-                      {timeAgo(latestPrediction.createdAt, lang)}
-                    </Text>
-                    {(latestPrediction.riskFactors ?? []).length > 0 ? (
-                      <View style={styles.riskFactors}>
-                        {(latestPrediction.riskFactors ?? []).map(
-                          (factor, index) => (
-                            <Text key={index} style={styles.riskFactor}>
-                              • {factor}
-                            </Text>
-                          ),
-                        )}
-                      </View>
+                    {patient?.phone ? (
+                      <Text style={styles.metaText}>📞 {patient.phone}</Text>
                     ) : null}
                   </View>
                 </View>
               </View>
-            ) : null}
 
-            {chartData.labels.length > 0 ? (
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>
-                  {t("doctor.patientDetail.bgHistory")}
-                </Text>
-                <LineChart
-                  data={chartData}
-                  width={SCREEN_WIDTH - 64}
-                  height={180}
-                  chartConfig={{
-                    backgroundColor: COLORS.card,
-                    backgroundGradientFrom: COLORS.card,
-                    backgroundGradientTo: COLORS.card,
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
-                    labelColor: () => COLORS.textSecondary,
-                    propsForDots: {
-                      r: "4",
-                      strokeWidth: "2",
-                      stroke: COLORS.primary,
-                    },
-                    propsForBackgroundLines: {
-                      stroke: COLORS.border,
-                      strokeDasharray: "4",
-                    },
-                  }}
-                  bezier
-                  style={styles.chart}
-                  withInnerLines
-                  withOuterLines={false}
-                  withVerticalLabels
-                  withHorizontalLabels
-                />
-                <Text style={styles.chartNote}>
-                  {t("doctor.patientDetail.normalRange")}
-                </Text>
-              </View>
-            ) : null}
-
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>
-                {t("doctor.patientDetail.recentReadings")}
-              </Text>
-              {healthRecords.length === 0 ? (
-                <Text style={styles.noDataText}>
-                  {t("doctor.patientDetail.noRecords")}
-                </Text>
-              ) : (
-                healthRecords.slice(0, 5).map((record, index) => (
-                  <View
-                    key={record.id}
-                    style={[
-                      styles.recordRow,
-                      index < healthRecords.length - 1
-                        ? styles.recordRowBorder
-                        : undefined,
-                    ]}
-                  >
+              {latestPrediction ? (
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>
+                    {t("doctor.patientDetail.lastPrediction")}
+                  </Text>
+                  <View style={styles.predictionRow}>
                     <View
                       style={[
-                        styles.recordBgDot,
-                        { backgroundColor: getBgColor(record.bloodGlucose) },
+                        styles.riskCircle,
+                        {
+                          backgroundColor: getRiskColor(
+                            latestPrediction.riskLevel,
+                          ),
+                        },
                       ]}
-                    />
-                    <View style={styles.recordInfo}>
-                      <Text
-                        style={[
-                          styles.recordBg,
-                          { color: getBgColor(record.bloodGlucose) },
-                        ]}
-                      >
-                        {record.bloodGlucose.toFixed(1)} mg/dL
+                    >
+                      <Text style={styles.riskCircleText}>
+                        {latestPrediction.riskLevel}
                       </Text>
-                      {record.mealDesc ? (
-                        <Text style={styles.recordMeal} numberOfLines={1}>
-                          🍽 {record.mealDesc}
+                    </View>
+                    <View style={styles.predictionInfo}>
+                      {latestPrediction.predictedGlucose ? (
+                        <Text style={styles.predictedBg}>
+                          {t("predictions.predictedValue", {
+                            value: latestPrediction.predictedGlucose.toFixed(1),
+                          })}
                         </Text>
                       ) : null}
-                    </View>
-                    <Text style={styles.recordTime}>
-                      {timeAgo(record.recordedAt, lang)}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>
-                {t("doctor.patientDetail.medications")}
-              </Text>
-              {medications.length === 0 ? (
-                <Text style={styles.noDataText}>
-                  {t("medications.noMedications")}
-                </Text>
-              ) : (
-                medications.map((medication, index) => (
-                  <View
-                    key={medication.id}
-                    style={[
-                      styles.medRow,
-                      index < medications.length - 1
-                        ? styles.recordRowBorder
-                        : undefined,
-                    ]}
-                  >
-                    <Text style={styles.medIcon}>💊</Text>
-                    <View style={styles.medInfo}>
-                      <Text style={styles.medName}>
-                        {medication.drugName} {medication.dosage}
-                      </Text>
-                      <Text style={styles.medFreq}>{medication.frequency}</Text>
-                    </View>
-                    <View style={styles.medTimes}>
-                      {medication.reminderTimes.map((time, index) => (
-                        <Text key={index} style={styles.medTime}>
-                          {time}
+                      {latestPrediction.confidence ? (
+                        <Text style={styles.confidence}>
+                          {t("predictions.confidence", {
+                            value: Math.round(
+                              latestPrediction.confidence * 100,
+                            ),
+                          })}
                         </Text>
-                      ))}
+                      ) : null}
+                      <Text style={styles.predictionTime}>
+                        {timeAgo(latestPrediction.createdAt, lang)}
+                      </Text>
+                      {(latestPrediction.riskFactors ?? []).length > 0 ? (
+                        <View style={styles.riskFactors}>
+                          {(latestPrediction.riskFactors ?? []).map(
+                            (factor, index) => (
+                              <Text key={index} style={styles.riskFactor}>
+                                • {factor}
+                              </Text>
+                            ),
+                          )}
+                        </View>
+                      ) : null}
                     </View>
                   </View>
-                ))
-              )}
-            </View>
+                </View>
+              ) : null}
 
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => {
-                navigation.navigate("DoctorChat", { patientId, patientName });
-              }}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.messageButtonText}>
-                {t("doctor.patientDetail.messageButton")}
-              </Text>
-            </TouchableOpacity>
+              {chartData.labels.length > 0 ? (
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>
+                    {t("doctor.patientDetail.bgHistory")}
+                  </Text>
+                  <LineChart
+                    data={chartData}
+                    width={SCREEN_WIDTH - 64}
+                    height={180}
+                    chartConfig={{
+                      backgroundColor: COLORS.card,
+                      backgroundGradientFrom: COLORS.card,
+                      backgroundGradientTo: COLORS.card,
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(46, 134, 193, ${opacity})`,
+                      labelColor: () => COLORS.textSecondary,
+                      propsForDots: {
+                        r: "4",
+                        strokeWidth: "2",
+                        stroke: COLORS.primary,
+                      },
+                      propsForBackgroundLines: {
+                        stroke: COLORS.border,
+                        strokeDasharray: "4",
+                      },
+                    }}
+                    bezier
+                    style={styles.chart}
+                    withInnerLines
+                    withOuterLines={false}
+                    withVerticalLabels
+                    withHorizontalLabels
+                  />
+                  <Text style={styles.chartNote}>
+                    {t("doctor.patientDetail.normalRange")}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>
+                  {t("doctor.patientDetail.recentReadings")}
+                </Text>
+                {healthRecords.length === 0 ? (
+                  <Text style={styles.noDataText}>
+                    {t("doctor.patientDetail.noRecords")}
+                  </Text>
+                ) : (
+                  healthRecords.slice(0, 5).map((record, index) => (
+                    <View
+                      key={record.id}
+                      style={[
+                        styles.recordRow,
+                        index < healthRecords.length - 1
+                          ? styles.recordRowBorder
+                          : undefined,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.recordBgDot,
+                          { backgroundColor: getBgColor(record.bloodGlucose) },
+                        ]}
+                      />
+                      <View style={styles.recordInfo}>
+                        <Text
+                          style={[
+                            styles.recordBg,
+                            { color: getBgColor(record.bloodGlucose) },
+                          ]}
+                        >
+                          {record.bloodGlucose.toFixed(1)} mg/dL
+                        </Text>
+                        {record.mealDesc ? (
+                          <Text style={styles.recordMeal} numberOfLines={1}>
+                            🍽 {record.mealDesc}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.recordTime}>
+                        {timeAgo(record.recordedAt, lang)}
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.sectionTitle}>
+                  {t("doctor.patientDetail.medications")}
+                </Text>
+                {medications.length === 0 ? (
+                  <Text style={styles.noDataText}>
+                    {t("medications.noMedications")}
+                  </Text>
+                ) : (
+                  medications.map((medication, index) => (
+                    <View
+                      key={medication.id}
+                      style={[
+                        styles.medRow,
+                        index < medications.length - 1
+                          ? styles.recordRowBorder
+                          : undefined,
+                      ]}
+                    >
+                      <Text style={styles.medIcon}>💊</Text>
+                      <View style={styles.medInfo}>
+                        <Text style={styles.medName}>
+                          {medication.drugName} {medication.dosage}
+                        </Text>
+                        <Text style={styles.medFreq}>
+                          {medication.frequency}
+                        </Text>
+                      </View>
+                      <View style={styles.medTimes}>
+                        {medication.reminderTimes.map((time, index) => (
+                          <Text key={index} style={styles.medTime}>
+                            {time}
+                          </Text>
+                        ))}
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={() => {
+                  navigation.navigate("DoctorChat", { patientId, patientName });
+                }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.messageButtonText}>
+                  {t("doctor.patientDetail.messageButton")}
+                </Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         )}
@@ -419,8 +433,8 @@ const PatientDetailScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: COLORS.primary,
   },
   header: {
@@ -451,7 +465,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   scrollContent: {
     padding: 16,

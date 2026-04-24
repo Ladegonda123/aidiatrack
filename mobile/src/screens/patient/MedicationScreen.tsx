@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -117,26 +118,30 @@ const MedicationScreen = (): React.JSX.Element => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const loadMedications = useCallback(async (): Promise<void> => {
+  const loadMedications = useCallback(async (silent = false): Promise<void> => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await getMyMedications();
       setMedications(data.filter((item) => item.isActive));
     } catch {
       setMedications([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    loadMedications().catch(() => undefined);
+    loadMedications(false).catch(() => undefined);
   }, [loadMedications]);
+
+  useRefreshOnFocus(
+    useCallback(() => loadMedications(true), [loadMedications]),
+  );
 
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
-    await loadMedications();
-    setRefreshing(false);
+    await loadMedications(true);
   }, [loadMedications]);
 
   const handleFrequencyChange = useCallback(
@@ -171,7 +176,7 @@ const MedicationScreen = (): React.JSX.Element => {
         setShowAddModal(false);
         reset();
         setReminderTimes(["08:00"]);
-        await loadMedications();
+        await loadMedications(true);
       } catch {
         Alert.alert(t("common.error"));
       } finally {
@@ -191,7 +196,7 @@ const MedicationScreen = (): React.JSX.Element => {
           onPress: async () => {
             try {
               await deleteMedication(medication.id);
-              await loadMedications();
+              await loadMedications(true);
             } catch {
               Alert.alert(t("common.error"));
             }
@@ -224,82 +229,86 @@ const MedicationScreen = (): React.JSX.Element => {
         ) : medications.length === 0 ? (
           <View style={styles.content}>
             <View style={styles.emptyState}>
-            <Ionicons name="medkit-outline" size={56} color={COLORS.primary} />
-            <Text style={styles.emptyText}>
-              {t("medications.noMedications")}
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyAddButton}
-              onPress={() => setShowAddModal(true)}
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.emptyAddText}>{t("medications.add")}</Text>
-            </TouchableOpacity>
+              <Ionicons
+                name="medkit-outline"
+                size={56}
+                color={COLORS.primary}
+              />
+              <Text style={styles.emptyText}>
+                {t("medications.noMedications")}
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyAddButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.emptyAddText}>{t("medications.add")}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.content}>
             <FlatList
-            data={medications}
-            keyExtractor={(item) => item.id.toString()}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[COLORS.primary]}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <View style={styles.medCard}>
-                <View style={styles.medLeft}>
-                  <View style={styles.medIconCircle}>
-                    <Ionicons
-                      name="medkit-outline"
-                      size={20}
-                      color={COLORS.primary}
-                    />
-                  </View>
+              data={medications}
+              keyExtractor={(item) => item.id.toString()}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[COLORS.primary]}
+                />
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              renderItem={({ item }) => (
+                <View style={styles.medCard}>
+                  <View style={styles.medLeft}>
+                    <View style={styles.medIconCircle}>
+                      <Ionicons
+                        name="medkit-outline"
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                    </View>
 
-                  <View style={styles.medInfo}>
-                    <Text style={styles.medName}>{item.drugName}</Text>
-                    <Text style={styles.medDosage}>
-                      {item.dosage} •{" "}
-                      {frequencyLabelByValue[item.frequency as Frequency]}
-                    </Text>
+                    <View style={styles.medInfo}>
+                      <Text style={styles.medName}>{item.drugName}</Text>
+                      <Text style={styles.medDosage}>
+                        {item.dosage} •{" "}
+                        {frequencyLabelByValue[item.frequency as Frequency]}
+                      </Text>
 
-                    <View style={styles.timesRow}>
-                      {item.reminderTimes.map((time, index) => (
-                        <View
-                          key={`${item.id}-${time}-${index}`}
-                          style={styles.timeChip}
-                        >
-                          <Ionicons
-                            name="alarm-outline"
-                            size={11}
-                            color={COLORS.primary}
-                          />
-                          <Text style={styles.timeChipText}>{time}</Text>
-                        </View>
-                      ))}
+                      <View style={styles.timesRow}>
+                        {item.reminderTimes.map((time, index) => (
+                          <View
+                            key={`${item.id}-${time}-${index}`}
+                            style={styles.timeChip}
+                          >
+                            <Ionicons
+                              name="alarm-outline"
+                              size={11}
+                              color={COLORS.primary}
+                            />
+                            <Text style={styles.timeChipText}>{time}</Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
                   </View>
-                </View>
 
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => handleDelete(item)}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={18}
-                    color={COLORS.danger}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
-          />
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(item)}
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={COLORS.danger}
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
           </View>
         )}
 
@@ -502,8 +511,8 @@ const MedicationScreen = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.primary },
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: COLORS.primary,
   },
   header: {
@@ -534,7 +543,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   emptyState: {
     flex: 1,

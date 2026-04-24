@@ -26,6 +26,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../hooks/useAuth";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import NotificationPanel from "../../components/NotificationPanel";
 import Avatar from "../../components/Avatar";
 import {
@@ -91,7 +92,7 @@ const DashboardScreen = (): React.JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [initialLoad, setInitialLoad] = useState<boolean>(true);
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [now, setNow] = useState<Date>(new Date());
   const activeChatUserIdRef = useRef<number | null>(null);
   const lang = i18n.language as "en" | "rw";
 
@@ -231,7 +232,7 @@ const DashboardScreen = (): React.JSX.Element => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      setNow(new Date());
     }, 60000);
 
     return () => clearInterval(timer);
@@ -249,13 +250,7 @@ const DashboardScreen = (): React.JSX.Element => {
     return () => clearInterval(interval);
   }, [authLoading, user?.id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!initialLoad) {
-        loadDashboard(true).catch(() => undefined);
-      }
-    }, [initialLoad, loadDashboard]),
-  );
+  useRefreshOnFocus(useCallback(() => loadDashboard(true), [loadDashboard]));
 
   useFocusEffect(
     useCallback(() => {
@@ -363,9 +358,9 @@ const DashboardScreen = (): React.JSX.Element => {
     () =>
       getNextMedication(
         medications.filter((m) => m.isActive),
-        currentTime,
+        now,
       ),
-    [currentTime, medications],
+    [medications, now],
   );
 
   const shouldShowAlert =

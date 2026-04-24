@@ -24,6 +24,7 @@ import Avatar from "../../components/Avatar";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
 import { timeAgo } from "../../utils/formatters";
 import { useAuth } from "../../hooks/useAuth";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import NotificationPanel from "../../components/NotificationPanel";
 import { AppNotification, getNotifications } from "../../api/notificationAPI";
 import { RootStackParamList, PatientWithChat } from "../../types";
@@ -32,6 +33,7 @@ type DashboardPatient = PatientWithChat;
 
 const DoctorDashboardScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
+  const lang = i18n.language as "en" | "rw";
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user, refreshChatUnread, loading } = useAuth();
@@ -47,10 +49,13 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const loadPatients = useCallback(async (): Promise<void> => {
+  const loadPatients = useCallback(async (silent = false): Promise<void> => {
     try {
-      setScreenLoading(true);
-      const list = await getMyPatients();
+      if (!silent) setScreenLoading(true);
+      const data = await getMyPatients();
+      const list = Array.isArray(data)
+        ? data
+        : ((data as { patients?: DashboardPatient[] })?.patients ?? []);
       setPatients(list);
     } catch {
       setPatients([]);
@@ -71,11 +76,13 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
   }, []);
 
   useEffect(() => {
-    loadPatients().catch(() => {
+    loadPatients(false).catch(() => {
       setScreenLoading(false);
     });
     loadNotifications().catch(() => undefined);
   }, [loadNotifications, loadPatients]);
+
+  useRefreshOnFocus(useCallback(() => loadPatients(true), [loadPatients]));
 
   useEffect(() => {
     if (loading || !user) return;
@@ -109,7 +116,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
 
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
-    await loadPatients();
+    await loadPatients(true);
     await loadNotifications();
     setRefreshing(false);
   }, [loadNotifications, loadPatients]);
@@ -291,10 +298,7 @@ const DoctorDashboardScreen = (): React.JSX.Element => {
                         {item.lastHealthRecord ? (
                           <Text style={styles.lastSeen}>
                             {t("doctor.dashboard.lastReading")}:{" "}
-                            {timeAgo(
-                              item.lastHealthRecord.recordedAt,
-                              i18n.language as "en" | "rw",
-                            )}
+                            {timeAgo(item.lastHealthRecord.recordedAt, lang)}
                           </Text>
                         ) : null}
                       </View>

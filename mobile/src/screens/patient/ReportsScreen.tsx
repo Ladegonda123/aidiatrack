@@ -17,10 +17,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BarChart, LineChart } from "react-native-chart-kit";
 import { Ionicons } from "@expo/vector-icons";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { getHealthHistory, getHealthSummary } from "../../api/healthAPI";
 import { DietRecommendation, getDietRecommendations } from "../../api/dietAPI";
 import { COLORS } from "../../utils/colors";
@@ -47,9 +48,10 @@ const ReportsScreen = (): React.JSX.Element => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const loadData = useCallback(async (): Promise<void> => {
+  const loadData = useCallback(async (silent = false): Promise<void> => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
       const [historyResponse, summaryData, dietData] = await Promise.all([
         getHealthHistory(1, 30),
         getHealthSummary(),
@@ -65,18 +67,15 @@ const ReportsScreen = (): React.JSX.Element => {
       setRecords([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData().catch(() => undefined);
+    loadData(false).catch(() => undefined);
   }, [loadData]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData().catch(() => undefined);
-    }, [loadData]),
-  );
+  useRefreshOnFocus(useCallback(() => loadData(true), [loadData]));
 
   const filteredRecords = useMemo((): HealthRecord[] => {
     const cutoff = new Date();
@@ -215,8 +214,7 @@ const ReportsScreen = (): React.JSX.Element => {
                   refreshing={refreshing}
                   onRefresh={async () => {
                     setRefreshing(true);
-                    await loadData();
-                    setRefreshing(false);
+                    await loadData(true);
                   }}
                   colors={[COLORS.primary]}
                 />

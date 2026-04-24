@@ -68,6 +68,7 @@ const NotificationPanel: React.FC<Props> = ({
   language,
 }) => {
   const { t } = useTranslation();
+  const lang = language === "en" ? "en" : "rw";
   const navigation = useNavigation<any>();
 
   const handleMarkOneRead = async (notif: AppNotification): Promise<void> => {
@@ -94,8 +95,7 @@ const NotificationPanel: React.FC<Props> = ({
   const handleDeleteAll = (): void => {
     Alert.alert(
       t("notifications.deleteAllTitle") || "Delete All",
-      t("notifications.deleteAllConfirm") ||
-        "Delete all notifications?",
+      t("notifications.deleteAllConfirm") || "Delete all notifications?",
       [
         { text: t("common.cancel"), style: "cancel" },
         {
@@ -169,7 +169,10 @@ const NotificationPanel: React.FC<Props> = ({
                 </TouchableOpacity>
               )}
               {notifications.length > 0 && (
-                <TouchableOpacity style={styles.actionBtn} onPress={handleDeleteAll}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={handleDeleteAll}
+                >
                   <Ionicons
                     name="trash-outline"
                     size={18}
@@ -255,7 +258,7 @@ const NotificationPanel: React.FC<Props> = ({
                         {item.body}
                       </Text>
                       <Text style={styles.itemTime}>
-                        {timeAgo(item.createdAt, language as "en" | "rw")}
+                        {timeAgo(item.createdAt, lang)}
                       </Text>
                     </View>
 

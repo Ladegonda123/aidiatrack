@@ -15,7 +15,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getMyPatients } from "../../api/doctorAPI";
@@ -23,6 +23,7 @@ import Avatar from "../../components/Avatar";
 import { COLORS } from "../../utils/colors";
 import { RootStackParamList, PatientWithChat } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { chatEvents, CHAT_EVENTS } from "../../utils/chatEvents";
 
 const formatChatTime = (
@@ -75,22 +76,26 @@ const DoctorChatList = (): React.JSX.Element => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  const loadPatients = useCallback(async (): Promise<void> => {
+  const loadPatients = useCallback(async (silent = false): Promise<void> => {
     try {
+      if (!silent) setLoading(true);
       const list = await getMyPatients();
       setPatients(list);
     } catch {
       setPatients([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    loadPatients().catch(() => {
+    loadPatients(false).catch(() => {
       setLoading(false);
     });
   }, [loadPatients]);
+
+  useRefreshOnFocus(useCallback(() => loadPatients(true), [loadPatients]));
 
   useEffect(() => {
     const handleChatOpened = (data: { withUserId: number }): void => {
@@ -171,18 +176,9 @@ const DoctorChatList = (): React.JSX.Element => {
     };
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadPatients().catch(() => {
-        setLoading(false);
-      });
-    }, []),
-  );
-
   const onRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
-    await loadPatients();
-    setRefreshing(false);
+    await loadPatients(true);
   }, [loadPatients]);
 
   const language = i18n.language === "rw" ? "rw" : "en";

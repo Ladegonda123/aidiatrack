@@ -23,10 +23,15 @@ const RW_TIME_AGO = (seconds: number): string => {
   const months = Math.floor(days / 30);
 
   if (seconds < 60) return "ubu nyine";
-  if (minutes < 60) return `${minutes} min.`;
+  if (minutes === 1) return "umunota 1 urangiye";
+  if (minutes < 60) return `iminota ${minutes} ishize`;
+  if (hours === 1) return "isaha 1 ishize";
   if (hours < 24) return `amasaha ${hours} ashize`;
+  if (days === 1) return "umunsi 1 ushize";
   if (days < 7) return `iminsi ${days} ishize`;
+  if (weeks === 1) return "icyumweru 1 gishize";
   if (weeks < 5) return `ibyumweru ${weeks} bishize`;
+  if (months === 1) return "ukwezi 1 gushize";
   return `amezi ${months} ashize`;
 };
 
@@ -38,10 +43,15 @@ const EN_TIME_AGO = (seconds: number): string => {
   const months = Math.floor(days / 30);
 
   if (seconds < 60) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes === 1) return "1 minute ago";
+  if (minutes < 60) return `${minutes} minutes ago`;
+  if (hours === 1) return "1 hour ago";
   if (hours < 24) return `${hours} hours ago`;
+  if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
+  if (weeks === 1) return "1 week ago";
   if (weeks < 5) return `${weeks} weeks ago`;
+  if (months === 1) return "1 month ago";
   return `${months} months ago`;
 };
 
