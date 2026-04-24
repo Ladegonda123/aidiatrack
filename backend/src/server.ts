@@ -1,17 +1,17 @@
-import http from 'http';
-import { Server } from 'socket.io';
-import { ENV } from './config/env';
-import { verifyDatabaseConnection } from './config/database';
-import { setupSocket } from './config/socket';
-import { registerReminderCrons } from './services/reminder.service';
-import app from './app';
+import http from "http";
+import { Server } from "socket.io";
+import { ENV } from "./config/env";
+import { verifyDatabaseConnection } from "./config/database";
+import { setupSocket } from "./config/socket";
+import { registerReminderCrons } from "./services/reminder.service";
+import app from "./app";
 
 const httpServer = http.createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
     origin: ENV.ALLOWED_ORIGINS,
-    methods: ['GET', 'POST'],
+    methods: ["GET", "POST"],
     credentials: true,
   },
 });
