@@ -4,9 +4,12 @@ import joblib
 import numpy as np
 import pandas as pd
 import os
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
 
-load_dotenv()
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not needed in production — env vars set by Render
 
 app = Flask(__name__)
 CORS(app)
