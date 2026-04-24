@@ -27,7 +27,8 @@
         "backgroundColor": "#2E86C1"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.wilsondev.aidiatrack"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,8 +38,9 @@
       "socketUrl": "https://aidiatrack-backend.onrender.com",
       "aiUrl": "https://aidiatrack-ai.onrender.com",
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "987bdbb4-b1e7-4099-97a0-9654d9e53bc5"
       }
-    }
+    },
+    "owner": "wilsondev26"
   }
 }
