@@ -13,7 +13,8 @@
     "prisma:reset": "prisma migrate reset",
     "seed": "ts-node prisma/seed.ts",
     "test": "jest --runInBand --forceExit",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --runInBand --forceExit"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
