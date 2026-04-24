@@ -1,4 +1,4 @@
-import express, { Express } from "express";
+import express, { Express, NextFunction, Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -38,8 +38,12 @@ export const createApp = (): Express => {
   app.use(express.urlencoded({ extended: true }));
   app.use(sanitizeInput);
 
+  app.get("/ping", (_req: Request, res: Response) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // Health check
-  app.get("/api/health", (_req, res) => {
+  app.get("/api/health", (_req: Request, res: Response) => {
     res.json({
       status: "ok",
       environment: ENV.NODE_ENV,
@@ -62,7 +66,7 @@ export const createApp = (): Express => {
   app.use("/api/upload", uploadRoutes);
 
   // 404 handler
-  app.use((_req, res) => {
+  app.use((_req: Request, res: Response, _next: NextFunction) => {
     res.status(404).json({ success: false, message: "Route not found" });
   });
 
