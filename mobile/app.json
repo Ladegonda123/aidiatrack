@@ -31,6 +31,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "https://aidiatrack-backend.onrender.com/api",
+      "socketUrl": "https://aidiatrack-backend.onrender.com",
+      "aiUrl": "https://aidiatrack-ai.onrender.com",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
     }
   }
 }

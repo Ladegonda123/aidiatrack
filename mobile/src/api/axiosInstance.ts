@@ -1,10 +1,14 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
+import Constants from "expo-constants";
 import { getToken } from "../utils/storage";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5000/api";
+const API_URL =
+  Constants.expoConfig?.extra?.apiUrl ??
+  process.env.EXPO_PUBLIC_API_URL ??
+  "http://192.168.x.x:5000/api";
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_URL,
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
@@ -15,7 +19,7 @@ axiosInstance.interceptors.request.use(
   ): Promise<InternalAxiosRequestConfig> => {
     const token = await getToken();
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; 
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
