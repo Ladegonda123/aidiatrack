@@ -17,6 +17,7 @@ interface RegisterBody {
   phone?: string;
   gender?: string;
   dateOfBirth?: Date | string;
+  language?: string;
 }
 
 interface LoginBody {
@@ -89,7 +90,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         phone: body.phone,
         gender: body.gender,
         dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
-        language: "rw",
+        language: body.language ?? "rw",
       },
     });
 

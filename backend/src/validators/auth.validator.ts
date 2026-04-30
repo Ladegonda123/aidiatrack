@@ -48,6 +48,13 @@ export const registerSchema: ObjectSchema = Joi.object({
     "date.format": "Date of birth must be in a valid ISO date format.",
     "date.isoDate": "Date of birth must be in ISO date format.",
   }),
+  language: Joi.string().valid("en", "rw").optional().messages({
+    "string.base": "Language must be a string.",
+    "any.only": "Language must be either 'en' or 'rw'.",
+  }),
+  fcmToken: Joi.string().trim().optional().messages({
+    "string.base": "FCM token must be a string.",
+  }),
 }).messages({
   "object.unknown": "Request contains an unsupported field.",
 });
