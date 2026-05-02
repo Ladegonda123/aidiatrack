@@ -110,7 +110,11 @@ export interface FoodItem {
 
 export interface HealthSummary {
   averageBg: number;
-  lastReading: HealthRecord | null;
+  lastReading: {
+    bloodGlucose: number;
+    weightKg?: number;
+    recordedAt: string;
+  } | null;
   totalRecords: number;
   trend: { date: string; value: number }[];
 }

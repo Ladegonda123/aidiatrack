@@ -201,20 +201,29 @@ export const buildRiskFeatures = async (
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const records = await prisma.healthRecord.findMany({
-    where: {
-      patientId,
-      recordedAt: { gte: thirtyDaysAgo },
-    },
-    select: {
-      bloodGlucose: true,
-      weightKg: true,
-      bloodPressure: true,
-      hba1c: true,
-      insulinDose: true,
-      activityLevel: true,
-    },
-  });
+  const [records, patient] = await Promise.all([
+    prisma.healthRecord.findMany({
+      where: {
+        patientId,
+        recordedAt: { gte: thirtyDaysAgo },
+      },
+      select: {
+        bloodGlucose: true,
+        weightKg: true,
+        bloodPressure: true,
+        hba1c: true,
+        insulinDose: true,
+        activityLevel: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: patientId },
+      select: {
+        weightKg: true,
+        heightCm: true,
+      },
+    }),
+  ]);
 
   if (records.length === 0) {
     return null;
@@ -229,9 +238,16 @@ export const buildRiskFeatures = async (
       bgValues.length,
   );
 
+  // Use latest weight from health records, fall back to user profile, default to 70
   const latestWeight =
-    records.find((record) => record.weightKg)?.weightKg ?? 70;
-  const bmi = latestWeight / (1.7 * 1.7);
+    records.find((record) => record.weightKg)?.weightKg ??
+    patient?.weightKg ??
+    70;
+
+  // Use patient's height from profile, default to 170 cm
+  const heightCm = patient?.heightCm ?? 170;
+  const heightM = heightCm / 100;
+  const bmi = latestWeight / (heightM * heightM);
 
   const latestBp = records.find(
     (record) => record.bloodPressure,

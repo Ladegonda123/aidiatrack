@@ -23,6 +23,7 @@ interface HealthSummaryResponse {
   lastReading: {
     recordedAt: Date;
     bloodGlucose: number;
+    weightKg?: number | null;
   } | null;
   totalRecords: number;
   trend: HealthSummaryTrendItem[];
@@ -209,6 +210,7 @@ export const getHealthSummary = async (
           select: {
             recordedAt: true,
             bloodGlucose: true,
+            weightKg: true,
           },
         }),
         prisma.healthRecord.findMany({

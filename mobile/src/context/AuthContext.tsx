@@ -190,6 +190,11 @@ export const AuthProvider = ({
   const login = useCallback(
     async (email: string, password: string): Promise<void> => {
       const response = await loginRequest(email, password);
+
+      if (!response.token) {
+        throw new Error("Login failed: no token returned");
+      }
+
       setUser(response.user);
       setToken(response.token);
       await saveToken(response.token);
@@ -205,6 +210,12 @@ export const AuthProvider = ({
   const register = useCallback(
     async (data: RegisterData): Promise<void> => {
       const response = await registerRequest(data);
+
+      // If no token is returned, registration succeeded but account needs login
+      if (!response.token) {
+        throw new Error("registration_requires_login");
+      }
+
       setUser(response.user);
       setToken(response.token);
       await saveToken(response.token);

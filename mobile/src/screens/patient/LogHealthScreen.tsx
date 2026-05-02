@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,8 +18,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { z } from "zod";
+import { useAuth } from "../../hooks/useAuth";
 import FoodPicker from "../../components/FoodPicker";
-import { logHealthRecord } from "../../api/healthAPI";
+import { logHealthRecord, getHealthSummary } from "../../api/healthAPI";
 import { PatientTabParamList, Prediction } from "../../types";
 import { chatEvents, DASHBOARD_EVENTS } from "../../utils/chatEvents";
 import { COLORS, getBgColor, getRiskColor } from "../../utils/colors";
@@ -133,6 +134,7 @@ const ACTIVITY_OPTIONS: ActivityOption[] = [
 
 const LogHealthScreen = (): React.JSX.Element => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const navigation = useNavigation<Props>();
   const bloodGlucoseRef = useRef<TextInput>(null);
   const [selectedMeals, setSelectedMeals] = useState<SelectedMeal[]>([]);
@@ -177,6 +179,7 @@ const LogHealthScreen = (): React.JSX.Element => {
     control,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -194,6 +197,30 @@ const LogHealthScreen = (): React.JSX.Element => {
     chatEvents.emit(DASHBOARD_EVENTS.REFRESH);
     navigation.goBack();
   };
+
+  // Pre-fill weight from last health record or onboarding
+  useEffect(() => {
+    const prefillWeight = async (): Promise<void> => {
+      try {
+        // Try last health record first
+        const summary = await getHealthSummary();
+        if (summary?.lastReading?.weightKg) {
+          setValue("weightKg", summary.lastReading.weightKg.toString());
+          return;
+        }
+        // Fall back to onboarding weight
+        if (user?.weightKg) {
+          setValue("weightKg", user.weightKg.toString());
+        }
+      } catch {
+        // If fails use onboarding weight
+        if (user?.weightKg) {
+          setValue("weightKg", user.weightKg.toString());
+        }
+      }
+    };
+    prefillWeight().catch(() => undefined);
+  }, [setValue, user?.weightKg]);
 
   const onSubmit = async (data: FormData): Promise<void> => {
     try {
@@ -362,7 +389,11 @@ const LogHealthScreen = (): React.JSX.Element => {
                   />
                 )}
               />
-              <Text style={styles.hint}>{t("logHealth.weightHint")}</Text>
+              <Text style={styles.hint}>
+                {lang === "rw"
+                  ? "Uzuzwa n'ibiro byawe bya nyuma. Hindura niba impinduka"
+                  : "Pre-filled from your last reading. Update if changed."}
+              </Text>
               {errors.weightKg?.message ? (
                 <Text style={styles.errorText}>
                   {t(errors.weightKg.message)}

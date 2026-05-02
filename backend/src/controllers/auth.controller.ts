@@ -84,24 +84,19 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const passwordHash = await bcrypt.hash(body.password, 12);
+    const role = body.role ?? "PATIENT";
     const createdUser = await prisma.user.create({
       data: {
         fullName: body.fullName,
         email: body.email,
         passwordHash,
-        role: body.role ?? "PATIENT",
+        role,
         phone: body.phone,
         gender: body.gender,
         dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
         language: body.language ?? "rw",
+        isOnboardingComplete: role === "DOCTOR" ? true : false,
       },
-    });
-
-    const token = signToken({
-      userId: createdUser.id,
-      role: createdUser.role === "DOCTOR" ? "DOCTOR" : "PATIENT",
-      email: createdUser.email,
-      language: createdUser.language,
     });
 
     if (typeof body.fcmToken === "string" && body.fcmToken.trim().length > 0) {
@@ -110,9 +105,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     sendSuccess(
       res,
-      { user: sanitizeUser(createdUser), token },
+      { user: sanitizeUser(createdUser) },
       201,
-      "Registration successful",
+      "Registration successful. Please log in.",
     );
   } catch (error: unknown) {
     logger.error("register failed", error);

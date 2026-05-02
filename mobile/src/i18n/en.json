@@ -47,7 +47,9 @@
       "languageRw": "Kinyarwanda",
       "button": "Create Account",
       "hasAccount": "Already have an account?",
-      "login": "Sign In"
+      "login": "Sign In",
+      "successTitle": "Account Created!",
+      "successMessage": "Your account has been created successfully. Please log in to continue."
     },
     "onboarding": {
       "step": "Step",

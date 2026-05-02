@@ -47,7 +47,9 @@
       "languageRw": "Ikinyarwanda",
       "button": "Fungura Konti",
       "hasAccount": "Usanzwe ufite konti?",
-      "login": "Injira"
+      "login": "Injira",
+      "successTitle": "Konti Yashyizwe!",
+      "successMessage": "Konti yawe yashyizwe neza. Mwinjire kugira ngo komeza."
     },
     "onboarding": {
       "step": "Intambwe",

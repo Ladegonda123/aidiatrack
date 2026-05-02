@@ -27,10 +27,17 @@ const AppNavigator = (): React.JSX.Element => {
 
   const destination = useMemo(() => {
     if (!user) return "auth";
-    if (!user.isOnboardingComplete) return "onboarding";
+
+    // Doctors skip onboarding — go straight to dashboard
     if (user.role === "DOCTOR") return "doctor";
+
+    // Patients who haven't completed onboarding
+    if (user.role === "PATIENT" && !user.isOnboardingComplete) {
+      return "onboarding";
+    }
+
     return "patient";
-  }, [user?.id, user?.isOnboardingComplete, user?.role]);
+  }, [user?.id, user?.role, user?.isOnboardingComplete]);
 
   if (destination === "onboarding") {
     return <OnboardingScreen />;

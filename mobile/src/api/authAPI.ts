@@ -15,7 +15,7 @@ export interface RegisterData {
 
 interface AuthResponse {
   user: User;
-  token: string;
+  token?: string;
 }
 
 interface ApiResponse<T> {
@@ -57,7 +57,8 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
 };
 
 export const getMe = async (): Promise<User> => {
-  const response = await axiosInstance.get<ApiResponse<{ user: User }>>("/auth/me");
+  const response =
+    await axiosInstance.get<ApiResponse<{ user: User }>>("/auth/me");
   const data = response.data.data ?? null;
   if (!data?.user) {
     throw new Error("Missing current user response data");
