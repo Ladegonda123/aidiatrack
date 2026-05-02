@@ -207,26 +207,11 @@ export const AuthProvider = ({
     [refreshChatUnread],
   );
 
-  const register = useCallback(
-    async (data: RegisterData): Promise<void> => {
-      const response = await registerRequest(data);
-
-      // If no token is returned, registration succeeded but account needs login
-      if (!response.token) {
-        throw new Error("registration_requires_login");
-      }
-
-      setUser(response.user);
-      setToken(response.token);
-      await saveToken(response.token);
-      await saveUser(response.user);
-      await saveLanguage(response.user.language);
-      await i18n.changeLanguage(response.user.language);
-      await refreshChatUnread();
-      await registerForPushNotifications();
-    },
-    [refreshChatUnread],
-  );
+  const register = useCallback(async (data: RegisterData): Promise<void> => {
+    // Just call API — do not set user or token
+    await registerRequest(data);
+    // Registration succeeds — user must now log in
+  }, []);
 
   const logout = useCallback(async (): Promise<void> => {
     await removeToken();

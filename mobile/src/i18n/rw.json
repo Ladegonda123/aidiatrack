@@ -48,8 +48,8 @@
       "button": "Fungura Konti",
       "hasAccount": "Usanzwe ufite konti?",
       "login": "Injira",
-      "successTitle": "Konti Yashyizwe!",
-      "successMessage": "Konti yawe yashyizwe neza. Mwinjire kugira ngo komeza."
+      "successTitle": "Konti Yashyizweho!",
+      "successMessage": "Konti yawe yashyizwe neza. Injira kugira ngo ukomeze."
     },
     "onboarding": {
       "step": "Intambwe",
@@ -57,11 +57,11 @@
       "finish": "Tangira",
       "skip": "Simbuka ubu",
       "step1Title": "Tubwire ibyawe",
-      "step1Subtitle": "Bifasha guhuza serivisi nawe",
+      "step1Subtitle": "Bifasha guhuza serivisi na wewe",
       "step2Title": "Ibipimo byawe",
-      "step2Subtitle": "Bikoreshwa kubara BMI yawe",
+      "step2Subtitle": "Bikoreshwa kubara BMI yawe mu gupima ingaruka",
       "step3Title": "Hitamo ururimi",
-      "step3Subtitle": "Ushobora guhindura ibi igihe icyo aricyo",
+      "step3Subtitle": "Ushobora guhindura ibi igihe icyo aricyo cose",
       "weightLabel": "Ibiro (kg)",
       "heightLabel": "Uburebure (cm)",
       "bmiPreview": "BMI yawe",
@@ -70,13 +70,14 @@
       "getStarted": "Tangira",
       "genderLabel": "Igitsina",
       "dobLabel": "Itariki y'Amavuko",
-      "dobPlaceholder": "YYYY-MM-DD",
+      "dobPlaceholder": "1990-01-15",
       "phoneLabel": "Numero ya Telefoni",
       "phonePlaceholder": "Numero ya telefoni",
       "bmiUnderweight": "Ibiro bike cyane",
       "bmiNormal": "Ibiro bisanzwe",
       "bmiOverweight": "Ibiro byinshi",
-      "bmiObese": "Ibiro byinshi cyane"
+      "bmiObese": "Ibiro byinshi cyane",
+      "infoPrivacy": "Ibipimo byawe bikoreshwa gusa mu gupima ingaruka. Ntabwo tuzabisangira n'abandi."
     },
     "forgotPassword": {
       "title": "Wibagiwe Ijambo ry'Ibanga",

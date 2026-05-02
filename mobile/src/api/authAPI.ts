@@ -43,17 +43,17 @@ export const login = async (
   return authData;
 };
 
-export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
+export const register = async (data: RegisterData): Promise<User> => {
+  const response = await axiosInstance.post<ApiResponse<{ user: User }>>(
     "/auth/register",
     data,
   );
 
-  const authData = response.data.data ?? null;
-  if (!authData) {
+  const user = response.data.data?.user ?? null;
+  if (!user) {
     throw new Error("Missing register response data");
   }
-  return authData;
+  return user;
 };
 
 export const getMe = async (): Promise<User> => {

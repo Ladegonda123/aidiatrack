@@ -28,14 +28,14 @@ const AppNavigator = (): React.JSX.Element => {
   const destination = useMemo(() => {
     if (!user) return "auth";
 
-    // Doctors skip onboarding — go straight to dashboard
+    // Doctors NEVER see onboarding
     if (user.role === "DOCTOR") return "doctor";
 
-    // Patients who haven't completed onboarding
-    if (user.role === "PATIENT" && !user.isOnboardingComplete) {
+    // Patients who haven't completed onboarding (explicit false check)
+    if (user.role === "PATIENT" && user.isOnboardingComplete === false)
       return "onboarding";
-    }
 
+    // Patients who completed onboarding or old users (undefined)
     return "patient";
   }, [user?.id, user?.role, user?.isOnboardingComplete]);
 

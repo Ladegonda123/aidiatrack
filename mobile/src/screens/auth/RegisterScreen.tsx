@@ -93,30 +93,25 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         phone: values.phone?.trim() ? values.phone.trim() : undefined,
         language: currentLanguage,
       });
-    } catch (error: unknown) {
-      // Check if this is the expected "registration_requires_login" error
-      const errorMessage = error instanceof Error ? error.message : "";
 
-      if (errorMessage === "registration_requires_login") {
-        // Success case: account created, show alert and redirect to login
-        Alert.alert(
-          t("auth.register.successTitle") ?? "Account Created!",
-          t("auth.register.successMessage") ??
-            "Your account has been created successfully. Please log in to continue.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                setRegisterError(null);
-                navigation.replace("Login");
-              },
+      // Success: show alert and redirect to login
+      Alert.alert(
+        t("auth.register.successTitle") ?? "Account Created!",
+        t("auth.register.successMessage") ??
+          "Your account has been created. Please log in.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setRegisterError(null);
+              navigation.replace("Login");
             },
-          ],
-        );
-      } else {
-        // Actual error
-        setRegisterError(t("common.error"));
-      }
+          },
+        ],
+      );
+    } catch (error: unknown) {
+      // Actual error
+      setRegisterError(t("common.error"));
     } finally {
       setLoading(false);
     }

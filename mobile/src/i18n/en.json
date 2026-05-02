@@ -70,13 +70,14 @@
       "getStarted": "Get Started",
       "genderLabel": "Gender",
       "dobLabel": "Date of Birth",
-      "dobPlaceholder": "YYYY-MM-DD",
+      "dobPlaceholder": "1990-01-15",
       "phoneLabel": "Phone Number",
       "phonePlaceholder": "Phone number",
       "bmiUnderweight": "Underweight",
       "bmiNormal": "Normal weight",
       "bmiOverweight": "Overweight",
-      "bmiObese": "Obese"
+      "bmiObese": "Obese",
+      "infoPrivacy": "Your measurements are only used to calculate health risk. They are never shared with anyone."
     },
     "forgotPassword": {
       "title": "Forgot Password",
