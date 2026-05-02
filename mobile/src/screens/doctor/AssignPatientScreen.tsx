@@ -35,7 +35,8 @@ const AssignPatientScreen = (): React.JSX.Element => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<PatientSearchResult[]>([]);
   const [searching, setSearching] = useState<boolean>(false);
-  const [selectedPatient, setSelectedPatient] = useState<PatientSearchResult | null>(null);
+  const [selectedPatient, setSelectedPatient] =
+    useState<PatientSearchResult | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<{
     type: "success" | "error";
@@ -44,7 +45,9 @@ const AssignPatientScreen = (): React.JSX.Element => {
     patientName?: string;
     patientEmail?: string;
   } | null>(null);
-  const searchTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -176,197 +179,208 @@ const AssignPatientScreen = (): React.JSX.Element => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              {t("doctor.assign.searchLabel") ?? "Search Patient"}
-            </Text>
+            <View style={styles.card}>
+              <Text style={styles.label}>
+                {t("doctor.assign.searchLabel") ?? "Search Patient"}
+              </Text>
 
-            <View style={styles.searchContainer}>
-              <Ionicons
-                name="search-outline"
-                size={18}
-                color={COLORS.textSecondary}
-              />
-              <TextInput
-                style={styles.searchInput}
-                placeholder={
-                  t("doctor.assign.searchPlaceholder") ??
-                  "Type name or email..."
-                }
-                placeholderTextColor={COLORS.textSecondary}
-                value={searchQuery}
-                onChangeText={handleSearch}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {searching && (
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              )}
-              {searchQuery.length > 0 && !searching && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSearchQuery("");
-                    setSearchResults([]);
-                    setSelectedPatient(null);
-                  }}
-                >
-                  <Ionicons
-                    name="close-circle"
-                    size={18}
-                    color={COLORS.textSecondary}
-                  />
-                </TouchableOpacity>
-              )}
+              <View style={styles.searchContainer}>
+                <Ionicons
+                  name="search-outline"
+                  size={18}
+                  color={COLORS.textSecondary}
+                />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={
+                    t("doctor.assign.searchPlaceholder") ??
+                    "Type name or email..."
+                  }
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                {searching && (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                )}
+                {searchQuery.length > 0 && !searching && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery("");
+                      setSearchResults([]);
+                      setSelectedPatient(null);
+                    }}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={18}
+                      color={COLORS.textSecondary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
 
-          {searchResults.length > 0 && !selectedPatient && (
-            <View style={styles.resultsDropdown}>
-              {searchResults.map((patient, index) => (
-                <TouchableOpacity
-                  key={patient.id}
-                  style={[
-                    styles.resultItem,
-                    index < searchResults.length - 1 && styles.resultItemBorder,
-                  ]}
-                  onPress={() => {
-                    setSelectedPatient(patient);
-                    setSearchQuery(patient.fullName);
-                    setSearchResults([]);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Avatar
-                    photoUrl={patient.photoUrl}
-                    name={patient.fullName}
-                    size={36}
-                  />
-                  <View style={styles.resultInfo}>
-                    <Text style={styles.resultName}>{patient.fullName}</Text>
-                    <Text style={styles.resultEmail}>{patient.email}</Text>
-                  </View>
-                  {patient.doctorId ? (
-                    <View
-                      style={
-                        patient.doctorId === currentDoctorId
-                          ? styles.ownedBadge
-                          : styles.assignedBadge
-                      }
-                    >
-                      <Text
+            {searchResults.length > 0 && !selectedPatient && (
+              <View style={styles.resultsDropdown}>
+                {searchResults.map((patient, index) => (
+                  <TouchableOpacity
+                    key={patient.id}
+                    style={[
+                      styles.resultItem,
+                      index < searchResults.length - 1 &&
+                        styles.resultItemBorder,
+                    ]}
+                    onPress={() => {
+                      setSelectedPatient(patient);
+                      setSearchQuery(patient.fullName);
+                      setSearchResults([]);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Avatar
+                      photoUrl={patient.photoUrl}
+                      name={patient.fullName}
+                      size={36}
+                    />
+                    <View style={styles.resultInfo}>
+                      <Text style={styles.resultName}>{patient.fullName}</Text>
+                      <Text style={styles.resultEmail}>{patient.email}</Text>
+                    </View>
+                    {patient.doctorId ? (
+                      <View
                         style={
                           patient.doctorId === currentDoctorId
-                            ? styles.ownedBadgeText
-                            : styles.assignedBadgeText
+                            ? styles.ownedBadge
+                            : styles.assignedBadge
                         }
                       >
-                        {patient.doctorId === currentDoctorId
-                          ? (t("doctor.assign.yours") ?? "Yours")
-                          : (t("doctor.assign.assigned") ?? "Assigned")}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.freeBadge}>
-                      <Text style={styles.freeBadgeText}>
-                        {t("doctor.assign.free") ?? "Available"}
+                        <Text
+                          style={
+                            patient.doctorId === currentDoctorId
+                              ? styles.ownedBadgeText
+                              : styles.assignedBadgeText
+                          }
+                        >
+                          {patient.doctorId === currentDoctorId
+                            ? (t("doctor.assign.yours") ?? "Yours")
+                            : (t("doctor.assign.assigned") ?? "Assigned")}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.freeBadge}>
+                        <Text style={styles.freeBadgeText}>
+                          {t("doctor.assign.free") ?? "Available"}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {selectedPatient && (
+              <View style={styles.selectedPatient}>
+                <Avatar
+                  photoUrl={selectedPatient.photoUrl}
+                  name={selectedPatient.fullName}
+                  size={42}
+                />
+                <View style={styles.selectedInfo}>
+                  <Text style={styles.selectedName}>
+                    {selectedPatient.fullName}
+                  </Text>
+                  <Text style={styles.selectedEmail}>
+                    {selectedPatient.email}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color={COLORS.success}
+                />
+              </View>
+            )}
+
+            {result && (
+              <View
+                style={[
+                  styles.resultBox,
+                  {
+                    backgroundColor:
+                      result.type === "success"
+                        ? COLORS.success + "12"
+                        : COLORS.danger + "12",
+                    borderColor:
+                      result.type === "success"
+                        ? COLORS.success
+                        : COLORS.danger,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={
+                    result.type === "success"
+                      ? "checkmark-circle"
+                      : "close-circle"
+                  }
+                  size={22}
+                  color={
+                    result.type === "success" ? COLORS.success : COLORS.danger
+                  }
+                  style={{ marginTop: 2 }}
+                />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text
+                    style={[
+                      styles.resultMessage,
+                      {
+                        color:
+                          result.type === "success"
+                            ? COLORS.success
+                            : COLORS.danger,
+                      },
+                    ]}
+                  >
+                    {result.message}
+                  </Text>
+                  {result.type === "success" && result.patientName && (
+                    <View style={styles.patientConfirm}>
+                      <Ionicons
+                        name="person-outline"
+                        size={14}
+                        color={COLORS.success}
+                      />
+                      <Text style={styles.patientConfirmText}>
+                        {result.patientName}
                       </Text>
                     </View>
                   )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {selectedPatient && (
-            <View style={styles.selectedPatient}>
-              <Avatar
-                photoUrl={selectedPatient.photoUrl}
-                name={selectedPatient.fullName}
-                size={42}
-              />
-              <View style={styles.selectedInfo}>
-                <Text style={styles.selectedName}>{selectedPatient.fullName}</Text>
-                <Text style={styles.selectedEmail}>{selectedPatient.email}</Text>
+                  {result.detail ? (
+                    <Text style={styles.resultDetail}>{result.detail}</Text>
+                  ) : null}
+                </View>
               </View>
-              <Ionicons
-                name="checkmark-circle"
-                size={22}
-                color={COLORS.success}
-              />
-            </View>
-          )}
-
-          {result && (
-            <View
-              style={[
-                styles.resultBox,
-                {
-                  backgroundColor:
-                    result.type === "success"
-                      ? COLORS.success + "12"
-                      : COLORS.danger + "12",
-                  borderColor:
-                    result.type === "success" ? COLORS.success : COLORS.danger,
-                },
-              ]}
-            >
-              <Ionicons
-                name={
-                  result.type === "success" ? "checkmark-circle" : "close-circle"
-                }
-                size={22}
-                color={
-                  result.type === "success" ? COLORS.success : COLORS.danger
-                }
-                style={{ marginTop: 2 }}
-              />
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text
-                  style={[
-                    styles.resultMessage,
-                    {
-                      color:
-                        result.type === "success"
-                          ? COLORS.success
-                          : COLORS.danger,
-                    },
-                  ]}
-                >
-                  {result.message}
-                </Text>
-                {result.type === "success" && result.patientName && (
-                  <View style={styles.patientConfirm}>
-                    <Ionicons
-                      name="person-outline"
-                      size={14}
-                      color={COLORS.success}
-                    />
-                    <Text style={styles.patientConfirmText}>
-                      {result.patientName}
-                    </Text>
-                  </View>
-                )}
-                {result.detail ? (
-                  <Text style={styles.resultDetail}>{result.detail}</Text>
-                ) : null}
-              </View>
-            </View>
-          )}
-
-          <TouchableOpacity
-            style={[styles.button, submitting && styles.buttonDisabled]}
-            onPress={() => {
-              handleAssign().catch(() => undefined);
-            }}
-            disabled={!selectedPatient || submitting}
-            activeOpacity={0.9}
-          >
-            {submitting ? (
-              <Text style={styles.buttonText}>{t("common.loading")}</Text>
-            ) : (
-              <Text style={styles.buttonText}>{t("assignPatient.button")}</Text>
             )}
-          </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, submitting && styles.buttonDisabled]}
+              onPress={() => {
+                handleAssign().catch(() => undefined);
+              }}
+              disabled={!selectedPatient || submitting}
+              activeOpacity={0.9}
+            >
+              {submitting ? (
+                <Text style={styles.buttonText}>{t("common.loading")}</Text>
+              ) : (
+                <Text style={styles.buttonText}>
+                  {t("assignPatient.button")}
+                </Text>
+              )}
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -420,7 +434,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   scroll: {
     flex: 1,
