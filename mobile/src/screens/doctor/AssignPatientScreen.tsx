@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { isAxiosError } from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import Avatar from "../../components/Avatar";
 import { useAuth } from "../../hooks/useAuth";
 import {
@@ -78,9 +79,20 @@ const AssignPatientScreen = (): React.JSX.Element => {
     searchTimeout.current = setTimeout(async () => {
       try {
         setSearching(true);
-        const patients = await searchPatients(text);
+        console.log("[AssignPatient] Searching for:", text);
+        const response = await axiosInstance.get(
+          `/admin/search-patients?query=${encodeURIComponent(text)}`,
+        );
+        console.log("[AssignPatient] Response:", JSON.stringify(response.data));
+        const patients = response.data?.data?.patients ?? [];
+        console.log("[AssignPatient] Patients found:", patients.length);
         setSearchResults(patients);
-      } catch {
+      } catch (err: any) {
+        console.error(
+          "[AssignPatient] Search error:",
+          err?.response?.status,
+          err?.response?.data,
+        );
         setSearchResults([]);
       } finally {
         setSearching(false);
