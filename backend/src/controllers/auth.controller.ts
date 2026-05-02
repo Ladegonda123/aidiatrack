@@ -32,6 +32,9 @@ interface UpdateProfileBody {
   phone?: string;
   gender?: string;
   dateOfBirth?: Date | string;
+  weightKg?: number;
+  heightCm?: number;
+  isOnboardingComplete?: boolean;
   fcmToken?: string;
   reminderEnabled?: boolean;
   reminderTimes?: string[];
@@ -175,6 +178,9 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         gender: true,
         dateOfBirth: true,
         language: true,
+        isOnboardingComplete: true,
+        weightKg: true,
+        heightCm: true,
         photoUrl: true,
         doctorId: true,
         fcmToken: true,
@@ -209,6 +215,9 @@ export const updateProfile = async (
       gender,
       dateOfBirth,
       language,
+      weightKg,
+      heightCm,
+      isOnboardingComplete,
       fcmToken,
       reminderEnabled,
       reminderTimes,
@@ -220,6 +229,9 @@ export const updateProfile = async (
       gender: gender || null,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       language,
+      weightKg: typeof weightKg === "number" ? weightKg : undefined,
+      heightCm: typeof heightCm === "number" ? heightCm : undefined,
+      isOnboardingComplete,
       fcmToken,
       reminderEnabled,
       reminderTimes: Array.isArray(reminderTimes) ? reminderTimes : undefined,
@@ -237,6 +249,9 @@ export const updateProfile = async (
         gender: true,
         dateOfBirth: true,
         language: true,
+        isOnboardingComplete: true,
+        weightKg: true,
+        heightCm: true,
         photoUrl: true,
         doctorId: true,
         fcmToken: true,

@@ -10,6 +10,7 @@ import {
   assignPatient,
   getMyPatientByEmail,
   getUnassignedPatients,
+  searchPatients,
   unassignPatient,
 } from "../controllers/admin.controller";
 
@@ -34,6 +35,12 @@ router.get(
   authenticate,
   requireRole("DOCTOR"),
   getUnassignedPatients,
+);
+router.get(
+  "/search-patients",
+  authenticate,
+  requireRole("DOCTOR"),
+  searchPatients,
 );
 router.get(
   "/patients/search",

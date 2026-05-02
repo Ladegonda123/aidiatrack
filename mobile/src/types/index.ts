@@ -14,6 +14,9 @@ export interface User {
   doctorId?: number;
   photoUrl?: string | null;
   language: Language;
+  isOnboardingComplete?: boolean;
+  weightKg?: number;
+  heightCm?: number;
   fcmToken?: string;
   reminderEnabled?: boolean;
   reminderTimes?: string[];

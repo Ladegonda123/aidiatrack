@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,7 +16,13 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { isAxiosError } from "axios";
-import { assignPatient } from "../../api/doctorAPI";
+import Avatar from "../../components/Avatar";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  assignPatient,
+  PatientSearchResult,
+  searchPatients,
+} from "../../api/doctorAPI";
 import { COLORS } from "../../utils/colors";
 import { RootStackParamList } from "../../types";
 
@@ -23,7 +30,12 @@ const AssignPatientScreen = (): React.JSX.Element => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
-  const [email, setEmail] = useState<string>("");
+  const { user } = useAuth();
+  const currentDoctorId = user?.id ?? null;
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<PatientSearchResult[]>([]);
+  const [searching, setSearching] = useState<boolean>(false);
+  const [selectedPatient, setSelectedPatient] = useState<PatientSearchResult | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<{
     type: "success" | "error";
@@ -32,19 +44,55 @@ const AssignPatientScreen = (): React.JSX.Element => {
     patientName?: string;
     patientEmail?: string;
   } | null>(null);
+  const searchTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
+  React.useEffect(() => {
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+  }, []);
+
+  const handleSearch = (text: string): void => {
+    setSearchQuery(text);
+    setSelectedPatient(null);
+    setResult(null);
+
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    if (text.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const patients = await searchPatients(text);
+        setSearchResults(patients);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+  };
+
   const handleAssign = async (): Promise<void> => {
-    if (!email.trim()) return;
+    if (!selectedPatient) return;
 
     try {
       setSubmitting(true);
       setResult(null);
 
-      const response = await assignPatient(email.trim().toLowerCase());
+      const response = await assignPatient(selectedPatient.email);
       const patient = response.data?.data?.patient;
 
       setResult({
@@ -53,7 +101,9 @@ const AssignPatientScreen = (): React.JSX.Element => {
         patientName: patient?.fullName,
         patientEmail: patient?.email,
       });
-      setEmail("");
+      setSearchQuery("");
+      setSelectedPatient(null);
+      setSearchResults([]);
     } catch (err: unknown) {
       const backendMessage =
         isAxiosError(err) && typeof err?.response?.data?.message === "string"
@@ -127,20 +177,124 @@ const AssignPatientScreen = (): React.JSX.Element => {
             showsVerticalScrollIndicator={false}
           >
           <View style={styles.card}>
-            <Text style={styles.label}>{t("assignPatient.emailLabel")}</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              placeholder={t("assignPatient.emailPlaceholder")}
-              placeholderTextColor={COLORS.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!submitting}
-            />
-            <Text style={styles.helper}>{t("assignPatient.helper")}</Text>
+            <Text style={styles.label}>
+              {t("doctor.assign.searchLabel") ?? "Search Patient"}
+            </Text>
+
+            <View style={styles.searchContainer}>
+              <Ionicons
+                name="search-outline"
+                size={18}
+                color={COLORS.textSecondary}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={
+                  t("doctor.assign.searchPlaceholder") ??
+                  "Type name or email..."
+                }
+                placeholderTextColor={COLORS.textSecondary}
+                value={searchQuery}
+                onChangeText={handleSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {searching && (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              )}
+              {searchQuery.length > 0 && !searching && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchQuery("");
+                    setSearchResults([]);
+                    setSelectedPatient(null);
+                  }}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={COLORS.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
+
+          {searchResults.length > 0 && !selectedPatient && (
+            <View style={styles.resultsDropdown}>
+              {searchResults.map((patient, index) => (
+                <TouchableOpacity
+                  key={patient.id}
+                  style={[
+                    styles.resultItem,
+                    index < searchResults.length - 1 && styles.resultItemBorder,
+                  ]}
+                  onPress={() => {
+                    setSelectedPatient(patient);
+                    setSearchQuery(patient.fullName);
+                    setSearchResults([]);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Avatar
+                    photoUrl={patient.photoUrl}
+                    name={patient.fullName}
+                    size={36}
+                  />
+                  <View style={styles.resultInfo}>
+                    <Text style={styles.resultName}>{patient.fullName}</Text>
+                    <Text style={styles.resultEmail}>{patient.email}</Text>
+                  </View>
+                  {patient.doctorId ? (
+                    <View
+                      style={
+                        patient.doctorId === currentDoctorId
+                          ? styles.ownedBadge
+                          : styles.assignedBadge
+                      }
+                    >
+                      <Text
+                        style={
+                          patient.doctorId === currentDoctorId
+                            ? styles.ownedBadgeText
+                            : styles.assignedBadgeText
+                        }
+                      >
+                        {patient.doctorId === currentDoctorId
+                          ? (t("doctor.assign.yours") ?? "Yours")
+                          : (t("doctor.assign.assigned") ?? "Assigned")}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={styles.freeBadge}>
+                      <Text style={styles.freeBadgeText}>
+                        {t("doctor.assign.free") ?? "Available"}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {selectedPatient && (
+            <View style={styles.selectedPatient}>
+              <Avatar
+                photoUrl={selectedPatient.photoUrl}
+                name={selectedPatient.fullName}
+                size={42}
+              />
+              <View style={styles.selectedInfo}>
+                <Text style={styles.selectedName}>{selectedPatient.fullName}</Text>
+                <Text style={styles.selectedEmail}>{selectedPatient.email}</Text>
+              </View>
+              <Ionicons
+                name="checkmark-circle"
+                size={22}
+                color={COLORS.success}
+              />
+            </View>
+          )}
 
           {result && (
             <View
@@ -204,7 +358,7 @@ const AssignPatientScreen = (): React.JSX.Element => {
             onPress={() => {
               handleAssign().catch(() => undefined);
             }}
-            disabled={submitting}
+            disabled={!selectedPatient || submitting}
             activeOpacity={0.9}
           >
             {submitting ? (
@@ -306,6 +460,113 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 12,
     lineHeight: 18,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+    marginBottom: 4,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    padding: 0,
+  },
+  resultsDropdown: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  resultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 12,
+  },
+  resultItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  resultInfo: { flex: 1 },
+  resultName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+  },
+  resultEmail: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 1,
+  },
+  assignedBadge: {
+    backgroundColor: COLORS.warning + "20",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  ownedBadge: {
+    backgroundColor: COLORS.success + "20",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  assignedBadgeText: {
+    fontSize: 11,
+    color: COLORS.warning,
+    fontWeight: "700",
+  },
+  ownedBadgeText: {
+    fontSize: 11,
+    color: COLORS.success,
+    fontWeight: "700",
+  },
+  freeBadge: {
+    backgroundColor: COLORS.success + "20",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  freeBadgeText: {
+    fontSize: 11,
+    color: COLORS.success,
+    fontWeight: "700",
+  },
+  selectedPatient: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.success + "10",
+    borderWidth: 1.5,
+    borderColor: COLORS.success + "40",
+    borderRadius: 12,
+    padding: 14,
+    gap: 12,
+    marginBottom: 16,
+  },
+  selectedInfo: { flex: 1 },
+  selectedName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+  selectedEmail: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   button: {
     backgroundColor: COLORS.primary,

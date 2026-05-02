@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import prisma from "../config/database";
 import { logger } from "../utils/logger";
 import { sendError, sendSuccess } from "../utils/response";
+import { createNotification } from "./notification.controller";
+import { emitDoctorAssigned } from "../config/socket";
+import { sendPushNotification } from "../services/notification.service";
 
 interface AssignPatientBody {
   patientEmail: string;
@@ -13,6 +16,7 @@ interface UnassignPatientBody {
 
 interface PatientSearchQuery {
   email?: string;
+  query?: string;
 }
 
 const patientSelect = {
@@ -33,6 +37,7 @@ const assignedPatientSelect = {
   gender: true,
   doctorId: true,
   fcmToken: true,
+  language: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -43,11 +48,11 @@ export const assignPatient = async (
 ): Promise<void> => {
   try {
     const doctorId = req.user!.userId;
-    const body = req.body as AssignPatientBody;
+    const assignBody = req.body as AssignPatientBody;
 
     const patient = await prisma.user.findUnique({
       where: {
-        email: body.patientEmail.toLowerCase(),
+        email: assignBody.patientEmail.toLowerCase(),
       },
       include: {
         doctor: {
@@ -93,6 +98,51 @@ export const assignPatient = async (
         doctorId,
       },
       select: assignedPatientSelect,
+    });
+
+    const doctor = await prisma.user.findUnique({
+      where: { id: doctorId },
+      select: { fullName: true },
+    });
+
+    const patientLang = updatedPatient.language ?? "rw";
+    const doctorName = doctor?.fullName ?? "Umuganga";
+    const title =
+      patientLang === "rw" ? "Wagenewe Umuganga" : "Doctor Assigned";
+    const notificationBody =
+      patientLang === "rw"
+        ? `Dr. ${doctorName} ni umuganga wawe mushya kuri AIDiaTrack.`
+        : `Dr. ${doctorName} has been assigned as your doctor on AIDiaTrack.`;
+
+    await createNotification({
+      userId: updatedPatient.id,
+      type: "system",
+      title,
+      body: notificationBody,
+      data: {
+        doctorId: doctorId.toString(),
+        doctorName,
+        action: "doctor_assigned",
+      },
+    });
+
+    if (updatedPatient.fcmToken) {
+      await sendPushNotification({
+        userId: updatedPatient.id,
+        title,
+        body: notificationBody,
+        channelId: "general",
+        data: {
+          doctorId: doctorId.toString(),
+          doctorName,
+          action: "doctor_assigned",
+        },
+      });
+    }
+
+    emitDoctorAssigned(updatedPatient.id, {
+      doctorId,
+      doctorName,
     });
 
     sendSuccess(
@@ -228,5 +278,65 @@ export const getMyPatientByEmail = async (
   } catch (error: unknown) {
     logger.error("getMyPatientByEmail failed", error);
     sendError(res, 500, "Failed to search patients");
+  }
+};
+
+export const searchPatients = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const query = req.query as PatientSearchQuery;
+    const searchTerm =
+      typeof query.query === "string" ? query.query.trim() : "";
+
+    if (searchTerm.length < 2) {
+      sendSuccess(
+        res,
+        { patients: [] },
+        200,
+        "Patients retrieved successfully",
+      );
+      return;
+    }
+
+    const patients = await prisma.user.findMany({
+      where: {
+        role: "PATIENT",
+        OR: [
+          {
+            email: {
+              contains: searchTerm,
+              mode: "insensitive",
+            },
+          },
+          {
+            fullName: {
+              contains: searchTerm,
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        photoUrl: true,
+        doctorId: true,
+        doctor: {
+          select: { fullName: true },
+        },
+      },
+      take: 5,
+      orderBy: {
+        fullName: "asc",
+      },
+    });
+
+    sendSuccess(res, { patients }, 200, "Patients retrieved successfully");
+  } catch (error: unknown) {
+    logger.error("searchPatients failed", error);
+    sendError(res, 500, "Search failed");
   }
 };

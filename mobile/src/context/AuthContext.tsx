@@ -16,6 +16,7 @@ import {
   updateProfile,
 } from "../api/authAPI";
 import axiosInstance from "../api/axiosInstance";
+import { registerForPushNotifications } from "../utils/registerPushToken";
 import { chatEvents, CHAT_EVENTS } from "../utils/chatEvents";
 import {
   getToken,
@@ -37,6 +38,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateLanguage: (lang: Language) => Promise<void>;
   refreshUser: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
   chatUnreadCount: number;
   setChatUnreadCount: React.Dispatch<React.SetStateAction<number>>;
   refreshChatUnread: () => Promise<void>;
@@ -81,6 +83,27 @@ export const AuthProvider = ({
       const response = await axiosInstance.get("/chat/unread-count");
       const count = response.data?.data?.unreadCount ?? 0;
       setChatUnreadCount(count);
+    } catch {
+      // silent fail
+    }
+  }, []);
+
+  const refreshUserProfile = useCallback(async (): Promise<void> => {
+    const currentToken = tokenRef.current;
+    if (!currentToken) return;
+
+    try {
+      const response = await axiosInstance.get("/auth/me");
+      const freshUser = response.data?.data?.user ?? response.data?.data;
+
+      if (freshUser) {
+        setUser(freshUser);
+        await saveUser(freshUser);
+        if (typeof freshUser.language === "string") {
+          await saveLanguage(freshUser.language);
+          await i18n.changeLanguage(freshUser.language);
+        }
+      }
     } catch {
       // silent fail
     }
@@ -174,6 +197,7 @@ export const AuthProvider = ({
       await saveLanguage(response.user.language);
       await i18n.changeLanguage(response.user.language);
       await refreshChatUnread();
+      await registerForPushNotifications();
     },
     [refreshChatUnread],
   );
@@ -188,6 +212,7 @@ export const AuthProvider = ({
       await saveLanguage(response.user.language);
       await i18n.changeLanguage(response.user.language);
       await refreshChatUnread();
+      await registerForPushNotifications();
     },
     [refreshChatUnread],
   );
@@ -221,13 +246,7 @@ export const AuthProvider = ({
     }
   }, []);
 
-  const refreshUser = useCallback(async (): Promise<void> => {
-    const me = await getMe();
-    setUser(me);
-    await saveUser(me);
-    await saveLanguage(me.language);
-    await i18n.changeLanguage(me.language);
-  }, []);
+  const refreshUser = refreshUserProfile;
 
   const value = useMemo<AuthContextType>(
     () => ({
@@ -243,6 +262,7 @@ export const AuthProvider = ({
       setChatUnreadCount,
       refreshChatUnread,
       updateLanguage,
+      refreshUserProfile,
     }),
     [
       chatUnreadCount,
@@ -251,6 +271,7 @@ export const AuthProvider = ({
       logout,
       refreshChatUnread,
       refreshUser,
+      refreshUserProfile,
       register,
       setChatUnreadCount,
       token,

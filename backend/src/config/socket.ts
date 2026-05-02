@@ -24,6 +24,7 @@ interface RoomPair {
 
 const onlineUsers = new Map<number, string>();
 const lastSeenMap = new Map<number, string>();
+let socketServer: Server | null = null;
 
 export const isUserOnline = (userId: number): boolean => {
   return onlineUsers.has(userId);
@@ -31,6 +32,19 @@ export const isUserOnline = (userId: number): boolean => {
 
 export const getLastSeen = (userId: number): string | null => {
   return lastSeenMap.get(userId) ?? null;
+};
+
+export const emitDoctorAssigned = (
+  patientId: number,
+  payload: { doctorId: number; doctorName: string },
+): void => {
+  const socketId = onlineUsers.get(patientId);
+
+  if (!socketId || !socketServer) {
+    return;
+  }
+
+  socketServer.to(socketId).emit("doctor_assigned", payload);
 };
 
 const isPositiveInt = (value: unknown): value is number => {
@@ -116,6 +130,8 @@ const isValidDoctorPatientPair = async (
 };
 
 export const setupSocket = (io: Server): void => {
+  socketServer = io;
+
   io.on("connection", (socket: Socket) => {
     logger.socket("Socket connected", { socketId: socket.id });
 
@@ -222,9 +238,12 @@ export const setupSocket = (io: Server): void => {
               content,
               timestamp,
             });
-            logger.socket("[Socket] sent new_message_notification to receiver:", {
-              receiverId: payload.receiverId,
-            });
+            logger.socket(
+              "[Socket] sent new_message_notification to receiver:",
+              {
+                receiverId: payload.receiverId,
+              },
+            );
           }
         }
 

@@ -94,6 +94,9 @@ export const updateProfileSchema: ObjectSchema = Joi.object({
     .allow("", null),
   dateOfBirth: Joi.date().max("now").optional().allow(null),
   language: Joi.string().valid("en", "rw").optional(),
+  weightKg: Joi.number().min(20).max(300).optional(),
+  heightCm: Joi.number().min(50).max(250).optional(),
+  isOnboardingComplete: Joi.boolean().optional(),
   fcmToken: Joi.string().optional().allow("", null),
   reminderEnabled: Joi.boolean().optional(),
   reminderTimes: Joi.array()

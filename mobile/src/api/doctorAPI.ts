@@ -26,6 +26,17 @@ export interface DoctorListItem {
   createdAt?: string;
 }
 
+export interface PatientSearchResult {
+  id: number;
+  fullName: string;
+  email: string;
+  photoUrl?: string | null;
+  doctorId?: number | null;
+  doctor?: {
+    fullName: string;
+  } | null;
+}
+
 export interface AssignedPatient {
   id: number;
   fullName: string;
@@ -88,4 +99,14 @@ export const assignDoctor = async (doctorId: number): Promise<User> => {
     { doctorId },
   );
   return response.data.data;
+};
+
+export const searchPatients = async (
+  query: string,
+): Promise<PatientSearchResult[]> => {
+  const response = await axiosInstance.get<
+    ApiResponse<{ patients: PatientSearchResult[] }>
+  >(`/admin/search-patients?query=${encodeURIComponent(query)}`);
+
+  return response.data.data?.patients ?? [];
 };

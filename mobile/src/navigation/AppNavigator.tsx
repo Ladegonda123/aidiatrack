@@ -18,6 +18,7 @@ import ReportsScreen from "../screens/patient/ReportsScreen";
 import MedicationScreen from "../screens/patient/MedicationScreen";
 import PatientNavigator from "./PatientNavigator";
 import DoctorNavigator from "./DoctorNavigator";
+import OnboardingScreen from "../screens/auth/OnboardingScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,9 +27,14 @@ const AppNavigator = (): React.JSX.Element => {
 
   const destination = useMemo(() => {
     if (!user) return "auth";
+    if (!user.isOnboardingComplete) return "onboarding";
     if (user.role === "DOCTOR") return "doctor";
     return "patient";
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.isOnboardingComplete, user?.role]);
+
+  if (destination === "onboarding") {
+    return <OnboardingScreen />;
+  }
 
   if (loading) {
     return (

@@ -21,7 +21,7 @@ import { COLORS } from "../../utils/colors";
 
 const ChatScreen = (): React.JSX.Element => {
   const { t } = useTranslation();
-  const { user, setChatUnreadCount } = useAuth();
+  const { user, setChatUnreadCount, refreshUserProfile } = useAuth();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -55,6 +55,14 @@ const ChatScreen = (): React.JSX.Element => {
       setLoadingDoctor(false);
     });
   }, [t, user?.doctorId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshUserProfile().catch(() => {
+        // Silent fail to avoid blocking chat screen UX.
+      });
+    }, [refreshUserProfile]),
+  );
 
   useFocusEffect(
     useCallback(() => {

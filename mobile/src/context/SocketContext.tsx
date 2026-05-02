@@ -34,7 +34,7 @@ export const SocketProvider = ({
 }: {
   children: React.ReactNode;
 }): React.JSX.Element => {
-  const { user } = useAuth();
+  const { user, refreshUserProfile } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const userIdRef = useRef<number | null>(null);
@@ -112,16 +112,28 @@ export const SocketProvider = ({
     socketClient.on("receive_message", handleReceiveMessage);
     socketClient.on("new_message_notification", handleNewMessageNotification);
 
+    const handleDoctorAssigned = (): void => {
+      refreshUserProfile().catch(() => {
+        // silent fail
+      });
+    };
+
+    socketClient.on("doctor_assigned", handleDoctorAssigned);
+
     setSocket(socketClient);
 
     return () => {
       socketClient.off("receive_message", handleReceiveMessage);
-      socketClient.off("new_message_notification", handleNewMessageNotification);
+      socketClient.off(
+        "new_message_notification",
+        handleNewMessageNotification,
+      );
+      socketClient.off("doctor_assigned", handleDoctorAssigned);
       socketClient.disconnect();
       setSocket(null);
       setIsConnected(false);
     };
-  }, [user]);
+  }, [refreshUserProfile, user]);
 
   useEffect(() => {
     if (socket && userIdRef.current && socket.connected) {
