@@ -95,8 +95,7 @@ const AssignPatientScreen = (): React.JSX.Element => {
       setSubmitting(true);
       setResult(null);
 
-      const response = await assignPatient(selectedPatient.email);
-      const patient = response.data?.data?.patient;
+      const patient = await assignPatient(selectedPatient.email);
 
       setResult({
         type: "success",
