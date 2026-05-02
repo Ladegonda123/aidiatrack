@@ -30,7 +30,6 @@ const OnboardingScreen = (): React.JSX.Element => {
   const [dob, setDob] = useState<string>(
     user?.dateOfBirth ? user.dateOfBirth.slice(0, 10) : "",
   );
-  const [phone, setPhone] = useState<string>(user?.phone ?? "");
   const [weight, setWeight] = useState<string>(
     typeof user?.weightKg === "number" ? String(user.weightKg) : "",
   );
@@ -99,10 +98,6 @@ const OnboardingScreen = (): React.JSX.Element => {
         if (!isNaN(dateObj.getTime())) {
           payload.dateOfBirth = dateObj.toISOString();
         }
-      }
-
-      if (phone && phone.trim()) {
-        payload.phone = phone.trim();
       }
 
       if (weight && weight.trim()) {
@@ -257,27 +252,6 @@ const OnboardingScreen = (): React.JSX.Element => {
                 minimumDate={new Date(1920, 0, 1)}
               />
 
-              <Text style={styles.label}>{t("onboarding.phoneLabel")}</Text>
-              {user?.phone ? (
-                <View style={styles.prefilledRow}>
-                  <Ionicons name="call-outline" size={16} color={COLORS.success} />
-                  <Text style={styles.prefilledText}>{user.phone}</Text>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color={COLORS.success}
-                  />
-                </View>
-              ) : (
-                <TextInput
-                  style={styles.input}
-                  value={phone}
-                  onChangeText={setPhone}
-                  placeholder="+250788000000"
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="phone-pad"
-                />
-              )}
             </View>
           )}
 
@@ -624,23 +598,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 22,
-  },
-  prefilledRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: COLORS.success + "10",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: COLORS.success + "30",
-  },
-  prefilledText: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.success,
-    fontWeight: "500",
   },
 });
 
