@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DatePickerField from "../../components/DatePickerField";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -38,7 +39,8 @@ const GENDER_OPTIONS = [
 ];
 
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, i18n: i18nInstance } = useTranslation();
+  const lang = i18nInstance.language as "en" | "rw";
   const { user, setUser } = useAuth();
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [gender, setGender] = useState<string>(user?.gender ?? "");
@@ -209,17 +211,19 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Controller
             control={control}
             name="dateOfBirth"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder={t("auth.editProfile.dobHint")}
+            render={({ field: { onChange, value } }) => (
+              <DatePickerField
+                value={value ?? ""}
+                onChange={onChange}
+                placeholder={
+                  lang === "rw"
+                    ? "Hitamo itariki"
+                    : "Select date of birth"
+                }
+                maximumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
               />
             )}
           />
-          <Text style={styles.hint}>{t("auth.editProfile.dobHint")}</Text>
 
           <TouchableOpacity
             style={[styles.button, submitting && styles.buttonDisabled]}
@@ -263,11 +267,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     color: COLORS.textPrimary,
-  },
-  hint: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 4,
   },
   errorText: { color: COLORS.danger, fontSize: 12, marginTop: 4 },
   genderRow: {

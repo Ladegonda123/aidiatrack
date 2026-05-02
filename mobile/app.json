@@ -12,7 +12,8 @@
           "defaultChannel": "default",
           "sounds": []
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
