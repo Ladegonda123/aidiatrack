@@ -17,9 +17,11 @@ import { saveLanguage } from "../../utils/storage";
 import { updateProfile } from "../../api/authAPI";
 import { Language } from "../../types";
 import i18n from "../../i18n";
+import DatePickerField from "../../components/DatePickerField";
 
 const OnboardingScreen = (): React.JSX.Element => {
-  const { t } = useTranslation();
+  const { t, i18n: i18nInstance } = useTranslation();
+  const lang = i18nInstance.language as "en" | "rw";
   const { user, setUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -82,35 +84,62 @@ const OnboardingScreen = (): React.JSX.Element => {
 
     try {
       setSubmitting(true);
-      await updateProfile({
-        gender: gender || undefined,
-        dateOfBirth: dob ? new Date(dob).toISOString() : undefined,
-        phone: phone || undefined,
-        weightKg: weight ? Number(weight) : undefined,
-        heightCm: height ? Number(height) : undefined,
-        language: selectedLanguage,
+
+      const payload: Record<string, unknown> = {
         isOnboardingComplete: true,
-      });
+        language: selectedLanguage ?? "rw",
+      };
+
+      if (gender) {
+        payload.gender = gender;
+      }
+
+      if (dob && dob.trim().length >= 8) {
+        const dateObj = new Date(dob.trim());
+        if (!isNaN(dateObj.getTime())) {
+          payload.dateOfBirth = dateObj.toISOString();
+        }
+      }
+
+      if (phone && phone.trim()) {
+        payload.phone = phone.trim();
+      }
+
+      if (weight && weight.trim()) {
+        const w = parseFloat(weight);
+        if (!isNaN(w) && w >= 20 && w <= 300) {
+          payload.weightKg = w;
+        }
+      }
+
+      if (height && height.trim()) {
+        const h = parseFloat(height);
+        if (!isNaN(h) && h >= 50 && h <= 250) {
+          payload.heightCm = h;
+        }
+      }
+
+      const updatedUser = await updateProfile(payload as Parameters<typeof updateProfile>[0]);
 
       setUser((prev) =>
         prev
           ? {
               ...prev,
-              gender: gender || prev.gender,
-              dateOfBirth: dob ? new Date(dob).toISOString() : prev.dateOfBirth,
-              phone: phone || prev.phone,
-              weightKg: weight ? Number(weight) : prev.weightKg,
-              heightCm: height ? Number(height) : prev.heightCm,
-              language: selectedLanguage,
+              ...(updatedUser ?? {}),
               isOnboardingComplete: true,
+              language: selectedLanguage ?? "rw",
             }
           : prev,
       );
 
-      await i18n.changeLanguage(selectedLanguage);
-      await saveLanguage(selectedLanguage);
+      await i18n.changeLanguage(selectedLanguage ?? "rw");
+      await saveLanguage(selectedLanguage ?? "rw");
       setCompleted(true);
-    } catch {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      const status = axiosErr?.response?.status;
+      const msg = axiosErr?.response?.data?.message;
+      console.error("[Onboarding] finish failed:", status, msg, axiosErr?.message);
       Alert.alert(t("common.error"));
     } finally {
       setSubmitting(false);
@@ -218,24 +247,37 @@ const OnboardingScreen = (): React.JSX.Element => {
               </View>
 
               <Text style={styles.label}>{t("onboarding.dobLabel")}</Text>
-              <TextInput
-                style={styles.input}
+              <DatePickerField
                 value={dob}
-                onChangeText={setDob}
-                placeholder={t("onboarding.dobPlaceholder")}
-                placeholderTextColor={COLORS.textSecondary}
-                autoCapitalize="none"
+                onChange={setDob}
+                placeholder={
+                  lang === "rw" ? "Hitamo itariki" : "Select your date of birth"
+                }
+                maximumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
+                minimumDate={new Date(1920, 0, 1)}
               />
 
               <Text style={styles.label}>{t("onboarding.phoneLabel")}</Text>
-              <TextInput
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder={t("onboarding.phonePlaceholder")}
-                placeholderTextColor={COLORS.textSecondary}
-                keyboardType="phone-pad"
-              />
+              {user?.phone ? (
+                <View style={styles.prefilledRow}>
+                  <Ionicons name="call-outline" size={16} color={COLORS.success} />
+                  <Text style={styles.prefilledText}>{user.phone}</Text>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color={COLORS.success}
+                  />
+                </View>
+              ) : (
+                <TextInput
+                  style={styles.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="+250788000000"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="phone-pad"
+                />
+              )}
             </View>
           )}
 
@@ -582,6 +624,23 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 22,
+  },
+  prefilledRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: COLORS.success + "10",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: COLORS.success + "30",
+  },
+  prefilledText: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.success,
+    fontWeight: "500",
   },
 });
 
