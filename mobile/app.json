@@ -50,9 +50,9 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://aidiatrack-backend.onrender.com/api",
-      "socketUrl": "https://aidiatrack-backend.onrender.com",
-      "aiUrl": "https://aidiatrack-ai.onrender.com",
+      "apiUrl": "https://aidiatrack-backend-hll9.onrender.com/api",
+      "socketUrl": "https://aidiatrack-backend-hll9.onrender.com",
+      "aiUrl": "https://aidiatrack-ai-01j7.onrender.com",
       "eas": {
         "projectId": "987bdbb4-b1e7-4099-97a0-9654d9e53bc5"
       }
