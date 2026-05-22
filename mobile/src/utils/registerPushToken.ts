@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
@@ -68,14 +67,9 @@ export const registerForPushNotifications = async (): Promise<
 
     await configureAndroidChannels();
 
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    if (!projectId) {
-      return null;
-    }
+    const tokenData = await Notifications.getDevicePushTokenAsync();
 
-    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-
-    const token = tokenData.data;
+    const token = tokenData.data as string;
     await updateFcmToken(token);
     return token;
   } catch {
